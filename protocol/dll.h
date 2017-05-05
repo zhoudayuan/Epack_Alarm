@@ -160,18 +160,18 @@
 
 /** @defgroup CSBK命令码 */
 /** @{ */
-#define PRE_CSBKO               0x3d
-#define REQ_CSBKO               0x29
-#define ACK_CSBKO               0x2c
-#define ALARM_CSBKO             0x37
+#define PRE_CSBKO               0x3d  // 预载波
+#define REQ_CSBKO               0x29  // Common Signalling Request CSBKO
+#define ACK_CSBKO               0x2c  // Common Signalling Answer Response CSBKO
+#define ALARM_CSBKO             0x37  // Digital Alarm Service Request CSBKO
 /** @} */
 
 /** @defgroup 补充业务命令码 */
 /** @{ */
-#define CALL_ALERT_SSO          0x05
-#define EN_RADIO_SSO            0x09
-#define DIS_RADIO_SSO           0x0a
-#define DIGITAL_ALARM_SSO       0x0f
+#define CALL_ALERT_SSO          0x05  // Call Alert Service
+#define EN_RADIO_SSO            0x09  // Radio Enable Service
+#define DIS_RADIO_SSO           0x0a  // Radio Disable Service
+#define DIGITAL_ALARM_SSO       0x0f  // 该值暂定-Digital Alarm Service
 /** @} */
 
 /**
@@ -230,6 +230,15 @@
 
 #define NODE_TYPE_D            ((UINT8)0x00)    //数据节点
 #define NODE_TYPE_V            ((UINT8)0x01)    //语音节点
+
+/**
+ * @brief  邻点锻炼告警状态标志
+ */
+#define     TURN_ON                  1     // 设置邻点断链告警开关[打开]
+#define     TURN_OFF                 0     // 设置邻点断链告警开关[关闭]
+#define     DISCON_DISABLE          -1     // 没有邻点断链告警功能
+#define     DISCON_HAPPEN            1     // 检测到邻点断链出现，
+#define     DISCON_RECOVER           0     // 检测到邻点断链恢复，当前不断链状态，
 
 
 /******************************************************************************
@@ -504,6 +513,8 @@ typedef struct _DLL_GLB_CFG_T
     UINT32 auNerInfo1[32];             ///< 临点拓扑信息 1
     UINT32 auNegrId2;                  ///< 临点信息2
     UINT32 auNerInfo2[32];             ///< 临点拓扑信息 2
+    ///////////////////////////////////////////////////
+//    UINT8  auDisconFlag;                ///< 邻点断链告警状态标志 0-清除告警，1-设置告警
 
 }DLL_GLB_CFG_T;
 
@@ -584,8 +595,8 @@ typedef struct _PRE_CSBK_PDU
 typedef struct _SUPS_CSBK_PDU
 {
     UINT8 uCSBKO:6;
-    UINT8 uPF  :1;
-    UINT8 uLB  :1;
+    UINT8 uPF  :1;  // Protect Flag
+    UINT8 uLB  :1;  // Last Block, 0-MBC Header or Continuation Block,1-CSBK or MBC Last Block
     UINT8 uFID;
     UINT8 uSSO;
     UINT8 uREV;

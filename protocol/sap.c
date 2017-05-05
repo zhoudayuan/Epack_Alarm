@@ -50,6 +50,12 @@ SHM_IPC_STRU *ptIPCShm = NULL;
  */
 SHM_CFG_STRU *ptCFGShm = NULL;
 
+/**
+ * @var semid_ipc
+ * @brief 进程间通信信号量标识符
+ */
+int semid_ipc;
+
 
 #include "log.h"
 
@@ -98,6 +104,9 @@ int main(void)
 
     _IPC_Shm();
     printf("[SAP] ipc shm ok!\n");
+
+//    _IPC_sem();
+    printf("[SAP] ipc sem ok!\n");
 
     ret = _LocalCfgPrint();
     if(ret == -1)
@@ -209,6 +218,62 @@ void _CFG_Shm()
     }
 
     return;
+}
+
+
+static int set_semvalue(void)
+{
+    SEMUN sem_union;
+    sem_union.val = 1;
+    if (semctl(semid_ipc, 0, SETVAL, sem_union) == -1)
+    {
+        return(0);
+    }
+    return(1);
+}
+
+
+/**
+ * @brief   初始化信号量
+ *
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
+void _IPC_sem()
+{
+    key_t semkey;
+
+
+    semkey = ftok(FTOK_F_NAME, FTOK_ID_SEM_IPC);
+    if (semkey < 0)
+    {
+        LOG_WFile(pLogFd, "Get IPC Sem key error!!!");
+        LOG_ERROR(s_LogMsgId, "..._Get IPC Sem key error!!!, exit!!!");
+        exit(1);
+    }
+
+    semid_ipc = semget(semkey, 1, (0666|IPC_CREAT));
+    if (semid_ipc == -1)
+    {
+        LOG_WFile(pLogFd, "Get IPC sem error!!!");
+        LOG_ERROR(s_LogMsgId, "..._Get IPC sem error!!!, exit!!!");
+        exit(1);
+    }
+    else if (semid_ipc > 1)
+    {
+        if (!set_semvalue())
+        {
+            LOG_WFile(pLogFd, "Failed to initialize semaphore");
+            LOG_ERROR(s_LogMsgId, "..._Failed to initialize semaphore!!!, exit!!!");
+            exit(1);
+        }
+    }
+    else
+    {
+        perror("semid_ipc>");
+        exit(1);
+    }
 }
 
 

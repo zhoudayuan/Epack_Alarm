@@ -83,7 +83,7 @@ int IDP_LockFreqSlot(UINT8 RevSlot, UINT8 RevFrq1, UINT8 RevFrq2);
  * @brief  上行中转链路数据处理函数
  */
 void IDP_RelayLinkData(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo, UINT8 SapType);
- 
+
 /**
  * @brief 呼叫控制层下行线程
  */

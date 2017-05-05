@@ -40,7 +40,6 @@
 #include <sys/mman.h>
 #include <time.h>
 #include <errno.h>
-
 #include "dll_common.h"
 #include "mgr_common.h"
 #include "log.h"
@@ -71,6 +70,7 @@ typedef enum _CCL_DATA_TYPE_E
     CT_ENABLE_ACK_MS        = 0x16,                      ///< 终端激活
     CT_ALARM_REQ_MS         = 0x17,                      ///< 终端紧急告警
     CT_ALARM_ACK_MS         = 0x18,                      ///< 终端紧急告警
+
 
     //链路机数据类型DC_MSG_WLU
     CT_GPS_REPORT_REQ_NAS   = 0x21,                      ///< GPS上拉
@@ -133,8 +133,9 @@ typedef struct _DLL_CCL_UL_T
 
 
 /******************************************************************************
- *   全局变量定义
- *   *************************************************************************/
+ *   全局变量声明
+ *  *************************************************************************/
+extern int semid_ipc;  ///<  进程间通信信号量标识符
 
 /******************************************************************************
  *   局部变量定义
@@ -152,6 +153,12 @@ void _IPC_Shm();
  * @brief   获取CFG共享内存
  */
 void _CFG_Shm();
+
+/**
+ * @brief   获取IPC 信号量
+ */
+void _IPC_sem();
+
 
 /**
  * @brief  获取本地配置打印

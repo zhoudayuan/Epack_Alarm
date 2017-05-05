@@ -454,7 +454,7 @@ void ODP_CclPrintf(CCL_DLL_DL_T * pvCclData)
 {
     if (tDllPrint->PrintLv == PRINT_DEBUG || tDllPrint->PrintLv == PRINT_ALL)
     {
-        LOG_DEBUG(s_LogMsgId,"[DLL][%s] MsgT_%d FrmT_%d DataT_%d Len_%d",
+        LOG_DEBUG(s_LogMsgId,"[DLL][%s] MsgT_%d FrmT_%d DataT_%#x Len_%d",
                   _F_,
                   pvCclData->MsgType,
                   pvCclData->FrmType,
@@ -1548,6 +1548,119 @@ int ODP_MsEnableFun(CCL_DLL_DL_T * pvCclData)
 }
 
 
+
+/**
+ * @brief 下行MS 告警 NAS和MS通用
+ *
+ * @param [in]  pvCclData       下行控制层数据
+ *
+ * @return  int         0:成功1:失败
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
+int ODP_MsNasAlarmReqFun(CCL_DLL_DL_T * pvCclData)
+{
+    UINT16 u2CRC    = 0;
+    SUPS_CSBK_PDU tSupsCsbk;
+    static UINT32 SeqSSO = 0;
+
+    tSupsCsbk.uLB = 1;  // CSBK or MBC Last Block
+    tSupsCsbk.uPF = 0;  // Reserved for future use
+    tSupsCsbk.uCSBKO = ALARM_CSBKO;
+    tSupsCsbk.uFID = HFID;
+    tSupsCsbk.uSSO = (SeqSSO++) % DIGITAL_ALARM_SSO; // 从目前的空口包分析，该值是一个小于0x0f的序列。
+    tSupsCsbk.uREV = 0;
+
+    memcpy(tSupsCsbk.auTADDR, pvCclData->DstId, 3);
+    memcpy(tSupsCsbk.auSADDR, pvCclData->SrcId, 3);
+
+    u2CRC = ALG_Crc16((UINT8 *)&tSupsCsbk, CSBK_LEN);
+
+    if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
+    {
+        u2CRC = u2CRC ^ PDT_CRC_MASK_CSBK;
+    }
+    else
+    {
+        u2CRC = u2CRC ^ DMR_CRC_MASK_CSBK;
+    }
+    tSupsCsbk.auCRC[0] = (UINT8)(u2CRC >> 8);
+    tSupsCsbk.auCRC[1] = (UINT8)(u2CRC & 0xff);
+
+    //发送多个预载波
+    ODP_GenPreCSBKFun(6, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(5, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(4, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(3, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(2, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(1, pvCclData->DstId, pvCclData->SrcId, 0);
+
+    memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+    ptInfData->ResFrqSlot = tDllPrint->FrqSlt+0x11;   //预留时隙频点和指定频点差1
+    CallingShootData(DI_MSG_DATA,FT_VOICE_NO,DT_CSBK,(CSBK_LEN+2),(UINT8 *)&tSupsCsbk);
+    ODP_SendInfData(ptInfData, S_ALARM_REQ);
+    return NO_ERR;
+}
+
+
+/**
+ * @brief 下行MS 告警 应答
+ *
+ * @param [in]  pvCclData       下行控制层数据
+ *
+ * @return  int         0:成功1:失败
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
+
+int ODP_MsAlarmAckFun(CCL_DLL_DL_T * pvCclData)
+{
+    UINT16 u2CRC    = 0;
+    SUPS_CSBK_PDU tSupsCsbk;
+
+    tSupsCsbk.uLB = 1;
+    tSupsCsbk.uPF = 0;
+    tSupsCsbk.uCSBKO = ALARM_CSBKO;
+    tSupsCsbk.uFID = HFID;
+    tSupsCsbk.uSSO = DIGITAL_ALARM_SSO;
+    tSupsCsbk.uREV = 0;
+
+    memcpy(tSupsCsbk.auTADDR, pvCclData->DstId, 3);
+    memcpy(tSupsCsbk.auSADDR, pvCclData->SrcId, 3);
+
+    u2CRC = ALG_Crc16((UINT8 *)&tSupsCsbk, CSBK_LEN);
+
+    if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
+    {
+        u2CRC = u2CRC ^ PDT_CRC_MASK_CSBK;
+    }
+    else
+    {
+        u2CRC = u2CRC ^ DMR_CRC_MASK_CSBK;
+    }
+    tSupsCsbk.auCRC[0] = (UINT8)(u2CRC >> 8);
+    tSupsCsbk.auCRC[1] = (UINT8)(u2CRC & 0xff);
+
+    //发送多个预载波
+    ODP_GenPreCSBKFun(6, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(5, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(4, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(3, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(2, pvCclData->DstId, pvCclData->SrcId, 0);
+    ODP_GenPreCSBKFun(1, pvCclData->DstId, pvCclData->SrcId, 0);
+
+    memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+    ptInfData->ResFrqSlot = tDllPrint->FrqSlt+0x11;         //预留时隙频点和指定频点差1
+    CallingShootData(DI_MSG_DATA,FT_VOICE_NO,DT_CSBK,(CSBK_LEN+2),(UINT8 *)&tSupsCsbk);
+
+    ODP_SendInfData(ptInfData, S_ALARM_ACK);
+
+    return NO_ERR;
+}
+
+
 /**
  * @brief 下行NAS GPS上拉数据处理函数
  *
@@ -1664,6 +1777,7 @@ int ODP_NasEnableFun(CCL_DLL_DL_T * pvCclData)
         g_DllGlobalCfg.auStunFlag = 0;
         g_DllGlobalCfg.auKillFlag = 0;
         ptCFGShm->kill_flag.val = 0;
+        ptCFGShm->stun_flag.val   = 0;
         p_DllFpgaShm->StunFlag[0] = 0;
         p_DllFpgaShm->StunFlag[1] = 0;
         p_DllFpgaShm->StunFlag[2] = 0;
@@ -1735,6 +1849,7 @@ int ODP_NasStunFun(CCL_DLL_DL_T * pvCclData)
 
     if (g_DllGlobalCfg.auNodeId == pvCclData->DstId[0])
     {
+        ptCFGShm->stun_flag.val   = NAS_KILL_FLAG;
         g_DllGlobalCfg.auStunFlag = NAS_KILL_FLAG;
         p_DllFpgaShm->StunFlag[0] = NAS_KILL_FLAG      &0xff;
         p_DllFpgaShm->StunFlag[1] = (NAS_KILL_FLAG>>8) &0xff;
@@ -2050,7 +2165,21 @@ void CCLDataProcess(CCL_DLL_DL_T * pvCclData)
         case CT_ENABLE_REQ_MS:
         {
             ODP_MsEnableFun(pvCclData);
+            break;
         }
+
+        case CT_ALARM_REQ_MS: // MS和NAS
+        {
+            ODP_MsNasAlarmReqFun(pvCclData);
+            break;
+        }
+
+        case CT_ALARM_ACK_MS:
+        {
+            ODP_MsAlarmAckFun(pvCclData);
+            break;
+        }
+
         default:
         {
             break;
@@ -2203,7 +2332,7 @@ void *CCLDownloadTask(void * p)
             }
             else
             {
-                
+
                 // 当FPGA处于转发状态时, 摇晕摇毙等链路机命令可以使能
                 if ((pvCclData->MsgType == DI_MSG_WLU)  && (pvCclData->DstId[0] == g_DllGlobalCfg.auNodeId))
                 {

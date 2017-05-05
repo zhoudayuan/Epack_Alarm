@@ -28,7 +28,7 @@
  *   15.  del_semvalue              删除指定信号量
  *   16.  parsingRTPPacket          解析RTP包
  *   修改历史
- *   2016-08-20                                牛功喜       建立文件                    
+ *   2016-08-20                                牛功喜       建立文件
  *   *************************************************************************/
 
 /******************************************************************************
@@ -43,39 +43,39 @@
  * @def _ENABLE_CLI
  * @brief 使能命令行接口功能开关
  */
-//#define _ENABLE_CLI  
+//#define _ENABLE_CLI
 /**
  * @def _USE_NET_NCOM
  * @brief 使用网口而非串口输入/输出
  */
-//#define _USE_NET_NCOM  
+//#define _USE_NET_NCOM
 /******************************************************************************
  *   类型定义
 *   *************************************************************************/
 /******************************************************************************
- *	 宏定义
-*	*************************************************************************/
+ *   宏定义
+*   *************************************************************************/
 
 /**
- * @def DB_SIZE  
+ * @def DB_SIZE
  * @brief 节点数据包最大长度定义
  */
 #define DB_DATA_SIZE                       (36)
-	
- 
+
+
 /******************************************************************************
- *	 结构体定义
- *	 *************************************************************************/
+ *   结构体定义
+ *   *************************************************************************/
 
 /**
  * @brief  链表节点数据结构
  */
 typedef struct _QUE_UNIT_T
 {
-	struct _QUE_UNIT_T* ptNext; 		 ///< 后一节点
-	UINT8				auData[DB_DATA_SIZE]; ///< 帧数据
-	UINT32				u4STCN; 		 ///< 节点句柄
-	
+    struct _QUE_UNIT_T* ptNext;          ///< 后一节点
+    UINT8               auData[DB_DATA_SIZE]; ///< 帧数据
+    UINT32              u4STCN;          ///< 节点句柄
+
 
 } QUE_UNIT_T;
 
@@ -84,12 +84,12 @@ typedef struct _QUE_UNIT_T
  */
 union semun
 {
-	int val;                            // value for SETVAL 
-	struct semid_ds *buf;               // buffer for IPC_STAT & IPC_SET 
-	unsigned short *array;              // array for GETALL & SETALL 
+    int val;                            // value for SETVAL
+    struct semid_ds *buf;               // buffer for IPC_STAT & IPC_SET
+    unsigned short *array;              // array for GETALL & SETALL
 };
 
- 
+
 /******************************************************************************
  *   全局变量定义
  *   *************************************************************************/
@@ -106,17 +106,17 @@ union semun
  *   可调用函数实现
  *   *************************************************************************/
 /**
- * @brief	申请空闲节点，如果没有空闲节点，返回失败
+ * @brief   申请空闲节点，如果没有空闲节点，返回失败
  */
 BOOL QUE_Alloc(QUE_UNIT_T** ptHead);
 
 /**
- * @brief	释放相应队列链表内所用节点数据
+ * @brief   释放相应队列链表内所用节点数据
  */
 void QUE_Free(QUE_UNIT_T* ptData);
 
 /**
- * @brief	查询队列链表是否为空
+ * @brief   查询队列链表是否为空
  */
 BOOL QUE_IsEmpty();
 /**
@@ -129,27 +129,27 @@ void QUE_FlushData();
 
 BOOL QUE_AddData(QUE_UNIT_T* ptData);
 /**
- * @brief	删除队列中超时的节点
+ * @brief   删除队列中超时的节点
  */
 
 void  QUE_DelExpiredNode();
 /**
- * @brief	获取队列链表内所用节点数量
+ * @brief   获取队列链表内所用节点数量
  */
 unsigned short  QUE_GetNum();
 /**
- * @brief	获取相应队列链表内首个节点数据
+ * @brief   获取相应队列链表内首个节点数据
  */
 
 BOOL QUE_GetData(QUE_UNIT_T** ptData);
 
 /**
- * @brief	获取相应队列链表头节点存储时间戳值
+ * @brief   获取相应队列链表头节点存储时间戳值
  */
 unsigned int QUE_GetTscn();
 
 /**
- * @brief	初始化模块并分配资源
+ * @brief   初始化模块并分配资源
  */
 unsigned int QUE_Init(void);
 /**
@@ -161,43 +161,43 @@ void delay(unsigned long msec);
  * @brief  定时器按照设定时间发出信号
  */
 
-int  set_ticker(int n_msecs)	;								   //定时器 
+int  set_ticker(int n_msecs)    ;                                  //定时器
 /**
  * @brief  定时处理函数
  */
 void timer_handler (int signo);
 
  /**
-  * @brief	初始化信号量值函数
+  * @brief  初始化信号量值函数
   */
  int set_semvalue(int sem_id, int value);
- 
+
  /**
-  * @brief	删除指定信号量
+  * @brief  删除指定信号量
   */
  int  del_semvalue(int sem_id);
 
  /**
-  * @brief	信号量P操作
+  * @brief  信号量P操作
   */
  int semaphore_p(int sem_id);
- 
+
  /**
-  * @brief	信号量V操作
+  * @brief  信号量V操作
   */
 int semaphore_v(int sem_id) ;
 
  /**
  * @brief  RTP包解析函数
  */
-  int	parsingRTPPacket(unsigned char	*data, unsigned int size) ;
+  int   parsingRTPPacket(unsigned char  *data, unsigned int size) ;
 
   /**
-* @brief	大小端转换
+* @brief    大小端转换
 */
 void LitToBigSmsData(unsigned char *ConvertedData,unsigned char *RawData,unsigned short datalen);
 /**
-* @brief	获取系统时间 按字符串输出
+* @brief    获取系统时间 按字符串输出
 */
 int GetTime( char *pvtime);
 

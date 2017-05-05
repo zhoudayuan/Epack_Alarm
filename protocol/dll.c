@@ -15,6 +15,8 @@
   *   引用头文件声明
   *   *************************************************************************/
 #include "dll_fun.h"
+//#include "ccl_fun.h"
+
 
 
 /******************************************************************************
@@ -223,6 +225,20 @@ DLL_FPGA_SHM_T *p_DllFpgaShm;
  * @brief DLL打印开关
  */
 DLL_PRINT_T *tDllPrint;
+
+
+/**
+ * @var g_discon_state
+ * @brief 断链状态
+ */
+UINT8 g_discon_state = 0;
+
+
+/**
+ * @var g_DisconCnt
+ * @brief 断链计数器
+ */
+UINT8 g_DisconCnt = 0;
 
 
 /******************************************************************************
@@ -454,7 +470,7 @@ void DLL_ClearTimer(void)
 
     if (uGpsFlag != 0xff)
     {
-        uGpsFlag= 0xff;
+        uGpsFlag = 0xff;
     }
 }
 
@@ -629,6 +645,49 @@ void * DLL_TimerTask(void * p)
 
 }
 
+// 检测邻点断链告警，唯一判断是否产生断链，连续两个周期内没有备份邻点，则认为断链。
+static int check_discon_state()
+{
+    if (ptCFGShm->start_neighbor.val == 0)  // 判断邻点功能是否打开
+    {
+        return DISCON_DISABLE;
+    }
+
+    // 根据是否有邻点备份判断断链产生
+    if (g_DllGlobalCfg.auNegrId2 == 0)  // auNegrId2=0,认为断链一次
+    {
+        g_DisconCnt ++;
+        if ((g_DisconCnt % 2) == 0)     // 连续断链两次则告警
+        {
+            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+            printf("AAAAAAAA====DISCON HAPPEN==AAAAAAAAAAA\n");
+            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+            return (g_discon_state = DISCON_HAPPEN);  //有断链
+        }
+    }
+    return DISCON_RECOVER;  // 没有断链
+}
+
+
+void set_alarm_discon_switch(int AlarmSwitch)
+{
+    if ((AlarmSwitch == TURN_OFF) && (g_discon_state == DISCON_HAPPEN))
+    {
+        g_discon_state = DISCON_RECOVER;
+        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
+        printf("CCCCCCC===@@ tell mgr [turn off] Alarm=CCCCCCCC\n");
+        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
+//        MGR_Alarm_Update_Status( MGR_ALARM_SERVER_1, TURN_OFF, 0);
+    }
+    else if (AlarmSwitch == TURN_ON)
+    {
+        printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
+        printf("BBBBBB=@@ tell mgr [turn on] Alarm =BBBBBBBBBBBB\n");
+        printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
+//        MGR_Alarm_Update_Status( MGR_ALARM_SERVER_1, TURN_ON, 0);
+    }
+}
+
 
 /**
  * @brief   数据链路层临点突发线程
@@ -658,9 +717,15 @@ void * DLL_NerBurstTask(void * p)
         BurstCyc = 60;
     }
 
+
     while(1)
     {
-        BurstCyc = ptCFGShm->neighbor_period.val*60;
+
+//      print_ptCFGShm();
+//      BurstCyc = ptCFGShm->neighbor_period.val*60;  // 网管配置2此处为1，配置4此处为2
+        BurstCyc = 4;
+
+
         tv.tv_sec = rand() % BurstCyc;
         tv.tv_usec = 0;
         LeftDelay = BurstCyc - tv.tv_sec;
@@ -688,6 +753,9 @@ void * DLL_NerBurstTask(void * p)
             continue;
         }
 
+
+        ///////////////////////////////////////////////////////////////////
+        // 临点突发
         if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn)
         {
             memset(&NegrBurst, 0, sizeof(NAS_NEGR_BURST_T));
@@ -722,18 +790,24 @@ void * DLL_NerBurstTask(void * p)
             ptInfData->tDataLink[F_1].DataLen = CSBK_LEN+2;
             memcpy(ptInfData->tDataLink[F_1].PayLoad, &NegrBurst, (CSBK_LEN+2));
 
-            ODP_SendInfData(ptInfData, S_NEGR_BST);         //临点突发
+            ODP_SendInfData(ptInfData, S_NEGR_BST);
 
         }
 
         sleep(LeftDelay);
         BurstCnt++;
 
+        ///////////////////////////////////////////////////////////////////
+        // 邻点上报
         if (BurstCnt % 2 == 0)
         {
-            if (LeftDelay < 5)      //临点突发和临点上报消息保护间隔
+//            if (LeftDelay < 5)      //临点突发和临点上报消息保护间隔
+            if (LeftDelay < 2)      //临点突发和临点上报消息保护间隔
+
             {
-                sleep(5);
+//                sleep(5);
+                  sleep(1);
+
             }
 
             if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn && ptCFGShm->start_neighbor.val == 1)
@@ -783,9 +857,13 @@ void * DLL_NerBurstTask(void * p)
                 //清除本地临点信息
                 g_DllGlobalCfg.auNegrId1 = 0;
                 memset(g_DllGlobalCfg.auNerInfo1, 0, sizeof(g_DllGlobalCfg.auNerInfo1));
+                // 检测邻点断链告警
+                if (check_discon_state() == DISCON_HAPPEN)
+                {
+                    set_alarm_discon_switch(TURN_ON);  // 开启告警
+                }
             }
         }
-
         continue;
     }
 

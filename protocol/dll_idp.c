@@ -20,6 +20,7 @@
  *   引用头文件声明
  *   *************************************************************************/
 #include "dll_fun.h"
+#include "ccl_fun.h"
 
 
 /******************************************************************************
@@ -61,6 +62,7 @@ extern struct sockaddr_in CclAddr;
 extern struct sockaddr_in InfAddr;
 extern socklen_t AddrSize;
 /** @} */
+
 
 /**
  * @brief 下行分组数据缓存
@@ -150,6 +152,34 @@ extern DLL_FPGA_SHM_T *p_DllFpgaShm;
  * @brief 共享内存系统信息
  */
 extern SHM_CFG_STRU *ptCFGShm;
+
+/**
+ * @var g_discon_state
+ * @brief 检查当是否前断链
+ */
+extern UINT8 g_discon_state;
+
+/**
+ * @var g_DisconCnt
+ * @brief 断链计数器
+ */
+extern UINT8 g_DisconCnt;
+
+/**
+ * @fun set_alarm_discon_switch
+ * @brief 设置当前邻点锻炼告警开关状态
+ */
+extern void set_alarm_discon_switch(int AlarmSwitch);
+
+/**
+ * @funr get_alarm_discon
+ * @brief 获取当前邻点锻炼告警开关状态
+ */
+extern int get_alarm_discon();
+
+
+
+
 
 /******************************************************************************
  *   内部函数实现
@@ -567,7 +597,6 @@ void IDP_SendCclData(DLL_CCL_UL_T * ptCclData)
     {
         IDP_CclPrintf(ptCclData);
     }
-
     sendto(CCLSocket, ptCclData, sizeof(DLL_CCL_UL_T), 0, (struct sockaddr *)(&CclAddr), AddrSize);
     return;
 }
@@ -647,7 +676,7 @@ void IDP_CclPrintf(DLL_CCL_UL_T * ptCclData)
 {
     if (tDllPrint->PrintLv == PRINT_DEBUG || tDllPrint->PrintLv == PRINT_ALL)
     {
-        LOG_DEBUG(s_LogMsgId,"[DLL][%s] MsgT_%d, FrmT_%d, DataT_%d, DataLen_%d Stopfg_%d",
+        LOG_DEBUG(s_LogMsgId,"[DLL][%s] MsgT_%d, FrmT_%d, DataT_%#x, DataLen_%d Stopfg_%d",
                 _F_,
                 ptCclData->MsgType,
                 ptCclData->FrmType,
@@ -1196,7 +1225,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         {
             if (tDllPrint->AIUp == 1)
             {
-                LOG_DEBUG(s_LogMsgId,"[DLL][%s] PRE CSBK relay", _F_);
+                LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d] PRE CSBK relay", _F_, __LINE__);
             }
             IDP_RelayLinkData(pvInfData, RevFrqNo, S_CSBK_PRE);
         }
@@ -1204,10 +1233,10 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         {
             if (tDllPrint->AIUp == 1)
             {
-                LOG_DEBUG(s_LogMsgId,"[DLL][%s] PRE CSBK from %x %x %x abandon", _F_,
-                                                                                pSupsCsbk->auSADDR[0],
-                                                                                pSupsCsbk->auSADDR[1],
-                                                                                pSupsCsbk->auSADDR[2]);
+                LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d] PRE CSBK from %x %x %x abandon", _F_, __LINE__,
+                pSupsCsbk->auSADDR[0],
+                pSupsCsbk->auSADDR[1],
+                pSupsCsbk->auSADDR[2]);
             }
             return NO_ERR;
         }
@@ -1236,7 +1265,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
             if (tDllPrint->AIUp == 1)
             {
-                LOG_DEBUG(s_LogMsgId,"[DLL][%s] REQ CSBK relay: ResFrq %d ResSlot %d", _F_, (SndFrq+1), (SndSlot+1));
+                LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d] REQ CSBK relay: ResFrq %d ResSlot %d", _F_, __LINE__, (SndFrq+1), (SndSlot+1));
             }
 
             ODP_SendInfData(ptInfData, S_CSBK_REQ);
@@ -1324,7 +1353,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             {
                 if (tDllPrint->AIUp == 1)
                 {
-                    LOG_DEBUG(s_LogMsgId,"[DLL][%s] PRE CSBK relay", _F_);
+                    LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d] PRE CSBK(ALARM) relay", _F_, __LINE__);
                 }
                 IDP_RelayLinkData(pvInfData, RevFrqNo, S_ALARM_REQ);
 
@@ -1332,10 +1361,10 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
                 ptCclData->MsgType = DI_MSG_DATA;
                 ptCclData->FrmType = FT_VOICE_NO;
-                memcpy(ptCclData->DstId, pSupsCsbk->auTADDR, 3);
-                memcpy(ptCclData->SrcId, pSupsCsbk->auSADDR, 3);
+                memcpy(ptCclData->DstId, pSupsCsbk->auTADDR, sizeof(pSupsCsbk->auTADDR));
+                memcpy(ptCclData->SrcId, pSupsCsbk->auSADDR, sizeof(pSupsCsbk->auSADDR));
                 ptCclData->DataType = CT_ALARM_REQ_MS;
-                ptCclData->DataLen = 0;
+                ptCclData->DataLen = CSBK_LEN;
                 IDP_SendCclData(ptCclData);
             }
             else        //ack
@@ -2413,6 +2442,8 @@ int IDP_NasNeighborFun(NAS_AI_PAYLOAD * pvNasData)
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
     memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
     memset(&NasAiData, 0, sizeof(NAS_AI_PAYLOAD));
+    
+
 
     if (OP_CODE_GET == pvNasData->op_code && g_DllGlobalCfg.auNodeId == pvNasData->dst_id)
     {
@@ -2427,6 +2458,7 @@ int IDP_NasNeighborFun(NAS_AI_PAYLOAD * pvNasData)
 
         WaitFollowEnable(3000);
 
+        //  发射预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
         ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
@@ -2905,6 +2937,7 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         return;
     }
 
+
     if (pNegrBurst->NodeId == g_DllGlobalCfg.auNodeId)
     {
         LOG_WARNING(s_LogMsgId,"[DLL][%s] Negr NodeId equal local Err", _F_);
@@ -2914,6 +2947,16 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     g_DllGlobalCfg.auNegrId1 = g_DllGlobalCfg.auNegrId1 | (0x0001 << pNegrBurst->NodeId);
     g_DllGlobalCfg.auNerInfo1[pNegrBurst->NodeId] = pNegrBurst->NegrId;
 
+    if ((ptCFGShm->start_neighbor.val == 1) && (g_DllGlobalCfg.auNegrId1 != 0))
+    {
+        g_DisconCnt = 0;
+        printf("\n\n");
+        printf("QQQQQQQQQQQQQQQQQQQQQQQQQ\n");
+        printf("QQQQ=== DISCON CLR===QQQQ\n");
+        printf("QQQQQQQQQQQQQQQQQQQQQQQQQ\n");
+        printf("\n\n");
+        set_alarm_discon_switch(TURN_OFF);
+    }
     return;
 }
 
@@ -2971,6 +3014,13 @@ void INFNasDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         LOG_WARNING(s_LogMsgId,"[DLL][%s] Nas data not local(DstId:%d)", _F_, pNasAiData->dst_id);
         IDP_RelayLinkData(pvInfData, RevFrqNo, S_NAS_RELAY);
         return;
+    }
+
+
+
+    if ((ptCFGShm->start_neighbor.val == 1) && (g_discon_state == DISCON_HAPPEN))
+    {
+        set_alarm_discon_switch(TURN_OFF);
     }
 
     switch (pNasAiData->cmd_code)

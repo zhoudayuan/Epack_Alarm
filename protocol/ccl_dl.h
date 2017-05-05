@@ -51,12 +51,12 @@
  *   可调用函数实现
  *   *************************************************************************/
 /**
- * @brief	封装CCL下行静音帧数据包
+ * @brief   封装CCL下行静音帧数据包
  */
 void  ODP_GenSilentFrmpacket(unsigned  char *pvSilentData,unsigned  char *pvDllData,unsigned  char FrmType , int *Len);
 
 /**
- * @brief	封装CCL下行语音包
+ * @brief   封装CCL下行语音包
  */
 void  ODP_GenVoicepacket(unsigned  char *pvCenterData,unsigned  char *pvDllData,unsigned  char FrmType , int *Len);
 
@@ -79,7 +79,7 @@ void  ODP_GenSigCtrlDataPacket(unsigned  char *pvCenterData ,unsigned  char* pvD
 
 void ODP_GenTerminatorPacket(unsigned char * pvCenterData, unsigned  char *pvDllData, int* Len);
 /**
-* @brief	打印LC_HEADER 、LC_TERMINATOR
+* @brief    打印LC_HEADER 、LC_TERMINATOR
 */
 void ODP_CclprintLc(unsigned char  * pvDllData);
 /**
@@ -88,16 +88,16 @@ void ODP_CclprintLc(unsigned char  * pvDllData);
 */
 void  ODP_CclPrintCcdlsig(unsigned char *Pttcmd);
 /**
-* @brief	打印 ccl_dll 数据
+* @brief    打印 ccl_dll 数据
 */
 void  ODP_CclPrintDllData(unsigned char *DllData);
 
 /**
-* @brief	保存中心呼叫ID、子网段数据
+* @brief    保存中心呼叫ID、子网段数据
 */
-void savccidnetdata(unsigned char *pvcenterdata,unsigned char *CCcvNet);
+void SavCcIDNetData(unsigned char *pvcenterdata,unsigned char *CCcvNet);
 /**
-* @brief	封装静音帧数据包
+* @brief    封装静音帧数据包
 */
 //void LitToBigSmsData(unsigned char *pvdlldata ,unsigned char *pvCenterData,unsigned short datalen);
 
