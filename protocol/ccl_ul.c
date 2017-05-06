@@ -88,7 +88,8 @@ void PrintIDbyDec(unsigned char *src, unsigned char *dst)
     }
     else
     {
-        // 转回小端模式
+
+        // 转回小端模式
         src_tmp[0] = src[2];
         src_tmp[1] = src[1];
         src_tmp[2] = src[0];

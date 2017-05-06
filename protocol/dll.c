@@ -15,7 +15,10 @@
   *   引用头文件声明
   *   *************************************************************************/
 #include "dll_fun.h"
-//#include "ccl_fun.h"
+#include "mgr_common.h"
+
+
+
 
 
 
@@ -232,7 +235,7 @@ DLL_PRINT_T *tDllPrint;
  * @brief 断链状态
  */
 UINT8 g_discon_state = 0;
-
+    
 
 /**
  * @var g_DisconCnt
@@ -645,6 +648,34 @@ void * DLL_TimerTask(void * p)
 
 }
 
+static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
+{
+    UINT32 i;
+
+    ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+    if (NULL == ptAlarm)
+    {
+        return 0;
+    }
+
+    sem_ipc_p();
+    for (i = 0; i < MGR_ALARM_MAX; (i++,ptAlarm++))
+    {
+        if(type == ptAlarm->alm_code)
+        {
+            ptAlarm->uStatus = uStatus;
+            ptAlarm->value = value;
+            sem_ipc_v();
+            return 1;
+        }
+    }
+    sem_ipc_v();
+    return 0;
+}
+
+
+
+
 // 检测邻点断链告警，唯一判断是否产生断链，连续两个周期内没有备份邻点，则认为断链。
 static int check_discon_state()
 {
@@ -659,9 +690,10 @@ static int check_discon_state()
         g_DisconCnt ++;
         if ((g_DisconCnt % 2) == 0)     // 连续断链两次则告警
         {
-            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
-            printf("AAAAAAAA====DISCON HAPPEN==AAAAAAAAAAA\n");
-            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA====DISCON HAPPEN==AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+            LOG_DEBUG(s_LogMsgId, "[DLL][%s] DISCON HAPPEN", _F_);
+
+            
             return (g_discon_state = DISCON_HAPPEN);  //有断链
         }
     }
@@ -674,17 +706,15 @@ void set_alarm_discon_switch(int AlarmSwitch)
     if ((AlarmSwitch == TURN_OFF) && (g_discon_state == DISCON_HAPPEN))
     {
         g_discon_state = DISCON_RECOVER;
-        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
-        printf("CCCCCCC===@@ tell mgr [turn off] Alarm=CCCCCCCC\n");
-        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
-//        MGR_Alarm_Update_Status( MGR_ALARM_SERVER_1, TURN_OFF, 0);
+        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC====Tell mgr [TURN_OFF] Alarm==CCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
+        LOG_DEBUG(s_LogMsgId, "[DLL][%s] Tell mgr [TURN_OFF] Alarm ", _F_);
+        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);
     }
     else if (AlarmSwitch == TURN_ON)
     {
-        printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
-        printf("BBBBBB=@@ tell mgr [turn on] Alarm =BBBBBBBBBBBB\n");
-        printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
-//        MGR_Alarm_Update_Status( MGR_ALARM_SERVER_1, TURN_ON, 0);
+        LOG_DEBUG(s_LogMsgId,"[DLL][%s] Tell mgr [TURN_ON] Alarm ", _F_);
+        printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB====Tell mgr [TURN_ON] Alarm==BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
+        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_ON, 0);
     }
 }
 
@@ -720,12 +750,8 @@ void * DLL_NerBurstTask(void * p)
 
     while(1)
     {
-
-//      print_ptCFGShm();
-//      BurstCyc = ptCFGShm->neighbor_period.val*60;  // 网管配置2此处为1，配置4此处为2
-        BurstCyc = 4;
-
-
+        BurstCyc = ptCFGShm->neighbor_period.val*60;
+        BurstCyc = 2;
         tv.tv_sec = rand() % BurstCyc;
         tv.tv_usec = 0;
         LeftDelay = BurstCyc - tv.tv_sec;
@@ -754,7 +780,6 @@ void * DLL_NerBurstTask(void * p)
         }
 
 
-        ///////////////////////////////////////////////////////////////////
         // 临点突发
         if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn)
         {
@@ -790,24 +815,19 @@ void * DLL_NerBurstTask(void * p)
             ptInfData->tDataLink[F_1].DataLen = CSBK_LEN+2;
             memcpy(ptInfData->tDataLink[F_1].PayLoad, &NegrBurst, (CSBK_LEN+2));
 
-            ODP_SendInfData(ptInfData, S_NEGR_BST);
+            ODP_SendInfData(ptInfData, S_NEGR_BST);         //临点突发
 
         }
 
         sleep(LeftDelay);
         BurstCnt++;
 
-        ///////////////////////////////////////////////////////////////////
         // 邻点上报
         if (BurstCnt % 2 == 0)
         {
-//            if (LeftDelay < 5)      //临点突发和临点上报消息保护间隔
-            if (LeftDelay < 2)      //临点突发和临点上报消息保护间隔
-
+            if (LeftDelay < 5)      //临点突发和临点上报消息保护间隔
             {
-//                sleep(5);
-                  sleep(1);
-
+                sleep(5);
             }
 
             if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn && ptCFGShm->start_neighbor.val == 1)

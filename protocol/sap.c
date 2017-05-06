@@ -32,6 +32,11 @@
  */
 INT32 s_LogMsgId;
 
+
+
+
+static int semid;
+
 /**
  * @var  pLogTxtFd
  * @brief 文件句柄
@@ -50,11 +55,7 @@ SHM_IPC_STRU *ptIPCShm = NULL;
  */
 SHM_CFG_STRU *ptCFGShm = NULL;
 
-/**
- * @var semid_ipc
- * @brief 进程间通信信号量标识符
- */
-int semid_ipc;
+
 
 
 #include "log.h"
@@ -99,14 +100,18 @@ int main(void)
     }
     printf("[SAP] log print ok!\n");
 
+
+
+
     _CFG_Shm();
     printf("[SAP] cfg shm ok!\n");
 
+    _IPC_sem();
+    printf("[SAP] ipc sem ok!\n");
+
     _IPC_Shm();
     printf("[SAP] ipc shm ok!\n");
-
-//    _IPC_sem();
-    printf("[SAP] ipc sem ok!\n");
+    
 
     ret = _LocalCfgPrint();
     if(ret == -1)
@@ -221,11 +226,44 @@ void _CFG_Shm()
 }
 
 
+
+
+/* changes the semaphore by -1 (waiting). */
+int sem_ipc_p(void)
+{
+    struct sembuf sem_b;
+    
+    sem_b.sem_num = 0;
+    sem_b.sem_op = -1; /* P() */
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(semid, &sem_b, 1) == -1) {
+        fprintf(stderr, "semaphore_p failed\n");
+        return(0);
+    }
+    return(1);
+}
+
+
+int sem_ipc_v(void)
+{
+    struct sembuf sem_b;
+    
+    sem_b.sem_num = 0;
+    sem_b.sem_op = 1; /* V() */
+    sem_b.sem_flg = SEM_UNDO;
+    if (semop(semid, &sem_b, 1) == -1) {
+        fprintf(stderr, "semaphore_v failed\n");
+        return(0);
+    }
+    return(1);
+}
+
+
 static int set_semvalue(void)
 {
     SEMUN sem_union;
     sem_union.val = 1;
-    if (semctl(semid_ipc, 0, SETVAL, sem_union) == -1)
+    if (semctl(semid, 0, SETVAL, sem_union) == -1)
     {
         return(0);
     }
@@ -244,7 +282,6 @@ void _IPC_sem()
 {
     key_t semkey;
 
-
     semkey = ftok(FTOK_F_NAME, FTOK_ID_SEM_IPC);
     if (semkey < 0)
     {
@@ -253,14 +290,14 @@ void _IPC_sem()
         exit(1);
     }
 
-    semid_ipc = semget(semkey, 1, (0666|IPC_CREAT));
-    if (semid_ipc == -1)
+    semid = semget(semkey, 1, (0666 | IPC_CREAT));
+    if (semid == -1)
     {
         LOG_WFile(pLogFd, "Get IPC sem error!!!");
         LOG_ERROR(s_LogMsgId, "..._Get IPC sem error!!!, exit!!!");
         exit(1);
     }
-    else if (semid_ipc > 1)
+    else if (semid > 1)
     {
         if (!set_semvalue())
         {
@@ -271,12 +308,10 @@ void _IPC_sem()
     }
     else
     {
-        perror("semid_ipc>");
+        perror("semid>");
         exit(1);
     }
 }
-
-
 /**
  * @brief   获取本地配置打印
  *

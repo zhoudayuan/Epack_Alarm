@@ -147,7 +147,7 @@ BOOL QUE_Alloc(QUE_UNIT_T** ptHead)
 
     if (ptTemp == &s_tQueUnused[0])
     {
-
+            // printf("QUE_Alloc failed!\n");
         LOG_ERROR(s_LogMsgId,"[CCL][%s]QUE_Alloc failed!!", __FUNCTION__);
         return FALSE;
     }

@@ -161,12 +161,6 @@ void  IDP_GenNasStatePack(unsigned char pvrelayflg,unsigned char *pvCenterData,i
 
 void IDP_GenAlarm_ClearData(unsigned char type,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len);
 
-/**
-* @brief  将源ID 和目的ID 以十进制 打印出来，方便调试看
-*/
-
-
-
 #endif //CCLUL_H
 
 

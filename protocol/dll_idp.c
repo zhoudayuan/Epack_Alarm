@@ -20,7 +20,6 @@
  *   引用头文件声明
  *   *************************************************************************/
 #include "dll_fun.h"
-#include "ccl_fun.h"
 
 
 /******************************************************************************
@@ -597,6 +596,7 @@ void IDP_SendCclData(DLL_CCL_UL_T * ptCclData)
     {
         IDP_CclPrintf(ptCclData);
     }
+
     sendto(CCLSocket, ptCclData, sizeof(DLL_CCL_UL_T), 0, (struct sockaddr *)(&CclAddr), AddrSize);
     return;
 }
@@ -2442,8 +2442,6 @@ int IDP_NasNeighborFun(NAS_AI_PAYLOAD * pvNasData)
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
     memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
     memset(&NasAiData, 0, sizeof(NAS_AI_PAYLOAD));
-    
-
 
     if (OP_CODE_GET == pvNasData->op_code && g_DllGlobalCfg.auNodeId == pvNasData->dst_id)
     {
@@ -2937,7 +2935,6 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         return;
     }
 
-
     if (pNegrBurst->NodeId == g_DllGlobalCfg.auNodeId)
     {
         LOG_WARNING(s_LogMsgId,"[DLL][%s] Negr NodeId equal local Err", _F_);
@@ -2950,11 +2947,8 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     if ((ptCFGShm->start_neighbor.val == 1) && (g_DllGlobalCfg.auNegrId1 != 0))
     {
         g_DisconCnt = 0;
-        printf("\n\n");
-        printf("QQQQQQQQQQQQQQQQQQQQQQQQQ\n");
-        printf("QQQQ=== DISCON CLR===QQQQ\n");
-        printf("QQQQQQQQQQQQQQQQQQQQQQQQQ\n");
-        printf("\n\n");
+        printf("DDDDDDDDDDDDDDDDDDDDDDDDDDDD=== DISCON RECOVER ===DDDDDDDDDDDDDDDDDDDDDDDDDDDD\n");
+        LOG_DEBUG(s_LogMsgId, "[DLL][%s] DISCON RECOVER",  _F_);
         set_alarm_discon_switch(TURN_OFF);
     }
     return;

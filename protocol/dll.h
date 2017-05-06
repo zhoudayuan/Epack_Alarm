@@ -513,8 +513,6 @@ typedef struct _DLL_GLB_CFG_T
     UINT32 auNerInfo1[32];             ///< 临点拓扑信息 1
     UINT32 auNegrId2;                  ///< 临点信息2
     UINT32 auNerInfo2[32];             ///< 临点拓扑信息 2
-    ///////////////////////////////////////////////////
-//    UINT8  auDisconFlag;                ///< 邻点断链告警状态标志 0-清除告警，1-设置告警
 
 }DLL_GLB_CFG_T;
 
