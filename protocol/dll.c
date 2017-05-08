@@ -644,7 +644,7 @@ void * DLL_TimerTask(void * p)
 
 }
 
-#if 1
+#if 0
 static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
 {
     UINT32 i;
@@ -748,7 +748,7 @@ void * DLL_NerBurstTask(void * p)
     while(1)
     {
         BurstCyc = ptCFGShm->neighbor_period.val*60;
-//        BurstCyc = 2;
+        BurstCyc = 2;
         tv.tv_sec = rand() % BurstCyc;
         tv.tv_usec = 0;
         LeftDelay = BurstCyc - tv.tv_sec;
