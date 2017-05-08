@@ -27,8 +27,7 @@
  * @brief 用于获取共享内存和信号量IPC键值的文件名
  */
 #define FTOK_F_NAME 		      "/"  
-/**
- * @def SHM_CFG_ITEM_NAME_LEN
+/** * @def SHM_CFG_ITEM_NAME_LEN
  * @brief 共享内存配置结构名称大小
  */
 #define SHM_CFG_ITEM_NAME_SIZE    20
@@ -146,7 +145,13 @@ typedef enum {
     CMD_CODE_START_NEIGHBOR          = 0x0003,
     CMD_CODE_NEIGHBOR_PERIOD         = 0x0004,
     CMD_CODE_COMBINED_DATA           = 0x0005,
-    CMD_CODE_SCAN_MODE               = 0x0006,
+    CMD_CODE_QUERY_ALARM             = 0x0006,
+    CMD_CODE_SCAN_MODE               = 0x0007,  //以前命令字是0x0006，暂时没用后期开发注意修改
+
+	//告警模块命令字
+	 CMD_CODE_ALARM                  = 0x0060,
+
+	
 	//业务模块命令字C0~FF
 	CMD_CODE_GPS_REPORT 	         = 0x00C0,
 	CMD_CODE_STUN		             = 0x00C1,
@@ -178,6 +183,13 @@ typedef enum {
 	CMD_CODE_START_TIME_OUT          = 0x0112,
 	CMD_CODE_FPGA_EEPROM             = 0x0113,
 	CMD_CODE_REBOOT                  = 0x0114,
+	CMD_CODE_ALARM_SWITCH            = 0x0115,
+	CMD_CODE_UPDATE_DTB              = 0x0116,
+	CMD_CODE_UPDATE_LOADAPP          = 0x0117,
+	CMD_CODE_UPDATE_FILE_SYSTEM      = 0x0118,
+	CMD_CODE_UPDATE_UBOOT            = 0x0119,
+	CMD_CODE_UPDATE_RBF              = 0x011a,
+	CMD_CODE_UPDATE_ZIMAGE           = 0x011b,
 	//FPGA调测命令
 	CMD_CODE_EMISSIVE_VCO_FREQ       = 0x0A01,
 	CMD_CODE_RECEIVING_VCO_FREQ      = 0x0A02,
@@ -213,6 +225,10 @@ typedef enum {
 	CMD_CODE_DEV_CALL_TIMEOUT        = 0x0A20,
 	CMD_CODE_ERROR_RATE_FREQ         = 0x0A21,
 	CMD_CODE_SAVE_IQ_DATA            = 0x0A22,
+	CMD_CODE_CLOSE_TRAN_THRESHOLD    = 0x0A23,
+	CMD_CODE_START_TEMP_ALARM        = 0x0A24,
+	CMD_CODE_CLOSE_TEMP_ALARM        = 0x0A25,
+	CMD_CODE_RESUME_TRAN_THRESHOLD   = 0x0A26,
 	//手咪命令
 	CMD_CODE_CENTER_MODULE           = 0x0B01,
 	CMD_CODE_GSM_MODULE1             = 0x0B02,
@@ -224,7 +240,8 @@ typedef enum {
 	CMD_CODE_MICROPHONE_MODULE2      = 0x0B08,
 	CMD_CODE_CONTROL_MODULE          = 0x0B09,
     CMD_CODE_CENTER_PRINT            = 0x0B0A,
-    CMD_CODE_CENTER_INFO             = 0x0B0B
+    CMD_CODE_CENTER_INFO             = 0x0B0B,
+    CMD_CODE_CENTER_QUERY_ALARM      = 0x0B0C
 	
 }NM_CMD_CODE;
 
@@ -341,9 +358,13 @@ typedef struct {
 	SHM_CFG_UINT_ITEM stun_time_out;              //终端摇晕超时时间
 	SHM_CFG_UINT_ITEM start_time_out;              //终端激活超时时间
 	SHM_CFG_UINT_ITEM dev_call_timeout;            //设备通话超时时间
-	SHM_CFG_UINT_ITEM scan_mode;
-	SHM_CFG_UINT_ITEM freq_offset;
-	
+	SHM_CFG_UINT_ITEM scan_mode;                  //扫描模式开关
+	SHM_CFG_UINT_ITEM freq_offset;               //扫描模式频点偏移
+	SHM_CFG_UINT_ITEM alarm_switch_status;       //告警上报空口开关
+	SHM_CFG_UINT_ITEM close_transmit_threshold;              //关闭发射门限
+	SHM_CFG_UINT_ITEM resume_transmit_threshold;              //恢复发射门限
+	SHM_CFG_UINT_ITEM tempratue_alarm_start_threshold;       //温度告警触发门限
+	SHM_CFG_UINT_ITEM tempratue_alarm_close_threshold;       //温度告警退出门限
 }__attribute__((packed,aligned(1)))SHM_CFG_STRU;  
 
 ///////////////////告警相关////////////////////
@@ -359,6 +380,7 @@ typedef enum _ALARM_TYPE{
  * @struct ALARM_ITEM
  * @brief 告警表项
  */
+
 typedef struct alarm_item_data
 {
 	unsigned char  uStatus;
@@ -366,17 +388,14 @@ typedef struct alarm_item_data
 	unsigned char alm_exist;
 	unsigned char alm_code;
 	unsigned char alm_clear;
+	unsigned char alm_sended_center_flag;
+	unsigned char alm_reset_send_center_num;
+	unsigned char alm_sended_ai_flag;
+	unsigned char alm_reset_send_ai_num;
 	unsigned char alm_eflag;
-} ALARM_ITEM;
-/**
- * @struct ALARM_ITEM
- * @brief 告警表项
- */
-typedef struct _ALARM_ITEM_SEND
-{
-	unsigned char alm_code;
-	unsigned char alm_status;
-} ALARM_ITEM_SEND;
+	unsigned int    value;
+} __attribute__((packed,aligned(1)))ALARM_ITEM;
+
 /**
 * @brief	告警状态无告警
 */
@@ -385,82 +404,73 @@ typedef struct _ALARM_ITEM_SEND
 * @brief	告警状态有告警
 */
 #define	DEF_ALM_OCCUR				1	//告警发生
-/**
-* @brief	告警状态告警恢复
-*/
-#define	DEF_ALM_RESUME			2	//告警恢复
+
+ /**
+ * @def MGR_ALARM_MAX
+ * @brief告警最多字节数(8*8-4)
+ */
+#define MGR_ALARM_BYTE_MAX 	      8
 
 /**
  * @def MGR_ALARM_MAX
- * @brief告警最大个数
+ * @brief告警数(8*8)
  */
-#define MGR_ALARM_MAX 	      10
-/**
- * @def MGR_ALARM_CENTER_NUM
- * @brief 中心告警个数
- */
-#define MGR_ALARM_CENTER_NUM 	      2
-/**
- * @def MGR_ALARM_CENTER_NUM
- * @brief 中心告警个数
- */
-#define MGR_ALARM_FPGA_NUM 	      4
-/**
- * @def MGR_ALARM_SERVER_NUM
- * @brief 中心告警个数
- */
-#define MGR_ALARM_SERVER_NUM 	      2
-/**
- * @struct MGR_ALARM_CENTER_TYPE_E
+#define MGR_ALARM_MAX 	      60
+
+/** *
+@def MGR_ALARM_CENTER_NUM 
+* @brief 中心告警个数 
+*/
+#define MGR_ALARM_CENTER_NUM 	      24
+
+/** * @def MGR_ALARM_FPGA_NUM 
+* @brief 中心告警个数 
+*/
+#define MGR_ALARM_FPGA_NUM 	     5
+/** * 
+@def MGR_ALARM_SERVER_NUM 
+* @brief 中心告警个数 
+*/
+#define MGR_ALARM_SERVER_NUM 	      1
+
+/** * @struct MGR_ALARM_CENTER_TYPE_E
  * @brief 告警类型
  */
-typedef enum _MGR_ALARM_CENTER_TYPE_E
+typedef enum _MGR_ALARM_TYPE
 {
-    MGR_ALARM_CENTER_1                       = 0x0001,
-    MGR_ALARM_CENTER_2     	                     = 0x0002,
-    MGR_ALARM_CENTER_3   		                     = 0x0003,
-    MGR_ALARM_CENTER_4                       = 0x0004,
-    MGR_ALARM_CENTER_5     	                     = 0x0005,
-    MGR_ALARM_CENTER_6   		                     = 0x0006,
-    MGR_ALARM_CENTER_7                       = 0x0007,
-    MGR_ALARM_CENTER_8     	                     = 0x0008,
-    MGR_ALARM_CENTER_9   		                     = 0x0009,
-} MGR_ALARM_CENTER_TYPE_E;
+    MGR_ALARM_CENTER_1                     = 0x0001,//电池电量告警
+    MGR_ALARM_CENTER_2     	               = 0x0002,//电池通信异常
+    MGR_ALARM_CENTER_3   		           = 0x0003,//电池模块预留
+    MGR_ALARM_CENTER_4   		           = 0x0004,//电池模块预留
+    MGR_ALARM_CENTER_5   		           = 0x0005, //GSM模块告警（SIM卡未插入）
+    MGR_ALARM_CENTER_6                     = 0x0006,//GSM模块预留
+    MGR_ALARM_CENTER_7     	               = 0x0007,//GSM模块预留
+    MGR_ALARM_CENTER_8   		           = 0x0008,//GSM模块预留
+    MGR_ALARM_CENTER_9   		           = 0x0009,//DSP故障告警
+    MGR_ALARM_CENTER_10   		           = 0x000a,//dSP预留
+    MGR_ALARM_CENTER_11                    = 0x000b,//模拟信道机未连接告警
+    MGR_ALARM_CENTER_12     	           = 0x000c,//模拟信道机预留
+    MGR_ALARM_CENTER_13   		           = 0x000d,//无线链路预留
+    MGR_ALARM_CENTER_14   		           = 0x000e,//无线链路预留
+    MGR_ALARM_CENTER_15   		           = 0x000f,  //网管预留
+    MGR_ALARM_CENTER_16                    = 0x0010,//网管预留
+    MGR_ALARM_CENTER_17     	           = 0x0011,//互联交互预留
+    MGR_ALARM_CENTER_18   		           = 0x0012,//互联交互预留
+    MGR_ALARM_CENTER_19   		           = 0x0013,//手咪预留
+    MGR_ALARM_CENTER_20   		           = 0x0014, //手咪预留
+    MGR_ALARM_CENTER_21                    = 0x0015,//CODEC预留
+    MGR_ALARM_CENTER_22     	           = 0x0016,//CODEC预留
+    MGR_ALARM_CENTER_23   		           = 0x0017,//主控预留
+    MGR_ALARM_CENTER_24                    = 0x0018,//守护进程预留
 
-/**
- * @struct MGR_ALARM_CENTER_TYPE_E
- * @brief 告警类型
- */
-typedef enum _MGR_ALARM_FPGA_TYPE_E
-{
-   MGR_ALARM_FPGA_1                       = 0x000a,
-    MGR_ALARM_FPGA_2     	                     = 0x000b,
-    MGR_ALARM_FPGA_3   		                     = 0x000c,
-    MGR_ALARM_FPGA_4                       = 0x000d,
-    MGR_ALARM_FPGA_5     	                     = 0x000e,
-    MGR_ALARM_FPGA_6   		                     = 0x000f,
-    MGR_ALARM_FPGA_7                       = 0x0010,
-    MGR_ALARM_FPGA_8     	                     = 0x0011,
-    MGR_ALARM_FPGA_9   		                     = 0x0012,
-} MGR_ALARM_FPGA_TYPE_E;
-
-
-/**
- * @struct MGR_ALARM_CENTER_TYPE_E
- * @brief 告警类型
- */
-typedef enum _MGR_ALARM_SERVER_TYPE_E
-{
-    MGR_ALARM_SERVER_1                       = 0x0013,
-    MGR_ALARM_SERVER_2     	                     = 0x0014,
-    MGR_ALARM_SERVER_3   		                     = 0x0015,
-    MGR_ALARM_SERVER_4                       = 0x0016,
-    MGR_ALARM_SERVER_5     	                     = 0x0017,
-    MGR_ALARM_SERVER_6   		                     = 0x0018,
-    MGR_ALARM_SERVER_7                       = 0x0019,
-    MGR_ALARM_SERVER_8     	                     = 0x001a,
-    MGR_ALARM_SERVER_9   		                     = 0x001b,
-} MGR_ALARM_SERVER_TYPE_E;
+    MGR_ALARM_FPGA_1                       = 0x0019,//GPS失锁
+    MGR_ALARM_FPGA_2     	               = 0x001a,//功放过热
+    MGR_ALARM_FPGA_3   		               = 0x001b,//笛卡尔环甭快
+    MGR_ALARM_FPGA_4                       = 0x001c,///读DSP标志位异常
+    MGR_ALARM_FPGA_5     	               = 0x001d,//DSP上行数据校验失败
+    MGR_ALARM_SERVER_1                     = 0x001e//链路断链 
+} MGR_ALARM_TYPE;
+ 
 /**
  * @struct SHM_IPC_STRU
  * @brief 进程间通信共享内存整体结构
@@ -468,16 +478,18 @@ typedef enum _MGR_ALARM_SERVER_TYPE_E
 typedef struct {
 	unsigned int print_mark;
 	unsigned int is_connect_cc;
-	ALARM_ITEM alarm_center[MGR_ALARM_MAX];//
-	ALARM_ITEM alarm_fpga[MGR_ALARM_MAX];//
-	ALARM_ITEM alarm_server[MGR_ALARM_MAX];//
+	ALARM_ITEM alarm_struct[MGR_ALARM_MAX];//
 	unsigned char ccl_printf[8];
     unsigned char dll_printf[16];
-    unsigned char route_printf[7];
+    unsigned char route_printf[7];	
     unsigned char printf_select;//默认0为工具输出，1为本地输出
     unsigned char mgr_printf[8];
 	unsigned char fpga_debug_sleep;
+    int update_flag;
 }__attribute__((packed,aligned(1)))SHM_IPC_STRU;  
+
+
+
 
 
 /**
@@ -493,6 +505,22 @@ typedef struct{
 	unsigned char data[8];    ///< 数据
 	unsigned char crc;        ///< 校验
 }NAS_AI_PAYLOAD;  
+
+
+/**
+ * @struct ALARM_SEND_ITEM_PAYLOAD
+ * @brief 告警数据包单字节结构
+ */
+typedef struct{
+    unsigned char bit_0:1;   
+	unsigned char bit_1:1;   
+	unsigned char bit_2:1;  
+	unsigned char bit_3:1;   
+	unsigned char bit_4:1;  
+	unsigned char bit_5:1;    
+	unsigned char bit_6:1;     
+	unsigned char bit_7:1; 
+}ALARM_SEND_ITEM_PAYLOAD; 
 
 
 #endif

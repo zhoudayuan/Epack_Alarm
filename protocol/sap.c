@@ -128,9 +128,7 @@ int main(void)
 
     while(1)
     {
-        sleep(2);
-        
-        printf("\n\nptIPCShm->printf_select=%d\n\n", ptIPCShm->printf_select);
+        sleep(10);
     }
 
     return 0;

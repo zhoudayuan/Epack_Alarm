@@ -2929,7 +2929,7 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     if ((ptCFGShm->start_neighbor.val == 1) && (g_DllGlobalCfg.auNegrId1 != 0))
     {
         g_DisconCnt = 0;
-        printf("DDDDDDDDDDDDDDDDDDDDDDDDDDDD=== DISCON RECOVER ===DDDDDDDDDDDDDDDDDDDDDDDDDDDD\n");
+//        printf("DDDDDDDDDDDDDDDDDDDDDDDDDDDD=== DISCON RECOVER ===DDDDDDDDDDDDDDDDDDDDDDDDDDDD\n");
         LOG_DEBUG(s_LogMsgId, "[DLL][%s] DISCON RECOVER",  _F_);
         set_alarm_discon_switch(TURN_OFF);
     }

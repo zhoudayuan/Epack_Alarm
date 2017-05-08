@@ -644,7 +644,7 @@ void * DLL_TimerTask(void * p)
 
 }
 
-#if 0
+#if 1
 static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
 {
     UINT32 i;
@@ -689,7 +689,7 @@ static int check_discon_state()
         g_DisconCnt ++;
         if ((g_DisconCnt % 2) == 0)     // 连续断链两次则告警
         {
-//          printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA====DISCON HAPPEN==AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+//            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA====DISCON HAPPEN==AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
             LOG_DEBUG(s_LogMsgId, "[DLL][%s] DISCON HAPPEN", _F_);
             return (g_discon_state = DISCON_HAPPEN);  //有断链
         }
@@ -703,22 +703,23 @@ void set_alarm_discon_switch(int AlarmSwitch)
     if ((AlarmSwitch == TURN_OFF) && (g_discon_state == DISCON_HAPPEN))
     {
         g_discon_state = DISCON_RECOVER;
-//      printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC====Tell mgr [TURN_OFF] Alarm==CCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
+//        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC====Tell mgr [TURN_OFF] Alarm==CCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
         LOG_DEBUG(s_LogMsgId, "[DLL][%s] Tell mgr [TURN_OFF] Alarm ", _F_);
-//        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);
+        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);
     }
     else if (AlarmSwitch == TURN_ON)
     {
 //      printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB====Tell mgr [TURN_ON] Alarm==BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
         LOG_DEBUG(s_LogMsgId,"[DLL][%s] Tell mgr [TURN_ON] Alarm ", _F_);
-//        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_ON, 0);
+        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_ON, 0);
     }
 }
 
 
 /**
  * @brief   数据链路层邻点突发线程
- *
+ *          2个BurstCyc上报一次，
+ *          2个上报时间得出是否产生断链
  * @param [in] p       传递给线程start_routine的参数
  * @author  陈禹良
  * @since   trunk.00001
@@ -744,11 +745,9 @@ void * DLL_NerBurstTask(void * p)
         BurstCyc = 60;
     }
 
-
     while(1)
     {
         BurstCyc = ptCFGShm->neighbor_period.val*60;
-        BurstCyc = 2;
         tv.tv_sec = rand() % BurstCyc;
         tv.tv_usec = 0;
         LeftDelay = BurstCyc - tv.tv_sec;
