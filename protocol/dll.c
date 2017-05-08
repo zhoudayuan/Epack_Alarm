@@ -18,10 +18,6 @@
 #include "mgr_common.h"
 
 
-
-
-
-
 /******************************************************************************
   *   全局变量定义
   *   *************************************************************************/
@@ -75,7 +71,7 @@ pthread_t IdpPid;
 
 /**
  * @var NeighborPid
- * @brief  临点突发线程PID
+ * @brief  邻点突发线程PID
  */
 pthread_t NeighborPid;
 
@@ -648,11 +644,14 @@ void * DLL_TimerTask(void * p)
 
 }
 
+#if 1
 static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
 {
     UINT32 i;
 
     ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+
+
     if (NULL == ptAlarm)
     {
         return 0;
@@ -672,7 +671,7 @@ static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
     sem_ipc_v();
     return 0;
 }
-
+#endif
 
 
 
@@ -690,10 +689,8 @@ static int check_discon_state()
         g_DisconCnt ++;
         if ((g_DisconCnt % 2) == 0)     // 连续断链两次则告警
         {
-            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA====DISCON HAPPEN==AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
+//          printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA====DISCON HAPPEN==AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
             LOG_DEBUG(s_LogMsgId, "[DLL][%s] DISCON HAPPEN", _F_);
-
-            
             return (g_discon_state = DISCON_HAPPEN);  //有断链
         }
     }
@@ -706,21 +703,21 @@ void set_alarm_discon_switch(int AlarmSwitch)
     if ((AlarmSwitch == TURN_OFF) && (g_discon_state == DISCON_HAPPEN))
     {
         g_discon_state = DISCON_RECOVER;
-        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC====Tell mgr [TURN_OFF] Alarm==CCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
+//      printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC====Tell mgr [TURN_OFF] Alarm==CCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
         LOG_DEBUG(s_LogMsgId, "[DLL][%s] Tell mgr [TURN_OFF] Alarm ", _F_);
-        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);
+//        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);
     }
     else if (AlarmSwitch == TURN_ON)
     {
+//      printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB====Tell mgr [TURN_ON] Alarm==BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
         LOG_DEBUG(s_LogMsgId,"[DLL][%s] Tell mgr [TURN_ON] Alarm ", _F_);
-        printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB====Tell mgr [TURN_ON] Alarm==BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
-        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_ON, 0);
+//        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_ON, 0);
     }
 }
 
 
 /**
- * @brief   数据链路层临点突发线程
+ * @brief   数据链路层邻点突发线程
  *
  * @param [in] p       传递给线程start_routine的参数
  * @author  陈禹良
@@ -751,7 +748,7 @@ void * DLL_NerBurstTask(void * p)
     while(1)
     {
         BurstCyc = ptCFGShm->neighbor_period.val*60;
-        BurstCyc = 2;
+//        BurstCyc = 2;
         tv.tv_sec = rand() % BurstCyc;
         tv.tv_usec = 0;
         LeftDelay = BurstCyc - tv.tv_sec;
@@ -780,7 +777,7 @@ void * DLL_NerBurstTask(void * p)
         }
 
 
-        // 临点突发
+        // 邻点突发
         if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn)
         {
             memset(&NegrBurst, 0, sizeof(NAS_NEGR_BURST_T));
@@ -815,7 +812,7 @@ void * DLL_NerBurstTask(void * p)
             ptInfData->tDataLink[F_1].DataLen = CSBK_LEN+2;
             memcpy(ptInfData->tDataLink[F_1].PayLoad, &NegrBurst, (CSBK_LEN+2));
 
-            ODP_SendInfData(ptInfData, S_NEGR_BST);         //临点突发
+            ODP_SendInfData(ptInfData, S_NEGR_BST);         //邻点突发
 
         }
 
@@ -825,7 +822,7 @@ void * DLL_NerBurstTask(void * p)
         // 邻点上报
         if (BurstCnt % 2 == 0)
         {
-            if (LeftDelay < 5)      //临点突发和临点上报消息保护间隔
+            if (LeftDelay < 5)      //邻点突发和邻点上报消息保护间隔
             {
                 sleep(5);
             }
@@ -843,11 +840,9 @@ void * DLL_NerBurstTask(void * p)
                 memcpy(&NasAiData.data[1], (UINT8 *)&g_DllGlobalCfg.auNegrId2, NER_LEN);
                 NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
 
-                //发送多个预载波
+                // 
                 DstId = NasAiData.dst_id;
                 SrcId = NasAiData.src_id;
-                ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-                ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -869,14 +864,15 @@ void * DLL_NerBurstTask(void * p)
                 ptInfData->tDataLink[F_1].DataLen = CSBK_LEN+2;
                 memcpy(ptInfData->tDataLink[F_1].PayLoad, &NasAiData, (CSBK_LEN+2));
 
-                ODP_SendInfData(ptInfData, S_NEGR_RPT);         //临点上报
+                ODP_SendInfData(ptInfData, S_NEGR_RPT);         //邻点上报
 
-                //备份本地临点信息
+                //备份本地邻点信息
                 g_DllGlobalCfg.auNegrId2 = g_DllGlobalCfg.auNegrId1;
                 memcpy(g_DllGlobalCfg.auNerInfo2, g_DllGlobalCfg.auNerInfo1, sizeof(g_DllGlobalCfg.auNerInfo1));
-                //清除本地临点信息
+                //清除本地邻点信息
                 g_DllGlobalCfg.auNegrId1 = 0;
                 memset(g_DllGlobalCfg.auNerInfo1, 0, sizeof(g_DllGlobalCfg.auNerInfo1));
+
                 // 检测邻点断链告警
                 if (check_discon_state() == DISCON_HAPPEN)
                 {

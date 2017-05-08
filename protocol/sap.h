@@ -84,9 +84,9 @@ typedef enum _CCL_DATA_TYPE_E
     CT_KILL_RPT_NAS         = 0x2a,                      ///< WLU  遥毙上报
     CT_ENABLE_RPT_NAS       = 0x2b,                      ///< WLU  激活上报
 
-    CT_NEGHR_QUERY          = 0x31,                      ///< 临点信息查询
-    CT_NEGHR_QUERY_ACK      = 0x32,                      ///< 临点信息响应
-    CT_NEGHR_REPORT         = 0x33,                      ///< 临点信息上报
+    CT_NEGHR_QUERY          = 0x31,                      ///< 邻点信息查询
+    CT_NEGHR_QUERY_ACK      = 0x32,                      ///< 邻点信息响应
+    CT_NEGHR_REPORT         = 0x33,                      ///< 邻点信息上报
     CT_DISCON_ALARM         = 0x34,                      ///< 断链告警
     CT_DISCON_ALARM_CLEAR   = 0x35,                      ///< 断链告警清除
 

@@ -930,18 +930,18 @@ void *ODP_HandleCenterSig(void *arg)
                     //发送状态
                     break;
                 }
-                if(CMD_PTT_ON   == CcCmd->CC_PTT_CMD.PttStat)                              //压手台命令
+                if(CMD_PTT_ON == CcCmd->CC_PTT_CMD.PttStat)    //压手台命令
                 {
                     //if(NAS_VOICE_UL == INF_CCL_STATE || p_DllFpgaShm->FollowEn)
                     if(p_DllFpgaShm->FollowEn)
                     {
-                        PttCmdResult=false;
+                        PttCmdResult = false;
                         LOG_WARNING(s_LogMsgId,"[CCL][%s]REC CC SIG CCL  state=%d  FollowEn=%d", __FUNCTION__,INF_CCL_STATE,p_DllFpgaShm->FollowEn);
                     }
                     else
                     {
-                        PttCmdResult=true;
-                        ODP_GenLcHeader(RecSigBuf,SendBuf,&u4Datalen);                        //封LC语音头
+                        PttCmdResult = true;
+                        ODP_GenLcHeader(RecSigBuf, SendBuf, &u4Datalen);    // 封LC语音头
                         sendto( s_tSendToDllSocket, SendBuf, u4Datalen, 0,(struct sockaddr *)&s_tSendToDllAddr,sizeof(s_tSendToDllAddr));
                         INF_CCL_STATE   = CENTER_VOICE_DL;
                     }
@@ -1380,7 +1380,7 @@ void* IDP_RecFrmDllthread(void *arg)
 
         switch(ptDllData->MsgType)
         {
-            case DI_MSG_DATA:    //数据
+            case DI_MSG_DATA:   // 数据
             {
                 if (CT_JUNK_DATA == ptDllData->DataType)
                 {

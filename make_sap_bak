@@ -1,0 +1,30 @@
+#!/bin/sh
+
+
+Result_Path=`pwd`/result
+Protocol_Path=`pwd`/protocol
+Adapter_Path=`pwd`/adapter
+gcc_path=`pwd`/tools/bin
+cd $Protocol_Path
+
+$gcc_path/g++ -O2 -Wall -DLINUX -o sap \
+                                sap.c \
+                                dll.c \
+                                dll_algrthm.c \
+                                dll_idp.c \
+                                dll_odp.c \
+                                dll_interleave.c \
+                                ccl_dl.c \
+                                ccl_ul.c \
+                                ccl_thread.c \
+                                ccl_fun.c \
+                                -I ../inc -lpthread
+
+if [ -e sap ]
+then
+
+    cp sap $Result_Path
+    rm sap
+    echo "~~~~ok~~~~"
+fi
+

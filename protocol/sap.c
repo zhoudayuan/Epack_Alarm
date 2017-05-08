@@ -32,10 +32,11 @@
  */
 INT32 s_LogMsgId;
 
-
-
-
-static int semid;
+/**
+ * @var  s_semid
+ * @brief ÐÅºÅÁ¿ID
+ */
+static int s_semid;
 
 /**
  * @var  pLogTxtFd
@@ -100,9 +101,6 @@ int main(void)
     }
     printf("[SAP] log print ok!\n");
 
-
-
-
     _CFG_Shm();
     printf("[SAP] cfg shm ok!\n");
 
@@ -111,7 +109,6 @@ int main(void)
 
     _IPC_Shm();
     printf("[SAP] ipc shm ok!\n");
-    
 
     ret = _LocalCfgPrint();
     if(ret == -1)
@@ -236,7 +233,7 @@ int sem_ipc_p(void)
     sem_b.sem_num = 0;
     sem_b.sem_op = -1; /* P() */
     sem_b.sem_flg = SEM_UNDO;
-    if (semop(semid, &sem_b, 1) == -1) {
+    if (semop(s_semid, &sem_b, 1) == -1) {
         fprintf(stderr, "semaphore_p failed\n");
         return(0);
     }
@@ -251,7 +248,7 @@ int sem_ipc_v(void)
     sem_b.sem_num = 0;
     sem_b.sem_op = 1; /* V() */
     sem_b.sem_flg = SEM_UNDO;
-    if (semop(semid, &sem_b, 1) == -1) {
+    if (semop(s_semid, &sem_b, 1) == -1) {
         fprintf(stderr, "semaphore_v failed\n");
         return(0);
     }
@@ -263,7 +260,7 @@ static int set_semvalue(void)
 {
     SEMUN sem_union;
     sem_union.val = 1;
-    if (semctl(semid, 0, SETVAL, sem_union) == -1)
+    if (semctl(s_semid, 0, SETVAL, sem_union) == -1)
     {
         return(0);
     }
@@ -290,14 +287,14 @@ void _IPC_sem()
         exit(1);
     }
 
-    semid = semget(semkey, 1, (0666 | IPC_CREAT));
-    if (semid == -1)
+    s_semid = semget(semkey, 1, (0666 | IPC_CREAT));
+    if (s_semid == -1)
     {
         LOG_WFile(pLogFd, "Get IPC sem error!!!");
         LOG_ERROR(s_LogMsgId, "..._Get IPC sem error!!!, exit!!!");
         exit(1);
     }
-    else if (semid > 1)
+    else if (s_semid > 1)
     {
         if (!set_semvalue())
         {
@@ -308,7 +305,7 @@ void _IPC_sem()
     }
     else
     {
-        perror("semid>");
+        perror("s_semid>");
         exit(1);
     }
 }

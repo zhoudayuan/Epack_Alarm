@@ -132,7 +132,7 @@ void  IDP_GenGpsData(unsigned char pvAcktype ,unsigned char * pvDlldata,unsigned
 */
 void    IDP_CclPrintGpsData(unsigned char *pvGpsData);
 /**
-* @brief    封装上行至中心临点数据包
+* @brief    封装上行至中心邻点数据包
 */
 void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len,unsigned char *callidnet);
 

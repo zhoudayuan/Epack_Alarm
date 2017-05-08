@@ -109,33 +109,33 @@ void ODP_GenLcHeader(unsigned char * pvCenterData, unsigned  char *pvDllData, in
     DLL_CCL_UL_T * ptDllData = (DLL_CCL_UL_T *)( pvDllData);
     DT_VOICE_LC_HEADER * ptDllPayLoad =(DT_VOICE_LC_HEADER *)ptDllData->PayLoad;
     PTT_CMD *ptCenterData=(PTT_CMD *)pvCenterData;
-    ptDllData->MsgType=DI_MSG_DATA;
-    ptDllData->DataType=CT_LC_HEADER  ;
-    ptDllData->FrmType =FT_VOICE_NO;
 
-    ptDllData->DataLen=LC_HEADER_LEN;            //负载长度=语音头LC 长度
-    * Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
-    ptDllPayLoad->Reserved=0;
-    ptDllPayLoad->ProtectFlg=0;
-    ptDllPayLoad->CtrOpcode=0x00;
-    ptDllPayLoad->FeatureId=0x00;
-    ptDllPayLoad->ServiceOpt=0x00;
-    ptDllPayLoad->GroupAddr[0]=ptCenterData->CalledNum[0];
-    ptDllPayLoad->GroupAddr[1]=ptCenterData->CalledNum[1];
-    ptDllPayLoad->GroupAddr[2]=ptCenterData->CalledNum[2];
-    ptDllPayLoad->SourceAddr[0]=ptCenterData->CallingNum[0];
-    ptDllPayLoad->SourceAddr[1]=ptCenterData->CallingNum[1];
-    ptDllPayLoad->SourceAddr[2]=ptCenterData->CallingNum[2];
+    ptDllData->MsgType  = DI_MSG_DATA;
+    ptDllData->DataType = CT_LC_HEADER  ;
+    ptDllData->FrmType  = FT_VOICE_NO;
+    ptDllData->DataLen  = LC_HEADER_LEN;            //负载长度=语音头LC 长度
+    *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
+    ptDllPayLoad->Reserved = 0;
+    ptDllPayLoad->ProtectFlg = 0;
+    ptDllPayLoad->CtrOpcode = 0x00;
+    ptDllPayLoad->FeatureId = 0x00;
+    ptDllPayLoad->ServiceOpt = 0x00;
+    ptDllPayLoad->GroupAddr[0] = ptCenterData->CalledNum[0];
+    ptDllPayLoad->GroupAddr[1] = ptCenterData->CalledNum[1];
+    ptDllPayLoad->GroupAddr[2] = ptCenterData->CalledNum[2];
+    ptDllPayLoad->SourceAddr[0] = ptCenterData->CallingNum[0];
+    ptDllPayLoad->SourceAddr[1] = ptCenterData->CallingNum[1];
+    ptDllPayLoad->SourceAddr[2] = ptCenterData->CallingNum[2];
+    ptDllData->SrcId[0] = ptCenterData->CallingNum[0];  //ptCenterData->SenderNum[0];//?? 添加源
+    ptDllData->SrcId[1] = ptCenterData->CallingNum[1];  //ptCenterData->SenderNum[1];//?? 添加源
+    ptDllData->SrcId[2] = ptCenterData->CallingNum[2];  //ptCenterData->SenderNum[2];//?? 添加源
+    ptDllData->DstId[0] = ptCenterData->CalledNum[0];   //?? 添加目的
+    ptDllData->DstId[1] = ptCenterData->CalledNum[1];
+    ptDllData->DstId[2] = ptCenterData->CalledNum[2];
 
-    ptDllData->SrcId[0]=ptCenterData->CallingNum[0];//ptCenterData->SenderNum[0];//?? 添加源
-    ptDllData->SrcId[1]=ptCenterData->CallingNum[1];//ptCenterData->SenderNum[1];//?? 添加源
-    ptDllData->SrcId[2]=ptCenterData->CallingNum[2];//ptCenterData->SenderNum[2];//?? 添加源
-    ptDllData->DstId[0]=ptCenterData->CalledNum[0];//?? 添加目的
-    ptDllData->DstId[1]=ptCenterData->CalledNum[1];
-    ptDllData->DstId[2]=ptCenterData->CalledNum[2];
-    if(1 == tcclPrint->CclDown)
+    if (1 == tcclPrint->CclDown)
     {
-      ODP_CclprintLc((unsigned char *)ptDllData);
+        ODP_CclprintLc((unsigned char *)ptDllData);
     }
 }
 

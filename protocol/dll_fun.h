@@ -100,7 +100,7 @@ void * INFUploadTask(void * p);
 void * DLL_TimerTask(void * p);
 
 /**
- * @brief   数据链路层临点突发线程
+ * @brief   数据链路层邻点突发线程
 */
 void * DLL_NerBurstTask(void * p);
 

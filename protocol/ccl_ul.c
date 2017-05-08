@@ -553,7 +553,7 @@ void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDlldata,unsigne
         LOG_DEBUG(s_LogMsgId,"[CCL][%s]near rpt len err LOADLEN=%d ",__FUNCTION__,ptDllData->DataLen);
         ptCenterData->ValidLength=CC_CCL_SMS_PAYLODDLEN;
     }
-    if(NEAR_REPORT_PASSIVE ==neartyppe)  //主动上报 与临点查询PALOAD  数据结构一致
+    if(NEAR_REPORT_PASSIVE ==neartyppe)  //主动上报 与邻点查询PALOAD  数据结构一致
     {
         ptCenterData->ValidLength=ptDllData->DataLen;
         memcpy(&ptCenterData->SmsData,ptDllData->PayLoad,ptDllData->DataLen);

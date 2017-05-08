@@ -212,6 +212,7 @@ typedef enum {
 	CMD_CODE_QUERY_998               = 0x0A1F,
 	CMD_CODE_DEV_CALL_TIMEOUT        = 0x0A20,
 	CMD_CODE_ERROR_RATE_FREQ         = 0x0A21,
+	CMD_CODE_SAVE_IQ_DATA            = 0x0A22,
 	// ÷ﬂ‰√¸¡Ó
 	CMD_CODE_CENTER_MODULE           = 0x0B01,
 	CMD_CODE_GSM_MODULE1             = 0x0B02,

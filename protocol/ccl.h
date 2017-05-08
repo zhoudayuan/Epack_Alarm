@@ -695,7 +695,7 @@ typedef union _SHARE_CC_DATA_D
     KILL_REQ_NAS_ACK        =0X25,
     REVIVE_REQ_NAS_ACK      =0x26,                     //激活NAS
     REVIVE_REQ_MS_ACK       =0x27,                     //激活MS
-    NAS_NEAR_REPORT         =0x28,                     //增加临点上报
+    NAS_NEAR_REPORT         =0x28,                     //增加邻点上报
     VARIANCE_HRESHOLD       =0x29,                      //方差门限（场强值）
 
     //报告
@@ -772,8 +772,8 @@ typedef enum _NAS_WORK_STATE_E
 
 typedef enum _NEAR_REPORT_TYPE_E
 {
-    NEAR_REPORT_ACTIVE            =0,                     ///<临点主动上报
-    NEAR_REPORT_PASSIVE           =1,                     ///< 临点查询上报
+    NEAR_REPORT_ACTIVE            =0,                     ///<邻点主动上报
+    NEAR_REPORT_PASSIVE           =1,                     ///< 邻点查询上报
 }NEAR_REPORT_TYPE_E;
 
 

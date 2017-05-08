@@ -996,13 +996,10 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         // 预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(CSBK_LEN+2),(UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
@@ -1161,10 +1158,10 @@ int IDP_LcTerminatorFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             if (tDllPrint->AIUp == 1)
             {
                 LOG_DEBUG(s_LogMsgId,"[DLL][%s] Td_Lc from %x %x %x GpsFlag %x abandon", _F_,
-                                                                              pTdLcPdu->auSADDR[0],
-                                                                              pTdLcPdu->auSADDR[1],
-                                                                              pTdLcPdu->auSADDR[2],
-                                                                              uGpsFlag);
+                    pTdLcPdu->auSADDR[0],
+                    pTdLcPdu->auSADDR[1],
+                    pTdLcPdu->auSADDR[2],
+                    uGpsFlag);
             }
             return NO_ERR;
         }
@@ -1300,8 +1297,6 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 WaitFollowEnable(3000);
                 DstId = NasAiData.dst_id;
                 SrcId = NasAiData.src_id;
-                ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-                ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -1332,8 +1327,6 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 WaitFollowEnable(3000);
                 DstId = NasAiData.dst_id;
                 SrcId = NasAiData.src_id;
-                ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-                ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -1749,7 +1742,6 @@ int IDP_R12PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                     memcpy(ptCclData->DstId, g_PdpUBuf.uDstId, 3);
                     memcpy(ptCclData->SrcId, g_PdpUBuf.uSrcId, 3);
                     memcpy(ptCclData->PayLoad, g_PdpUBuf.auData, ptCclData->DataLen);
-
                     LOG_DEBUG(s_LogMsgId,"[DLL][%s] ShortMessage: SrcId:%2x %2x %2x DstId:%2x %2x %2x datalen:%d",
                             _F_,
                             ptCclData->SrcId[0],
@@ -2206,8 +2198,6 @@ int IDP_NasGpsReportFun(NAS_AI_PAYLOAD * pvNasData)
 
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -2269,8 +2259,6 @@ int IDP_NasStunFun(NAS_AI_PAYLOAD * pvNasData)
         WaitFollowEnable(3000);
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -2333,8 +2321,6 @@ int IDP_NasKillFun(NAS_AI_PAYLOAD * pvNasData)
 
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -2400,8 +2386,6 @@ int IDP_NasEnableFun(NAS_AI_PAYLOAD * pvNasData)
 
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -2423,7 +2407,7 @@ int IDP_NasEnableFun(NAS_AI_PAYLOAD * pvNasData)
 
 
 /**
- * @brief  上行NAS临点信息查询处理函数
+ * @brief  上行NAS邻点信息查询处理函数
  *
  * @param [in]  pvNasData       上行链路机数据
  *
@@ -2459,8 +2443,6 @@ int IDP_NasNeighborFun(NAS_AI_PAYLOAD * pvNasData)
         //  发射预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -2481,7 +2463,7 @@ int IDP_NasNeighborFun(NAS_AI_PAYLOAD * pvNasData)
 }
 
 /**
- * @brief  上行NAS临点信息上报处理函数
+ * @brief  上行NAS邻点信息上报处理函数
  *
  * @param [in]  pvNasData       上行链路机数据
  *
@@ -2878,7 +2860,7 @@ void INFDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
 
 /**
- * @brief  接口适配层上行临点处理
+ * @brief  接口适配层上行邻点处理
  *
  * @param [in] pvInfData       INF上行数据
  * @param [in] RevFrqNo       接收频率号

@@ -1,0 +1,27 @@
+#!/bin/sh
+
+Result_Path=`pwd`/result
+
+Cli_Path=`pwd`/adapter
+
+gcc_path=`pwd`/tools/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin
+
+cd $Cli_Path
+#Application
+$gcc_path/arm-linux-gnueabihf-g++ -O2 -Wall -DLINUX -o logsend log_send.c -I ../inc -lpthread
+
+if [ -e logsend ]
+then
+	cp logsend $Result_Path
+	rm logsend
+fi
+
+#cd $Cli_Path
+#$gcc_path/arm-cortexa9-linux-gnueabihf-g++ -O2 -Wall -DLINUX -o nm nm.c common.c md5.c
+#if [ -e nm ]
+#then
+#    cp nm $Result_Path
+#    rm nm
+#fi
+
+

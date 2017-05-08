@@ -282,8 +282,8 @@ typedef enum _SAP_TYPE_E
     S_DATA_3_4          = 9,                      ///< 3/4数据
     S_TD_LC             = 10,                     ///< 数据终结
 
-    S_NEGR_BST          = 20,                     ///< 临点突发
-    S_NEGR_RPT          = 21,                     ///< 临点上报
+    S_NEGR_BST          = 20,                     ///< 邻点突发
+    S_NEGR_RPT          = 21,                     ///< 邻点上报
 
     S_GPS_REQ           = 30,                     ///< gps请求
     S_GPS_ACK           = 31,                     ///< gps应答
@@ -443,7 +443,7 @@ typedef struct _MS_GPS_REQ_T
  */
 typedef struct _WLU_DATA_UL_T
 {
-    UINT8 MsgType;         ///< 0x01:临点查询0x02:GPS查询
+    UINT8 MsgType;         ///< 0x01:邻点查询0x02:GPS查询
     UINT8 AckTag:2;        ///< 响应标记
     UINT8 Opcode:6;        ///< 操作码
     UINT8 SrcId:4;         ///< 源ID
@@ -459,7 +459,7 @@ typedef struct _WLU_DATA_UL_T
  */
 typedef struct _WLU_DATA_DL_T
 {
-    UINT8 MsgType;         ///< 0x01:临点查询0x02:GPS查询
+    UINT8 MsgType;         ///< 0x01:邻点查询0x02:GPS查询
     UINT8 AckTag:2;        ///< 响应标记
     UINT8 Opcode:6;        ///< 操作码
     UINT8 SrcId:4;         ///< 源ID
@@ -471,7 +471,7 @@ typedef struct _WLU_DATA_DL_T
 
 /**
  * @struct NAS_NEGR_BURST_T
- * @brief NAS临点突发数据链路结构体
+ * @brief NAS邻点突发数据链路结构体
  */
 typedef struct _NAS_NEGR_BURST_T
 {
@@ -499,8 +499,8 @@ typedef struct _DLL_GLB_CFG_T
     UINT8  auDownloadPI[12];           ///< 时隙下行PI信令
     UINT8  auEmbInfo[16];              ///< 语音内嵌信令32bit
     UINT8  auCCflag;                   ///< 远程连接中心标示
-    UINT8  auNegrBuSw;                 ///< 临点突然开关1:on,  0:off
-    UINT8  auNegrCyc;                  ///< 临点突发周期(单位分钟，最小1)
+    UINT8  auNegrBuSw;                 ///< 邻点突然开关1:on,  0:off
+    UINT8  auNegrCyc;                  ///< 邻点突发周期(单位分钟，最小1)
     UINT8  auNodeId;                   ///< 本地节点ID
     UINT8  auSoureId[3];               ///< 一体机源ID
     UINT8  auGroupId[3];               ///< 一体机组ID
@@ -509,10 +509,10 @@ typedef struct _DLL_GLB_CFG_T
     UINT16 auSevHangTime;              ///< 业务挂起时间
     UINT32 auStunFlag;                 ///< 遥晕标记
     UINT32 auKillFlag;                 ///< 遥毙标记
-    UINT32 auNegrId1;                  ///< 临点信息1
-    UINT32 auNerInfo1[32];             ///< 临点拓扑信息 1
-    UINT32 auNegrId2;                  ///< 临点信息2
-    UINT32 auNerInfo2[32];             ///< 临点拓扑信息 2
+    UINT32 auNegrId1;                  ///< 邻点信息1
+    UINT32 auNerInfo1[32];             ///< 邻点拓扑信息 1
+    UINT32 auNegrId2;                  ///< 邻点信息2
+    UINT32 auNerInfo2[32];             ///< 邻点拓扑信息 2
 
 }DLL_GLB_CFG_T;
 

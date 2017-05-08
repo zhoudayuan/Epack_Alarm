@@ -1732,8 +1732,6 @@ int ODP_NasGpsReportFun(CCL_DLL_DL_T * pvCclData)
         //发送多个预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -1806,8 +1804,6 @@ int ODP_NasEnableFun(CCL_DLL_DL_T * pvCclData)
         //发送多个预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -1879,8 +1875,6 @@ int ODP_NasStunFun(CCL_DLL_DL_T * pvCclData)
         //发送多个预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -1953,8 +1947,6 @@ int ODP_NasKillFun(CCL_DLL_DL_T * pvCclData)
         //发送多个预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -1968,7 +1960,7 @@ int ODP_NasKillFun(CCL_DLL_DL_T * pvCclData)
 
 
 /**
- * @brief 下行NAS 查询临点信息处理函数
+ * @brief 下行NAS 查询邻点信息处理函数
  *
  * @param [in]  pvCclData       下行控制层数据
  *
@@ -2019,8 +2011,6 @@ int ODP_NasNeighborFun(CCL_DLL_DL_T * pvCclData)
         //发送多个预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
-        ODP_GenNasPreCSBKFun(6, &DstId, &SrcId, 1);
-        ODP_GenNasPreCSBKFun(5, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
@@ -2189,7 +2179,7 @@ void CCLDataProcess(CCL_DLL_DL_T * pvCclData)
 
 
 /**
- * @brief   呼叫控制层下行临点处理
+ * @brief   呼叫控制层下行邻点处理
  *
  * @param [in]  pvCclData       CCL下行数据
  * @author  陈禹良
