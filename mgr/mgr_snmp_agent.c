@@ -432,6 +432,39 @@ init_mgr_snmp_agent(void)
     const oid id31CombinedDataPacket_oid[] = { 1,3,6,1,4,1,40400,1,5,31 };
     const oid id32CombinedDataPacket_oid[] = { 1,3,6,1,4,1,40400,1,5,32 };
 
+    const oid id1QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,1 };
+    const oid id2QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,2 };
+    const oid id3QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,3 };
+    const oid id4QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,4 };
+    const oid id5QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,5 };
+    const oid id6QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,6 };
+    const oid id7QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,7 };
+    const oid id8QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,8 };
+    const oid id9QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,9 };
+    const oid id10QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,10 };
+    const oid id11QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,11 };
+    const oid id12QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,12 };
+    const oid id13QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,13 };
+    const oid id14QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,14 };
+    const oid id15QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,15 };
+    const oid id16QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,16 };
+    const oid id17QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,17 };
+    const oid id18QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,18 };
+    const oid id19QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,19 };
+    const oid id20QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,20 };
+    const oid id21QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,21 };
+    const oid id22QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,22 };
+    const oid id23QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,23 };
+    const oid id24QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,24 };
+    const oid id25QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,25};
+    const oid id26QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,26 };
+    const oid id27QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,27};
+    const oid id28QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,28 };
+    const oid id29QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,29 };
+    const oid id30QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,30 };
+    const oid id31QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,31 };
+    const oid id32QueryAlarm_oid[] = { 1,3,6,1,4,1,40400,1,6,32 };
+
 	//
 	/*手咪相关*/
 	const oid centerModule_oid[] = { 1,3,6,1,4,1,40400,101,1,1 };
@@ -480,7 +513,11 @@ init_mgr_snmp_agent(void)
 	const oid stunTimeout_oid[] = { 1,3,6,1,4,1,40400,2,1,19 };
 	const oid startTimeout_oid[] = { 1,3,6,1,4,1,40400,2,1,20 };
 	const oid scanMode_oid[] = { 1,3,6,1,4,1,40400,2,1,21 };
-	
+	const oid alarmSwitchStatus_oid[] = { 1,3,6,1,4,1,40400,2,1,22 };
+    const oid closeTranThreshold_oid[] = { 1,3,6,1,4,1,40400,2,1,23 };
+    const oid tempAlarmStartThreshold_oid[] = { 1,3,6,1,4,1,40400,2,1,24 };
+    const oid tempAlarmCloseThreshold_oid[] = { 1,3,6,1,4,1,40400,2,1,25 };
+    const oid resumeTranThreshold_oid[] = { 1,3,6,1,4,1,40400,2,1,26 };
 	/* 校准*/
     const oid emissiveVCOFreq_oid[] = { 1,3,6,1,4,1,40400,100,1,1 };
     const oid receivingVCOFreq_oid[] = { 1,3,6,1,4,1,40400,100,1,2 };
@@ -500,7 +537,8 @@ init_mgr_snmp_agent(void)
 	const oid query998_oid[] = { 1,3,6,1,4,1,40400,100,1,16 };
 	const oid devCallTimeout_oid[] = { 1,3,6,1,4,1,40400,100,1,17 };
 	const oid errorRateFreq_oid[] = { 1,3,6,1,4,1,40400,100,1,18 };
-    const oid saveIqData_oid[] = { 1,3,6,1,4,1,40400,100,1,19 };
+	const oid saveIqData_oid[] = { 1,3,6,1,4,1,40400,100,1,19 };
+
 	
     const oid afc_oid[] = { 1,3,6,1,4,1,40400,100,2,1 };
     const oid saveAFC_oid[] = { 1,3,6,1,4,1,40400,100,2,2 };
@@ -545,6 +583,169 @@ init_mgr_snmp_agent(void)
 
   DEBUGMSGTL(("mgr_snmp_agent", "Initializing\n"));
 
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id1QueryAlarm", handle_id1QueryAlarm,
+                               id1QueryAlarm_oid, OID_LENGTH(id1QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id2QueryAlarm", handle_id2QueryAlarm,
+                               id2QueryAlarm_oid, OID_LENGTH(id2QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id3QueryAlarm", handle_id3QueryAlarm,
+                               id3QueryAlarm_oid, OID_LENGTH(id3QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id4QueryAlarm", handle_id4QueryAlarm,
+                               id4QueryAlarm_oid, OID_LENGTH(id4QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id5QueryAlarm", handle_id5QueryAlarm,
+                               id5QueryAlarm_oid, OID_LENGTH(id5QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+      netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id6QueryAlarm", handle_id6QueryAlarm,
+                               id6QueryAlarm_oid, OID_LENGTH(id6QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id7QueryAlarm", handle_id7QueryAlarm,
+                               id7QueryAlarm_oid, OID_LENGTH(id7QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id8QueryAlarm", handle_id8QueryAlarm,
+                               id8QueryAlarm_oid, OID_LENGTH(id8QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id9QueryAlarm", handle_id9QueryAlarm,
+                               id9QueryAlarm_oid, OID_LENGTH(id9QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id10QueryAlarm", handle_id10QueryAlarm,
+                               id10QueryAlarm_oid, OID_LENGTH(id10QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+
+
+      netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id11QueryAlarm", handle_id11QueryAlarm,
+                               id11QueryAlarm_oid, OID_LENGTH(id11QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id12QueryAlarm", handle_id12QueryAlarm,
+                               id12QueryAlarm_oid, OID_LENGTH(id12QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id13QueryAlarm", handle_id13QueryAlarm,
+                               id13QueryAlarm_oid, OID_LENGTH(id13QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id14QueryAlarm", handle_id14QueryAlarm,
+                               id14QueryAlarm_oid, OID_LENGTH(id14QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id15QueryAlarm", handle_id15QueryAlarm,
+                               id15QueryAlarm_oid, OID_LENGTH(id15QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+      netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id16QueryAlarm", handle_id16QueryAlarm,
+                               id6QueryAlarm_oid, OID_LENGTH(id6QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id17QueryAlarm", handle_id17QueryAlarm,
+                               id17QueryAlarm_oid, OID_LENGTH(id17QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id18QueryAlarm", handle_id18QueryAlarm,
+                               id18QueryAlarm_oid, OID_LENGTH(id18QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id19QueryAlarm", handle_id19QueryAlarm,
+                               id19QueryAlarm_oid, OID_LENGTH(id19QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id20QueryAlarm", handle_id20QueryAlarm,
+                               id20QueryAlarm_oid, OID_LENGTH(id20QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+
+      netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id21QueryAlarm", handle_id21QueryAlarm,
+                               id21QueryAlarm_oid, OID_LENGTH(id21QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id22QueryAlarm", handle_id22QueryAlarm,
+                               id22QueryAlarm_oid, OID_LENGTH(id22QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id23QueryAlarm", handle_id23QueryAlarm,
+                               id23QueryAlarm_oid, OID_LENGTH(id23QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id24QueryAlarm", handle_id24QueryAlarm,
+                               id24QueryAlarm_oid, OID_LENGTH(id24QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id25QueryAlarm", handle_id25QueryAlarm,
+                               id25QueryAlarm_oid, OID_LENGTH(id25QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+      netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id26QueryAlarm", handle_id26QueryAlarm,
+                               id26QueryAlarm_oid, OID_LENGTH(id26QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id27QueryAlarm", handle_id27QueryAlarm,
+                               id27QueryAlarm_oid, OID_LENGTH(id27QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id28QueryAlarm", handle_id28QueryAlarm,
+                               id28QueryAlarm_oid, OID_LENGTH(id28QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id29QueryAlarm", handle_id29QueryAlarm,
+                               id29QueryAlarm_oid, OID_LENGTH(id29QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+     netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id30QueryAlarm", handle_id30QueryAlarm,
+                               id30QueryAlarm_oid, OID_LENGTH(id30QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+      netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id31QueryAlarm", handle_id31QueryAlarm,
+                               id31QueryAlarm_oid, OID_LENGTH(id31QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
+       netsnmp_register_scalar(
+        netsnmp_create_handler_registration("id32QueryAlarm", handle_id32QueryAlarm,
+                               id32QueryAlarm_oid, OID_LENGTH(id32QueryAlarm_oid),
+                               HANDLER_CAN_RWRITE
+        ));
     netsnmp_register_scalar(
         netsnmp_create_handler_registration("id1Freq", handle_id1Freq,
                                id1Freq_oid, OID_LENGTH(id1Freq_oid),
@@ -966,6 +1167,32 @@ init_mgr_snmp_agent(void)
 								   scanMode_oid, OID_LENGTH(scanMode_oid),
 								   HANDLER_CAN_RWRITE
 			));
+
+	netsnmp_register_scalar(
+			netsnmp_create_handler_registration("alarmSwitchStatus", handle_alarmSwitchStatus,
+								   alarmSwitchStatus_oid, OID_LENGTH(alarmSwitchStatus_oid),
+								   HANDLER_CAN_RWRITE
+			));
+    netsnmp_register_scalar(
+			netsnmp_create_handler_registration("closeTranThreshold", handle_closeTranThreshold,
+								   closeTranThreshold_oid, OID_LENGTH(closeTranThreshold_oid),
+								   HANDLER_CAN_RWRITE
+			));
+    netsnmp_register_scalar(
+			netsnmp_create_handler_registration("resumeTranThreshold", handle_resumeTranThreshold,
+								   resumeTranThreshold_oid, OID_LENGTH(resumeTranThreshold_oid),
+								   HANDLER_CAN_RWRITE
+			));
+    netsnmp_register_scalar(
+			netsnmp_create_handler_registration("tempAlarmStartThreshold", handle_tempAlarmStartThreshold,
+								   tempAlarmStartThreshold_oid, OID_LENGTH(tempAlarmStartThreshold_oid),
+								   HANDLER_CAN_RWRITE
+			));
+    netsnmp_register_scalar(
+			netsnmp_create_handler_registration("tempAlarmCloseThreshold", handle_tempAlarmCloseThreshold,
+								   tempAlarmCloseThreshold_oid, OID_LENGTH(tempAlarmCloseThreshold_oid),
+								   HANDLER_CAN_RWRITE
+			));
     netsnmp_register_scalar(
         netsnmp_create_handler_registration("emissiveVCOFreq", handle_emissiveVCOFreq,
                                emissiveVCOFreq_oid, OID_LENGTH(emissiveVCOFreq_oid),
@@ -1061,7 +1288,6 @@ init_mgr_snmp_agent(void)
 							   errorRate_oid, OID_LENGTH(errorRate_oid),
 							   HANDLER_CAN_RONLY
 		));
-    
 	netsnmp_register_scalar(
 		netsnmp_create_handler_registration("printMark", handle_printMark,
 							   printMark_oid, OID_LENGTH(printMark_oid),
@@ -1642,7 +1868,6 @@ init_mgr_snmp_agent(void)
 							  errorRateFreq_oid, OID_LENGTH(errorRateFreq_oid),
 							   HANDLER_CAN_RWRITE
 		));
-    
 
 	netsnmp_register_scalar(
 		netsnmp_create_handler_registration("saveIqData", handle_saveIqData,
@@ -1748,98 +1973,6 @@ init_mgr_snmp_agent(void)
 
 }
 
-int
-handle_saveIqData(netsnmp_mib_handler *handler,
-                          netsnmp_handler_registration *reginfo,
-                          netsnmp_agent_request_info   *reqinfo,
-                          netsnmp_request_info         *requests)
-{
-    int ret;
-	unsigned int i = 0;
-	unsigned int data_switch = 0;
-	struct timeval delay; 
-	
-    /* We are never called for a GETNEXT if it's registered as a
-       "instance", as it's "magically" handled for us.  */
-
-    /* a instance handler also only hands us one request at a time, so
-       we don't need to loop over a list of requests; we'll only get one. */
-    
-    switch(reqinfo->mode) {
-
-        case MODE_GET:
-            netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-            break;
-
-        /*
-         * SET REQUEST
-         *
-         * multiple states in the transaction.  See:
-         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
-         */
-        case MODE_SET_RESERVE1:
-                /* or you could use netsnmp_check_vb_type_and_size instead */
-            ret = netsnmp_check_vb_type(requests->requestvb, ASN_UNSIGNED);
-            if ( ret != SNMP_ERR_NOERROR ) {
-                netsnmp_set_request_error(reqinfo, requests, ret );
-            }
-            break;
-
-        case MODE_SET_RESERVE2:
-            /* XXX malloc "undo" storage buffer */
-            break;
-
-        case MODE_SET_FREE:
-            /* XXX: free resources allocated in RESERVE1 and/or
-               RESERVE2.  Something failed somewhere, and the states
-               below won't be called. */
-            break;
-
-        case MODE_SET_ACTION:
-            /* XXX: perform the value change here */
-            data_switch = *((unsigned int *)requests->requestvb->val.integer);
-			if (shm_ipc_addr->mgr_printf[1])
-			{
-				LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_SET_ACTION iq_data_switch : %u\n", __FILE__, __FUNCTION__, __LINE__, data_switch);
-			}
-			sem_nm_p();
-			shm_nm_addr->save_iq_data.ack_flag = ACK_FLAG_CLR;
-			sem_nm_v();
-			
-			send_local_nm_set_cmd(CMD_CODE_SAVE_IQ_DATA, (unsigned char *)&data_switch);
-
-			for (i = 0; i < debug_timeout_cnt; i++)
-			{
-				delay.tv_sec = 0;
-				delay.tv_usec = POLLING_INTERVA;
-				select(0, NULL, NULL, NULL, &delay);
-				if (ACK_FLAG_OK == shm_nm_addr->save_iq_data.ack_flag)
-				{
-					break;
-				}
-			}
-			if (i == debug_timeout_cnt)
-			{
-				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-			}
-            break;
-
-        case MODE_SET_COMMIT:
-            /* XXX: delete temporary storage */
-            break;
-
-        case MODE_SET_UNDO:
-            /* XXX: UNDO and return to previous value for the object */
-            break;
-
-        default:
-            /* we should never get here, so this is a really bad error */
-            snmp_log(LOG_ERR, "unknown mode (%d) in handle_powerAmplifierSwitch\n", reqinfo->mode );
-            return SNMP_ERR_GENERR;
-    }
-
-    return SNMP_ERR_NOERROR;
-}
 
 
 
@@ -12215,6 +12348,633 @@ handle_localCc(netsnmp_mib_handler *handler,
 
 
 
+
+int
+handle_alarmSwitchStatus(netsnmp_mib_handler *handler,
+                       netsnmp_handler_registration *reginfo,
+                       netsnmp_agent_request_info   *reqinfo,
+                       netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+	unsigned int alarm_status = 0;
+	struct timeval delay; 
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_switch_status.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+            send_local_nm_get_cmd(CMD_CODE_ALARM_SWITCH);
+			
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_switch_status.ack_flag)
+				{
+					alarm_status= shm_nm_addr->alarm_switch_status.data;
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+						LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_GET alarm_status : %u\n", __FILE__, __FUNCTION__, __LINE__, alarm_status);
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_UNSIGNED, &alarm_status, sizeof(alarm_status));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_UNSIGNED);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+			alarm_status= *((unsigned int *)requests->requestvb->val.integer);
+			
+			if (shm_ipc_addr->mgr_printf[1])
+			{
+				LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_SET_ACTION alarm_status : %u\n", __FILE__, __FUNCTION__, __LINE__, alarm_status);
+			}
+			sem_nm_p();
+			shm_nm_addr->alarm_switch_status.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+				
+			send_local_nm_set_cmd(CMD_CODE_ALARM_SWITCH, (unsigned char *)&alarm_status);
+				
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_switch_status.ack_flag)
+				{
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_alarmSwitchStatus\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_closeTranThreshold(netsnmp_mib_handler *handler,
+                       netsnmp_handler_registration *reginfo,
+                       netsnmp_agent_request_info   *reqinfo,
+                       netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+	unsigned int threshold = 0;
+	struct timeval delay; 
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->close_transmit_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+            send_local_nm_get_cmd(CMD_CODE_CLOSE_TRAN_THRESHOLD);
+			
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->close_transmit_threshold.ack_flag)
+				{
+					threshold= shm_nm_addr->close_transmit_threshold.data;
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+						LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_GET close_transmit_threshold : %u\n", __FILE__, __FUNCTION__, __LINE__,threshold);
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_UNSIGNED, &threshold, sizeof(threshold));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_UNSIGNED);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+			threshold= *((unsigned int *)requests->requestvb->val.integer);
+			
+			if (shm_ipc_addr->mgr_printf[1])
+			{
+				LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_SET_ACTION close_transmit_threshold  : %u\n", __FILE__, __FUNCTION__, __LINE__, threshold);
+			}
+			sem_nm_p();
+			shm_nm_addr->close_transmit_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+				
+			send_local_nm_set_cmd(CMD_CODE_CLOSE_TRAN_THRESHOLD, (unsigned char *)&threshold);
+				
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->close_transmit_threshold.ack_flag)
+				{
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_closeTranThreshold\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+int
+handle_resumeTranThreshold(netsnmp_mib_handler *handler,
+                       netsnmp_handler_registration *reginfo,
+                       netsnmp_agent_request_info   *reqinfo,
+                       netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+	unsigned int threshold = 0;
+	struct timeval delay; 
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->resume_transmit_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+            send_local_nm_get_cmd(CMD_CODE_RESUME_TRAN_THRESHOLD);
+			
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->resume_transmit_threshold.ack_flag)
+				{
+					threshold= shm_nm_addr->resume_transmit_threshold.data;
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+						LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_GET resume_transmit_threshold : %u\n", __FILE__, __FUNCTION__, __LINE__,threshold);
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_UNSIGNED, &threshold, sizeof(threshold));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_UNSIGNED);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+			threshold= *((unsigned int *)requests->requestvb->val.integer);
+			
+			if (shm_ipc_addr->mgr_printf[1])
+			{
+				LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_SET_ACTION resume_transmit_threshold  : %u\n", __FILE__, __FUNCTION__, __LINE__, threshold);
+			}
+			sem_nm_p();
+			shm_nm_addr->resume_transmit_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+				
+			send_local_nm_set_cmd(CMD_CODE_RESUME_TRAN_THRESHOLD, (unsigned char *)&threshold);
+				
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->resume_transmit_threshold.ack_flag)
+				{
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_resumeTranThreshold\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+int
+handle_tempAlarmStartThreshold(netsnmp_mib_handler *handler,
+                       netsnmp_handler_registration *reginfo,
+                       netsnmp_agent_request_info   *reqinfo,
+                       netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+	unsigned int threshold = 0;
+	struct timeval delay; 
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->tempratue_alarm_start_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+            send_local_nm_get_cmd(CMD_CODE_START_TEMP_ALARM);
+			
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->tempratue_alarm_start_threshold.ack_flag)
+				{
+					threshold= shm_nm_addr->tempratue_alarm_start_threshold.data;
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+						LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_GET tempratue_alarm_start_threshold : %u\n", __FILE__, __FUNCTION__, __LINE__,threshold);
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_UNSIGNED, &threshold, sizeof(threshold));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_UNSIGNED);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+			threshold= *((unsigned int *)requests->requestvb->val.integer);
+			
+			if (shm_ipc_addr->mgr_printf[1])
+			{
+				LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_SET_ACTION tempratue_alarm_start_threshold  : %u\n", __FILE__, __FUNCTION__, __LINE__, threshold);
+			}
+			sem_nm_p();
+			shm_nm_addr->tempratue_alarm_start_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+				
+			send_local_nm_set_cmd(CMD_CODE_START_TEMP_ALARM, (unsigned char *)&threshold);
+				
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->tempratue_alarm_start_threshold.ack_flag)
+				{
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_tempAlarmStartThreshold\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_tempAlarmCloseThreshold(netsnmp_mib_handler *handler,
+                       netsnmp_handler_registration *reginfo,
+                       netsnmp_agent_request_info   *reqinfo,
+                       netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+	unsigned int threshold = 0;
+	struct timeval delay; 
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->tempratue_alarm_close_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+            send_local_nm_get_cmd(CMD_CODE_CLOSE_TEMP_ALARM);
+			
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->tempratue_alarm_close_threshold.ack_flag)
+				{
+					threshold= shm_nm_addr->tempratue_alarm_close_threshold.data;
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+						LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_GET tempratue_alarm_close_threshold : %u\n", __FILE__, __FUNCTION__, __LINE__,threshold);
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_UNSIGNED, &threshold, sizeof(threshold));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_UNSIGNED);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+			threshold= *((unsigned int *)requests->requestvb->val.integer);
+			
+			if (shm_ipc_addr->mgr_printf[1])
+			{
+				LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_SET_ACTION tempratue_alarm_close_threshold  : %u\n", __FILE__, __FUNCTION__, __LINE__, threshold);
+			}
+			sem_nm_p();
+			shm_nm_addr->tempratue_alarm_close_threshold.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+				
+			send_local_nm_set_cmd(CMD_CODE_CLOSE_TEMP_ALARM, (unsigned char *)&threshold);
+				
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->tempratue_alarm_close_threshold.ack_flag)
+				{
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_tempAlarmCloseThreshold\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
 int
 handle_version(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -14055,6 +14815,105 @@ handle_powerAmplifierSwitch(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
+
+int
+handle_saveIqData(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+	unsigned int data_switch = 0;
+	struct timeval delay; 
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+            netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_UNSIGNED);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+            data_switch = *((unsigned int *)requests->requestvb->val.integer);
+			if (shm_ipc_addr->mgr_printf[1])
+			{
+				LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| MODE_SET_ACTION iq_data_switch : %u\n", __FILE__, __FUNCTION__, __LINE__, data_switch);
+			}
+			sem_nm_p();
+			shm_nm_addr->save_iq_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			send_local_nm_set_cmd(CMD_CODE_SAVE_IQ_DATA, (unsigned char *)&data_switch);
+
+			for (i = 0; i < debug_timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->save_iq_data.ack_flag)
+				{
+					break;
+				}
+			}
+			if (i == debug_timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_powerAmplifierSwitch\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
 int
 handle_fpgaParam(netsnmp_mib_handler *handler,
                               netsnmp_handler_registration *reginfo,
@@ -16609,6 +17468,12 @@ handle_saveEeprom(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
+
+
+
+
 
 int
 handle_id1StartNeighbor(netsnmp_mib_handler *handler,
@@ -21779,6 +22644,8 @@ int handle_updateData(netsnmp_mib_handler *handler,
 }
 
 
+
+
 int
 handle_localCombinedData(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -21816,12 +22683,13 @@ handle_localCombinedData(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -21891,38 +22759,30 @@ handle_localCombinedData(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
+					if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
 					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+						send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+						for (i = 0; i < timeout_cnt; i++)
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
+							{
+								break;
+							}
 						}
-						else
+						if (i == timeout_cnt)
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
-							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
@@ -21949,6 +22809,3725 @@ handle_localCombinedData(netsnmp_mib_handler *handler,
 }
 
 
+
+
+
+int
+handle_id1QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_1;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id2QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+int
+handle_id2QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_2;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id2QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+int
+handle_id3QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_3;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id3QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+int
+handle_id4QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_4;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id4QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id5QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_5;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id5QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id6QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_6;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id6QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id7QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_7;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id7QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+
+int
+handle_id8QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_8;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id8QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id9QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_9;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id9QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id10QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_10;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id10QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id11QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_11;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id11QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+
+int
+handle_id12QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_12;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id12QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+
+int
+handle_id13QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_13;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id13QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id14QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_14;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id14QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+
+int
+handle_id15QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_15;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id15QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+
+int
+handle_id16QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_16;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id16QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id17QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_17;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id17QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id18QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_18;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id18QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id19QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_19;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id19QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id20QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_20;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id20QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id21QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_21;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id21QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id22QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_22;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id22QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id23QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_23;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id23QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id24QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_24;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id24QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+
+int
+handle_id25QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_25;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id25QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id26QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_26;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id26QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id27QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_27;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id27QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+int
+handle_id28QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_28;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id28QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+int
+handle_id29QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_29;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id29QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+int
+handle_id30QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_30;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id30QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+int
+handle_id31QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_31;
+	unsigned  char  data[8]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id31QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
+
+
+
+
+
+
+
+
+int
+handle_id32QueryAlarm(netsnmp_mib_handler *handler,
+                          netsnmp_handler_registration *reginfo,
+                          netsnmp_agent_request_info   *reqinfo,
+                          netsnmp_request_info         *requests)
+{
+    int ret;
+	unsigned int i = 0;
+    unsigned int j=0;
+	struct timeval delay; 
+	unsigned int this_id = DEV_ID_32;
+	unsigned  char  data[MGR_ALARM_BYTE_MAX]={0};
+	int flag=0;
+	
+    /* We are never called for a GETNEXT if it's registered as a
+       "instance", as it's "magically" handled for us.  */
+
+    /* a instance handler also only hands us one request at a time, so
+       we don't need to loop over a list of requests; we'll only get one. */
+    
+    switch(reqinfo->mode) {
+
+        case MODE_GET:
+			sem_nm_p();
+			shm_nm_addr->alarm_data.ack_flag = ACK_FLAG_CLR;
+			sem_nm_v();
+			
+			if (is_local_dev(this_id))
+			{
+				send_local_nm_get_cmd(CMD_CODE_QUERY_ALARM);
+			}
+			else
+			{
+				send_remote_nm_get_cmd(CMD_CODE_QUERY_ALARM, this_id);
+			}
+
+			for (i = 0; i < timeout_cnt; i++)
+			{
+				delay.tv_sec = 0;
+				delay.tv_usec = POLLING_INTERVA;
+				select(0, NULL, NULL, NULL, &delay);
+				if (ACK_FLAG_OK == shm_nm_addr->alarm_data.ack_flag)
+				{
+					memcpy((unsigned char *)&data,shm_nm_addr->alarm_data.data,sizeof(data));
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+		                for(j=0;j<8;j++)
+                        {
+                            LOG_DEBUG(s_i4LogMsgId, "0x%X    ",data[i]);
+                        }      
+						
+					}
+					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(data));
+					break;
+				}
+			}
+			if (i == timeout_cnt)
+			{
+				netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+			}
+            break;
+
+        /*
+         * SET REQUEST
+         *
+         * multiple states in the transaction.  See:
+         * http://www.net-snmp.org/tutorial-5/toolkit/mib_module/set-actions.jpg
+         */
+        case MODE_SET_RESERVE1:
+                /* or you could use netsnmp_check_vb_type_and_size instead */
+            ret = netsnmp_check_vb_type(requests->requestvb, ASN_OPAQUE);
+            if ( ret != SNMP_ERR_NOERROR ) {
+                netsnmp_set_request_error(reqinfo, requests, ret );
+            }
+            break;
+
+        case MODE_SET_RESERVE2:
+            /* XXX malloc "undo" storage buffer */
+            break;
+
+        case MODE_SET_FREE:
+            /* XXX: free resources allocated in RESERVE1 and/or
+               RESERVE2.  Something failed somewhere, and the states
+               below won't be called. */
+            break;
+
+        case MODE_SET_ACTION:
+            /* XXX: perform the value change here */
+		
+			netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+            break;
+
+        case MODE_SET_COMMIT:
+            /* XXX: delete temporary storage */
+            break;
+
+        case MODE_SET_UNDO:
+            /* XXX: UNDO and return to previous value for the object */
+            break;
+
+        default:
+            /* we should never get here, so this is a really bad error */
+            snmp_log(LOG_ERR, "unknown mode (%d) in handle_id32QueryAlarm\n", reqinfo->mode );
+            return SNMP_ERR_GENERR;
+    }
+
+    return SNMP_ERR_NOERROR;
+}
 
 int
 handle_id1CombinedDataPacket(netsnmp_mib_handler *handler,
@@ -21997,12 +26576,13 @@ handle_id1CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -22072,47 +26652,39 @@ handle_id1CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
@@ -22137,6 +26709,7 @@ handle_id1CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -22186,12 +26759,13 @@ handle_id2CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -22261,47 +26835,39 @@ handle_id2CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
@@ -22326,6 +26892,8 @@ handle_id2CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -22375,12 +26943,13 @@ handle_id3CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -22450,52 +27019,45 @@ handle_id3CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -22514,6 +27076,8 @@ handle_id3CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -22563,12 +27127,13 @@ handle_id4CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -22638,52 +27203,45 @@ handle_id4CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -22704,6 +27262,7 @@ handle_id4CombinedDataPacket(netsnmp_mib_handler *handler,
 }
 
 
+
 int
 handle_id5CombinedDataPacket(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -22716,6 +27275,7 @@ handle_id5CombinedDataPacket(netsnmp_mib_handler *handler,
 	unsigned int this_id = DEV_ID_5;
 	NM_COMBINED_DATA data;
 	int flag=0;
+	
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -22750,12 +27310,13 @@ handle_id5CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -22825,52 +27386,45 @@ handle_id5CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -22889,6 +27443,8 @@ handle_id5CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -22938,12 +27494,13 @@ handle_id6CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -23013,52 +27570,45 @@ handle_id6CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -23077,6 +27627,8 @@ handle_id6CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -23126,12 +27678,13 @@ handle_id7CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -23201,52 +27754,45 @@ handle_id7CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -23265,6 +27811,8 @@ handle_id7CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -23314,12 +27862,13 @@ handle_id8CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -23389,52 +27938,45 @@ handle_id8CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -23453,6 +27995,8 @@ handle_id8CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -23502,12 +28046,13 @@ handle_id9CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -23577,52 +28122,45 @@ handle_id9CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -23690,12 +28228,13 @@ handle_id10CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -23765,52 +28304,45 @@ handle_id10CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -23829,6 +28361,8 @@ handle_id10CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -23878,12 +28412,13 @@ handle_id11CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -23953,52 +28488,45 @@ handle_id11CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -24017,6 +28545,8 @@ handle_id11CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -24066,12 +28596,13 @@ handle_id12CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -24141,52 +28672,45 @@ handle_id12CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -24205,6 +28729,7 @@ handle_id12CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -24254,12 +28779,13 @@ handle_id13CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -24329,52 +28855,45 @@ handle_id13CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -24393,6 +28912,8 @@ handle_id13CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -24442,12 +28963,13 @@ handle_id14CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -24517,52 +29039,45 @@ handle_id14CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -24581,6 +29096,8 @@ handle_id14CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -24630,12 +29147,13 @@ handle_id15CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -24705,52 +29223,45 @@ handle_id15CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -24781,7 +29292,7 @@ handle_id16CombinedDataPacket(netsnmp_mib_handler *handler,
     int ret;
 	unsigned int i = 0;
 	struct timeval delay; 
-	unsigned int this_id = DEV_ID_16;
+	unsigned int this_id = DEV_ID_1;
 	NM_COMBINED_DATA data;
 	int flag=0;
 	
@@ -24819,12 +29330,13 @@ handle_id16CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -24894,52 +29406,45 @@ handle_id16CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -24960,6 +29465,8 @@ handle_id16CombinedDataPacket(netsnmp_mib_handler *handler,
 }
 
 
+
+
 int
 handle_id17CombinedDataPacket(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -24972,6 +29479,7 @@ handle_id17CombinedDataPacket(netsnmp_mib_handler *handler,
 	unsigned int this_id = DEV_ID_17;
 	NM_COMBINED_DATA data;
 	int flag=0;
+	
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -25006,12 +29514,13 @@ handle_id17CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -25081,52 +29590,45 @@ handle_id17CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -25145,6 +29647,8 @@ handle_id17CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -25194,12 +29698,13 @@ handle_id18CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -25269,52 +29774,45 @@ handle_id18CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -25333,6 +29831,8 @@ handle_id18CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -25382,12 +29882,13 @@ handle_id19CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -25457,52 +29958,45 @@ handle_id19CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -25521,6 +30015,7 @@ handle_id19CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -25570,12 +30065,13 @@ handle_id20CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -25645,52 +30141,45 @@ handle_id20CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -25723,6 +30212,7 @@ handle_id21CombinedDataPacket(netsnmp_mib_handler *handler,
 	unsigned int this_id = DEV_ID_21;
 	NM_COMBINED_DATA data;
 	int flag=0;
+	
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -25757,12 +30247,13 @@ handle_id21CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -25832,52 +30323,45 @@ handle_id21CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -25896,6 +30380,8 @@ handle_id21CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -25945,12 +30431,13 @@ handle_id22CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -26020,52 +30507,45 @@ handle_id22CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -26086,6 +30566,7 @@ handle_id22CombinedDataPacket(netsnmp_mib_handler *handler,
 }
 
 
+
 int
 handle_id23CombinedDataPacket(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -26098,6 +30579,7 @@ handle_id23CombinedDataPacket(netsnmp_mib_handler *handler,
 	unsigned int this_id = DEV_ID_23;
 	NM_COMBINED_DATA data;
 	int flag=0;
+	
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -26132,12 +30614,13 @@ handle_id23CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -26207,52 +30690,45 @@ handle_id23CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -26273,6 +30749,7 @@ handle_id23CombinedDataPacket(netsnmp_mib_handler *handler,
 }
 
 
+
 int
 handle_id24CombinedDataPacket(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -26285,6 +30762,7 @@ handle_id24CombinedDataPacket(netsnmp_mib_handler *handler,
 	unsigned int this_id = DEV_ID_24;
 	NM_COMBINED_DATA data;
 	int flag=0;
+	
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -26319,12 +30797,13 @@ handle_id24CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -26394,52 +30873,45 @@ handle_id24CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -26458,6 +30930,7 @@ handle_id24CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -26507,12 +30980,13 @@ handle_id25CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -26582,52 +31056,45 @@ handle_id25CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -26648,6 +31115,7 @@ handle_id25CombinedDataPacket(netsnmp_mib_handler *handler,
 }
 
 
+
 int
 handle_id26CombinedDataPacket(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -26660,6 +31128,7 @@ handle_id26CombinedDataPacket(netsnmp_mib_handler *handler,
 	unsigned int this_id = DEV_ID_26;
 	NM_COMBINED_DATA data;
 	int flag=0;
+	
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -26694,12 +31163,13 @@ handle_id26CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -26769,52 +31239,45 @@ handle_id26CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -26833,6 +31296,7 @@ handle_id26CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -26882,12 +31346,13 @@ handle_id27CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -26957,52 +31422,45 @@ handle_id27CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -27070,12 +31528,13 @@ handle_id28CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -27145,52 +31604,45 @@ handle_id28CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -27211,6 +31663,8 @@ handle_id28CombinedDataPacket(netsnmp_mib_handler *handler,
 }
 
 
+
+
 int
 handle_id29CombinedDataPacket(netsnmp_mib_handler *handler,
                           netsnmp_handler_registration *reginfo,
@@ -27223,6 +31677,7 @@ handle_id29CombinedDataPacket(netsnmp_mib_handler *handler,
 	unsigned int this_id = DEV_ID_29;
 	NM_COMBINED_DATA data;
 	int flag=0;
+	
     /* We are never called for a GETNEXT if it's registered as a
        "instance", as it's "magically" handled for us.  */
 
@@ -27257,12 +31712,13 @@ handle_id29CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -27332,52 +31788,45 @@ handle_id29CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -27396,6 +31845,7 @@ handle_id29CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -27445,12 +31895,13 @@ handle_id30CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -27520,52 +31971,45 @@ handle_id30CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -27584,6 +32028,7 @@ handle_id30CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -27633,12 +32078,13 @@ handle_id31CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -27708,52 +32154,45 @@ handle_id31CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -27772,6 +32211,8 @@ handle_id31CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
+
 
 
 int
@@ -27821,12 +32262,13 @@ handle_id32CombinedDataPacket(netsnmp_mib_handler *handler,
 					{
 						LOG_DEBUG(s_i4LogMsgId, \
 							   "\n |%s||%s||%d|\n"
-							   "\r MODE_GET freq            : 0x%X\n"
-							   "\r MODE_GET power           : 0x%X\n"
-							   "\r MODE_GET start_neighbor  : 0x%X\n"
-							   "\r MODE_GET neighbor_period : 0x%X\n",\
+							   "\r MODE_GET freq                : 0x%X\n"
+							   "\r MODE_GET power               : 0x%X\n"
+							   "\r MODE_GET start_neighbor      : 0x%X\n"
+							   "\r MODE_GET start_alarm_report  : 0x%X\n"
+							   "\r MODE_GET neighbor_period     : 0x%X\n",\
 							   __FILE__, __FUNCTION__, __LINE__,\
-							   data.freq, data.power, data.start_neighbor, data.neighbor_period);
+							   data.freq, data.power, data.start_neighbor,data.start_alarm_report, data.neighbor_period);
 					}
 					snmp_set_var_typed_value(requests->requestvb, ASN_OPAQUE, (unsigned char *)&data, sizeof(NM_COMBINED_DATA));
 					break;
@@ -27896,52 +32338,45 @@ handle_id32CombinedDataPacket(netsnmp_mib_handler *handler,
 				else
 				{
 				    flag=0;
-					if((data.start_neighbor!=0xFF)&&((data.start_neighbor!=0)&&(data.start_neighbor!=1)))
-					{
-						printf("set startneighbor=%d not in 0,1\n",data.start_neighbor);
+                    if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+				    {
+						printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
 						netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
 					}
 					else
 					{
-						if((data.neighbor_period!=0xFFFF)&&((data.neighbor_period<MIN_PERIOD)||(data.neighbor_period>MAX_PERIOD)||(data.neighbor_period % 2)))
+						sem_nm_p();
+						shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
+						sem_nm_v();
+							
+						if (is_local_dev(this_id))
 						{
-							printf("set neighborperiod=%d not in 2,4,6...20\n",data.neighbor_period);
-							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_TOOBIG);
+							send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
 						}
 						else
 						{
-							sem_nm_p();
-							shm_nm_addr->combined_data.ack_flag = ACK_FLAG_CLR;
-							sem_nm_v();
+							send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
+						}
 							
-							if (is_local_dev(this_id))
+						for (i = 0; i < timeout_cnt; i++)
+						{
+							delay.tv_sec = 0;
+							delay.tv_usec = POLLING_INTERVA;
+							select(0, NULL, NULL, NULL, &delay);
+							if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
 							{
-								send_local_nm_set_cmd(CMD_CODE_COMBINED_DATA, (unsigned char *)&data);
+								break;
 							}
-							else
-							{
-								send_remote_nm_set_cmd(CMD_CODE_COMBINED_DATA, this_id, (unsigned char *)&data);
-							}
-							
-							for (i = 0; i < timeout_cnt; i++)
-							{
-								delay.tv_sec = 0;
-								delay.tv_usec = POLLING_INTERVA;
-								select(0, NULL, NULL, NULL, &delay);
-								if (ACK_FLAG_OK == shm_nm_addr->combined_data.ack_flag)
-								{
-									break;
-								}
-							}
-							if (i == timeout_cnt)
-							{
-								netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
-							}
+						}
+						if (i == timeout_cnt)
+						{
+							netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
 						}
 					}
 					
 				}
 			}
+
             break;
 
         case MODE_SET_COMMIT:
@@ -27960,6 +32395,7 @@ handle_id32CombinedDataPacket(netsnmp_mib_handler *handler,
 
     return SNMP_ERR_NOERROR;
 }
+
 
 
 int
@@ -33330,8 +37766,7 @@ handle_microphoneModule2(netsnmp_mib_handler *handler,
                           netsnmp_request_info         *requests)
 {
     int ret;
-	unsigned char microphone_module2[400];
-	unsigned char temp_timeout[404];
+	unsigned char microphone_module2[422];
 	struct timeval delay; 
     int i;
     /* We are never called for a GETNEXT if it's registered as a
@@ -33399,13 +37834,13 @@ handle_microphoneModule2(netsnmp_mib_handler *handler,
         case MODE_SET_ACTION:
             /* XXX: perform the value change here */
 			memcpy(microphone_module2, requests->requestvb->val.string, sizeof(microphone_module2));
-			memcpy(temp_timeout,microphone_module2,sizeof(microphone_module2));
-			memcpy(temp_timeout+sizeof(microphone_module2),(unsigned char *)&(shm_cfg_addr->dev_call_timeout.val),sizeof(int));
+            /////////////////填充4字节设备通话超时时间///////////////////////
+			memcpy(microphone_module2+400,(unsigned char *)&(shm_cfg_addr->dev_call_timeout.val),sizeof(int));
 			sem_nm_p();
 			shm_nm_addr->microphone_module2.ack_flag = ACK_FLAG_CLR;
 			sem_nm_v();
 			
-			send_cc_set_cmd(CMD_CODE_MICROPHONE_MODULE2,temp_timeout);
+			send_cc_set_cmd(CMD_CODE_MICROPHONE_MODULE2,microphone_module2);
 
 			for (i = 0; i < timeout_cnt; i++)
 			{
@@ -34464,9 +38899,38 @@ void send_remote_nm_get_cmd(unsigned short cmd_code, unsigned char dst_id)
 {
 	NAS_AI_PAYLOAD nas_ai_payload;
 	NAS_INF_DL_T nm_ai_msg;
+
+   /////////////////////////发送四次欲载波////////////////////////
 	memset(&nas_ai_payload, 0, sizeof(NAS_AI_PAYLOAD));
 	memset(&nm_ai_msg, 0, sizeof(NAS_INF_DL_T));
-	
+
+    nas_ai_payload.cmd_code = CMO_CODE_NAS_PRE;
+	nas_ai_payload.nm_type = NM_TYPE_NM;
+	nas_ai_payload.op_code = OP_CODE_GET;
+	nas_ai_payload.src_id = local_dev_id;
+	nas_ai_payload.dst_id = dst_id;
+	nas_ai_payload.crc = crc8((unsigned char *)&nas_ai_payload, sizeof(NAS_AI_PAYLOAD) - 1);
+
+	nm_ai_msg.TimeStamp = 0xFFFFFFFF;
+	nm_ai_msg.SlotNum = 0x00;
+	nm_ai_msg.TxFreq1 = 0x01;
+	nm_ai_msg.TxFreq2 = 0x00;
+	nm_ai_msg.ResFrqSlot = 0;
+	nm_ai_msg.tDataLink[0].MsgType = DI_MSG_NM;
+	nm_ai_msg.tDataLink[0].CC = local_cc;
+	nm_ai_msg.tDataLink[0].DataType = DI_MSG_NM;
+	nm_ai_msg.tDataLink[0].DataLen = sizeof(NAS_AI_PAYLOAD);
+	memcpy(nm_ai_msg.tDataLink[0].PayLoad, &nas_ai_payload, sizeof(NAS_AI_PAYLOAD));
+
+	sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in));   ///发送四次与载波
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+
+//////////////////////////发送链路机消息///////////////////////
+    memset(&nas_ai_payload, 0, sizeof(NAS_AI_PAYLOAD));
+	memset(&nm_ai_msg, 0, sizeof(NAS_INF_DL_T));
+    
 	nas_ai_payload.cmd_code = (unsigned char)cmd_code;
 	nas_ai_payload.nm_type = NM_TYPE_NM;
 	nas_ai_payload.op_code = OP_CODE_GET;
@@ -34519,6 +38983,36 @@ void send_remote_nm_set_cmd(unsigned short cmd_code, unsigned char dst_id, unsig
 {
 	NAS_AI_PAYLOAD nas_ai_payload;
 	NAS_INF_DL_T nm_ai_msg;
+
+
+    ////////////////////////发送四次欲载波消息/////////////////////////
+    memset(&nas_ai_payload, 0, sizeof(NAS_AI_PAYLOAD));
+	memset(&nm_ai_msg, 0, sizeof(NAS_INF_DL_T));
+	
+	nas_ai_payload.cmd_code = CMO_CODE_NAS_PRE;
+	nas_ai_payload.nm_type = NM_TYPE_NM;
+	nas_ai_payload.op_code = OP_CODE_SET;
+	nas_ai_payload.src_id = local_dev_id;
+	nas_ai_payload.dst_id = dst_id;
+	nas_ai_payload.crc = crc8((unsigned char *)&nas_ai_payload, sizeof(NAS_AI_PAYLOAD) - 1);
+	
+	nm_ai_msg.TimeStamp = 0xFFFFFFFF;
+	nm_ai_msg.SlotNum = 0x00;
+	nm_ai_msg.TxFreq1 = 0x01;
+	nm_ai_msg.TxFreq2 = 0x00;
+	nm_ai_msg.ResFrqSlot = 0;
+	nm_ai_msg.tDataLink[0].MsgType = DI_MSG_NM;
+	nm_ai_msg.tDataLink[0].CC = local_cc;
+	nm_ai_msg.tDataLink[0].DataType = DI_MSG_NM;
+	nm_ai_msg.tDataLink[0].DataLen = sizeof(NAS_AI_PAYLOAD);
+	memcpy(nm_ai_msg.tDataLink[0].PayLoad, &nas_ai_payload, sizeof(NAS_AI_PAYLOAD));
+
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+
+    ////////////////////////发送链路机消息/////////////////////////
 	memset(&nas_ai_payload, 0, sizeof(NAS_AI_PAYLOAD));
 	memset(&nm_ai_msg, 0, sizeof(NAS_INF_DL_T));
 	

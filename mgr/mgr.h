@@ -98,6 +98,7 @@ typedef struct {
 	SHM_NM_OPAQUE_ITEM version;
 	SHM_NM_OPAQUE_ITEM fpga_version;
 	SHM_NM_OPAQUE_ITEM combined_data;  //中心网管数据包
+	SHM_NM_OPAQUE_ITEM alarm_data;  //中心网管查询报警数据包
 	//校准
 	SHM_NM_UINT_ITEM emissive_vco_freq;
 	SHM_NM_UINT_ITEM receiving_vco_freq;
@@ -126,8 +127,13 @@ typedef struct {
 	SHM_NM_UINT_ITEM set_998;
 	SHM_NM_UINT_ITEM query_998;
 	SHM_NM_UINT_ITEM dev_call_timeout;
-	SHM_NM_UINT_ITEM error_rate_freq;  
+	SHM_NM_UINT_ITEM error_rate_freq;
 	SHM_NM_UINT_ITEM save_iq_data;
+	SHM_NM_UINT_ITEM alarm_switch_status;
+    SHM_NM_UINT_ITEM close_transmit_threshold;
+    SHM_NM_UINT_ITEM resume_transmit_threshold;
+    SHM_NM_UINT_ITEM tempratue_alarm_start_threshold;
+    SHM_NM_UINT_ITEM tempratue_alarm_close_threshold;
 	SHM_NM_OPAQUE_ITEM save_iqs;
 	SHM_NM_OPAQUE_ITEM save_power;
 	SHM_NM_OPAQUE_ITEM save_offset;
@@ -195,15 +201,38 @@ typedef struct{
 	unsigned int locking_time;
 	unsigned int half_variance_threshold;
 	unsigned int dev_call_timeout;
+    unsigned int close_transmit_threshold;
+    unsigned int resume_transmit_threshold;
+    unsigned int tempratue_alarm_start_threshold;
+    unsigned int tempratue_alarm_close_threshold;
 }INIT_FPGA_PARAM;
 
 
 typedef struct{
     unsigned int freq;    //频率
     unsigned char power;   //功率
-    unsigned char start_neighbor;   //开启临点
+    unsigned char start_neighbor :1;   //开启临点
+    unsigned char start_alarm_report :1;//开启告警上报
+    unsigned char reserve : 6; //保留
     unsigned short neighbor_period;  //临点周期
 }__attribute__((packed,aligned(1)))NM_COMBINED_DATA;
+
+
+
+typedef struct{
+	unsigned char alarm_status;
+	unsigned int  alarm_value;
+}__attribute__((packed,aligned(1)))FPGA_ITEM_ALARM_STRUCT;
+
+
+
+typedef struct {
+	FPGA_ITEM_ALARM_STRUCT gps_losing_lock_alarm;                // gps失锁告警         ：1：失锁 0：锁定
+	FPGA_ITEM_ALARM_STRUCT excess_temperature_alarm;             //功放过热告警
+	FPGA_ITEM_ALARM_STRUCT cartesian_ring_collapse_alarm;        //  笛卡尔环崩环
+	FPGA_ITEM_ALARM_STRUCT read_dsp_flag_error_alarm;            //读取DSP数据的标志位异常告警
+	FPGA_ITEM_ALARM_STRUCT dsp_up_crc_error_alarm;               // dsp上行数据校验失败告警
+}__attribute__((packed,aligned(1)))FPGA_ALARM_STRUCT;
 
 
 typedef struct{
@@ -211,7 +240,7 @@ typedef struct{
 	unsigned short f1s2_half;
 	unsigned short f2s1_half;
 	unsigned short f2s2_half;
-    unsigned int  u_half_rssi;
+    unsigned int   u_half_rssi;
 	unsigned char prohibit_transmit_flag;
 	unsigned short data1;
 	unsigned short data2;
@@ -220,6 +249,7 @@ typedef struct{
 	unsigned short data5;
 	unsigned short data6;
     unsigned char reserve1[75];
+    
 	
 	unsigned int vari_threshold;
 	unsigned char lock_flag;

@@ -223,9 +223,13 @@ void _CFG_Shm()
 }
 
 
-
-
-/* changes the semaphore by -1 (waiting). */
+/**
+ * @brief   P-操作
+  *
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
 int sem_ipc_p(void)
 {
     struct sembuf sem_b;
@@ -240,7 +244,13 @@ int sem_ipc_p(void)
     return(1);
 }
 
-
+/**
+ * @brief   V-操作
+  *
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
 int sem_ipc_v(void)
 {
     struct sembuf sem_b;

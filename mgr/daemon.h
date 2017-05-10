@@ -21,7 +21,7 @@
 #define TASK_NUM                     7
 
 /* 初始值*/
-#define SOFT_VERSION                 "V1.0.03.003"
+#define SOFT_VERSION                 "V1.0.03.002"
 #define FPGA_VERSION                 "V0.0.00.000"
 #define DEFAULT_DEV_ID               0x00
 #define DEFAULT_CC                   11
@@ -47,6 +47,15 @@
 #define DEFAULT_DEV_CALL_TIMEOUT     60
 #define DEFAULT_SCAN_MODE            0
 #define DEFAULT_FREQ_OFFSET          500
+#define DEFAULT_ALARM_SWITCH_STATUS  0
+#define DEFAULT_CLOSE_TRAN_THRESHOLD 0xFFFFFFFF
+#define DEFAULT_RESUME_TRAN_THRESHOLD 0xFFFFFFFF
+#define DEFAULT_START_TEMP_ALARM     0xFFFFFFFF
+#define DEFAULT_CLOSE_TEMP_ALARM     0xFFFFFFFF
+
+
+
+
 
 #define GPIO_RUN_LED                 236  //旧板是196
 #define GPIO_MCU_PWR_CTRL            210  //旧板是170
@@ -74,6 +83,7 @@ void * pthread_run_led(void *arg);
 void * pthread_pwr_key_det(void *arg);
 void * pthread_wd_wg(void *arg);
 void load_fpga(void);
+int init_alarm_table(void);
 
 
 #endif

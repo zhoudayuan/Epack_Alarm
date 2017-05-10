@@ -418,7 +418,6 @@ void CallingShootData(UINT8 MsgT, UINT8 FrmT, UINT8 DataT, UINT8 Len, UINT8 *Pay
     ptInfData->tDataLink[Frq].DataType = DataT;
     ptInfData->tDataLink[Frq].DataLen = Len;
     memcpy(ptInfData->tDataLink[Frq].PayLoad, PayLoad, Len);
-
 }
 
 
@@ -760,7 +759,7 @@ void ODP_TerminDataLC(UINT8 *DstId, UINT8 *SrcId, UINT8 GI, UINT8 ResFrq, UINT8 
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
     ptInfData->ResFrqSlot = ResFrq<<4 | ResSlt;
 
-    CallingShootData(DI_MSG_DATA,FT_VOICE_NO,DT_LC_TERMINATOR,(DATA_HEADER_LEN+2),(UINT8 *)auULC);
+    CallingShootData(DI_MSG_DATA, FT_VOICE_NO, DT_LC_TERMINATOR, (DATA_HEADER_LEN+2), (UINT8 *)auULC);
 
     if (tDllPrint->AIDown == 1)
     {
@@ -889,8 +888,7 @@ int ODP_LcTerminatorFun(CCL_DLL_DL_T * pvCclData)
     }
 
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-    CallingShootData(DI_MSG_DATA,FT_VOICE_NO,DT_LC_TERMINATOR,(FLC_LEN+3),(UINT8 *)auULC);
-
+    CallingShootData(DI_MSG_DATA, FT_VOICE_NO, DT_LC_TERMINATOR, (FLC_LEN+3), (UINT8 *)auULC);
     ODP_SendInfData(ptInfData, S_LC_TER);
     return NO_ERR;
 }

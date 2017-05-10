@@ -644,7 +644,7 @@ void * DLL_TimerTask(void * p)
 
 }
 
-#if 1
+
 static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
 {
     UINT32 i;
@@ -671,7 +671,7 @@ static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
     sem_ipc_v();
     return 0;
 }
-#endif
+
 
 
 
@@ -839,7 +839,6 @@ void * DLL_NerBurstTask(void * p)
                 memcpy(&NasAiData.data[1], (UINT8 *)&g_DllGlobalCfg.auNegrId2, NER_LEN);
                 NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
 
-                // 
                 DstId = NasAiData.dst_id;
                 SrcId = NasAiData.src_id;
                 ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
@@ -850,7 +849,6 @@ void * DLL_NerBurstTask(void * p)
 
                 //封装下行fpga数据帧
                 memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-
                 ptInfData->TimeStamp = 0xffffffff;
                 ptInfData->SlotNum = S_1;
                 ptInfData->TxFreq1 = 1;
@@ -860,9 +858,8 @@ void * DLL_NerBurstTask(void * p)
                 ptInfData->tDataLink[F_1].CC = g_DllGlobalCfg.auWLUCC;
                 ptInfData->tDataLink[F_1].PI = g_DllGlobalCfg.auPI;
                 ptInfData->tDataLink[F_1].DataType = DI_MSG_WLU;
-                ptInfData->tDataLink[F_1].DataLen = CSBK_LEN+2;
+                ptInfData->tDataLink[F_1].DataLen  = CSBK_LEN+2;
                 memcpy(ptInfData->tDataLink[F_1].PayLoad, &NasAiData, (CSBK_LEN+2));
-
                 ODP_SendInfData(ptInfData, S_NEGR_RPT);         //邻点上报
 
                 //备份本地邻点信息

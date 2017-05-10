@@ -56,6 +56,7 @@
 #undef TASK_NAME
 #define TASK_NAME	"MGR_LOCAL_HANDLE"
 
+
 struct sigaction action_axi;
 void *iq_start_addr=NULL;
 // 与读写Iqdata相关
@@ -209,7 +210,7 @@ MGRH_FPGA_MSG * fpga_mem_nm_w = NULL;
 MGRH_FPGA_MSG * fpga_mem_nm_r = NULL;
 INIT_FPGA_PARAM * fpga_mem_nm_param = NULL;
 unsigned char * fpga_mem_nm_share = NULL;
-unsigned char * fpga_mem_nm_alarm = NULL;
+FPGA_ALARM_STRUCT *  fpga_mem_nm_alarm = NULL;
 FPGA_DEBUG_PRINT * fpga_mem_nm_debug = NULL;
 
 /********
@@ -227,36 +228,68 @@ EEPROM_FPGA_PARAM eeprom_fpga_param;
 EEPROM_ESN_PARAM eeprom_esn_param;
 
 
-/**
- * @var ALARM_PACKET_MAX
- * @brief 告警包分包最多包数
- */
-#define ALARM_PACKET_MAX  2
+ 
 /**
  * @var g_tMgrAlarm
- * @brief 告警表
+ * @brief 发往空口告警表
  */
-static ALARM_ITEM_SEND g_tMgrAlarm[MGR_ALARM_MAX * 3];
+static ALARM_SEND_ITEM_PAYLOAD g_tMgrAlarm[MGR_ALARM_BYTE_MAX];
+
 /**
- * @var g_auAlarmSendNum
- * @brief 一个告警包中的告警个数
+ * @var center_nm_query_alarmtable
+ * @brief 中心网管主动查询告警表
  */
-static UINT8 g_auAlarmSendNum[ALARM_PACKET_MAX] = {0,0};
+static ALARM_SEND_ITEM_PAYLOAD center_nm_query_alarmtable[MGR_ALARM_BYTE_MAX];
+
+
+/**
+ * @var g_tMgrAlarm
+ * @brief 发往本地手咪告警/恢复表
+ */
+static ALARM_SEND_ITEM_PAYLOAD local_Alarm[MGR_ALARM_BYTE_MAX];
+
+/**
+ * @var g_tMgrAlarm
+ * @brief 手咪主动查询告警/恢复表
+ */
+static ALARM_SEND_ITEM_PAYLOAD center_query_alarmtable[MGR_ALARM_BYTE_MAX];
+
+
 /**
  * @var ALARM_SEND_NUM
  * @brief 普通告警个数
  */
 UINT8 ALARM_SEND_NUM = 0;
 /**
+ * @var ALARM_AI_SEND_NUM
+ * @brief 能在空口发送的告警个数
+ */
+UINT8 ALARM_AI_SEND_NUM = 0;
+/**
  * @var EALARM_SEND_NUM
  * @brief 紧急告警个数
  */
 UINT8 EALARM_SEND_NUM = 0;
 /**
- * @var ptMgrAlarm
- * @brief 告警表指针
+ * @var ALARM_AI_SEND_NUM
+ * @brief 发往本地手咪告警/恢复个数
  */
-ALARM_ITEM *ptMgrAlarm = NULL;
+UINT8 ALARM_LOCAL_SEND_NUM = 0;
+
+/**
+ * @var ALARM_AI_SEND_NUM
+ * @brief 手咪查询告警/恢复个数
+ */
+UINT8 CENTER_QUERY_ALARM_NUM = 0;
+
+
+char buffer[30]= {0};///存放挂载点
+
+
+
+
+
+
 
 
 
@@ -292,6 +325,7 @@ void print_iq_excess_err()
     }
 }
 
+
 /**
 * @brief   告警表状态置位
 *
@@ -321,7 +355,7 @@ void MGR_Alarm_Trigger(ALARM_ITEM *alarm_item)
 * @author		ztt
 * @bug
 */
-void MGR_Alarm_Clear(ALARM_ITEM *alarm_item)
+void  MGR_Alarm_Clear(ALARM_ITEM *alarm_item)
 {
 	if (alarm_item->alm_cnt > 0)
 		alarm_item->alm_cnt--;
@@ -330,8 +364,6 @@ void MGR_Alarm_Clear(ALARM_ITEM *alarm_item)
 		alarm_item->alm_exist = 0;
 		alarm_item->alm_clear = 1;
 	}
-	else if((alarm_item->alm_clear > 0) && (alarm_item->alm_clear < 4))//更改发送频率  故改为8
-		alarm_item->alm_clear++;
 	return;
 }
 /**
@@ -346,76 +378,266 @@ void MGR_Alarm_Clear(ALARM_ITEM *alarm_item)
 void MGR_Alarm_Set()
 {
 	int i = 0;
-	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_center;
-	for(i=0; i<MGR_ALARM_MAX*2; i++,ptAlarm++)
+
+	
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+	for(i=0; i<MGR_ALARM_MAX; i++,ptAlarm++)
 	{		
 		if(ptAlarm->uStatus ==1)
 			MGR_Alarm_Trigger(ptAlarm);
 		else
 			MGR_Alarm_Clear(ptAlarm);
 	}
+
 	return;
 }
+
+void MGR_Local_AlarmTable_Update_Send(ALARM_SEND_ITEM_PAYLOAD *pAlarm,int index,UINT8 uStatus)
+{
+    unsigned int byte_index=0;
+    unsigned int bit_index=0;
+    unsigned int i=0;
+    
+    byte_index=index / 8;
+    bit_index=index % 8;
+
+    for(i=0;i<byte_index;i++)
+    {
+        pAlarm++;
+    }
+    switch(bit_index)
+    {
+        case 0:
+           pAlarm->bit_0=uStatus;
+           break;
+        case 1:
+           pAlarm->bit_1=uStatus;
+           break;
+        case 2:
+           pAlarm->bit_2=uStatus;
+           break;
+        case 3:
+           pAlarm->bit_3=uStatus;
+           break;
+        case 4:
+           pAlarm->bit_4=uStatus;
+           break;
+        case 5:
+           pAlarm->bit_5=uStatus;
+           break;
+        case 6:
+           pAlarm->bit_6=uStatus;
+           break;
+        case 7:
+           pAlarm->bit_7=uStatus;
+           break;
+        default:
+            printf("MGR_Local_AlarmTable_Update_Send error\n");
+            break;
+    }
+	
+	return;
+}
+
 /**
 * @brief   生成发送告警表
 *
 * @param[in]		
 *
 * @return		void
-* @author		ztt
-* @bug
+* @author		wdz
+* @bug 只有当电池电量告警/恢复时
 */
-void MGR_AlarmTable_Set()
+void MGR_Ai_AlarmTable_Set()
 {
-	int i ,num = 0;
-	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_center;
-	
-	for(i=0; i<MGR_ALARM_MAX*2; i++,ptAlarm++)
-	{
-		
-		if(DEF_ALM_OCCUR == ptAlarm->alm_exist)
-		{
-			g_tMgrAlarm[num].alm_code = ptAlarm->alm_code;
-			g_tMgrAlarm[num].alm_status = DEF_ALM_OCCUR;
-			num++;
-		}
-		else if((ptAlarm->alm_clear > 0) &&(ptAlarm->alm_clear < 4))
-		{
-			g_tMgrAlarm[num].alm_code = ptAlarm->alm_code;
-			g_tMgrAlarm[num].alm_status = DEF_ALM_RESUME;
-			num++;
-		}
-		else
-			{}
-			
-	}
-	ALARM_SEND_NUM = num;
+	int i;
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+    memset(g_tMgrAlarm,0x00,sizeof(g_tMgrAlarm));
 
-	if(ptIPCShm->mgr_printf[0])
-	{
-		LOG_DEBUG(s_i4LogMsgId,"Alarm Num = %d",ALARM_SEND_NUM);
-		ptAlarm = ptIPCShm->alarm_center;
-		for(i=0; i<MGR_ALARM_MAX*2; i++,ptAlarm++)
-	       {
-			if(g_tMgrAlarm[i].alm_status == DEF_ALM_OCCUR)
-				LOG_DEBUG(s_i4LogMsgId,"Alarm Code = %d,DEF_ALM_OCCUR",g_tMgrAlarm[i].alm_code);
-			
-			if(g_tMgrAlarm[i].alm_status == DEF_ALM_RESUME)
-				LOG_DEBUG(s_i4LogMsgId,"Alarm Code = %d,DEF_ALM_RESUME",g_tMgrAlarm[i].alm_code);
-			
-		}
-	}
+    if((ptAlarm->alm_exist == DEF_ALM_OCCUR)||((ptAlarm->alm_clear ==1)&&(ptAlarm->alm_sended_ai_flag==1)&&(ptAlarm->alm_reset_send_ai_num < 3)))
+    {
+        for(i=0; i<MGR_ALARM_MAX; i++,ptAlarm++)
+            {
+                if(ptAlarm->alm_code!=0xff)
+                {
+                    if(DEF_ALM_OCCUR == ptAlarm->alm_exist)
+                    {
+                        MGR_Local_AlarmTable_Update_Send(g_tMgrAlarm,i,DEF_ALM_OCCUR);
+                        ptAlarm->alm_sended_ai_flag=1;
+                        ptAlarm->alm_reset_send_ai_num=0;
+                    }
+                    else if((ptAlarm->alm_clear ==1)&&(ptAlarm->alm_sended_ai_flag==1)&&(ptAlarm->alm_reset_send_ai_num < 3))
+                    {
+                        MGR_Local_AlarmTable_Update_Send(g_tMgrAlarm,i,DEF_ALM_NORMAL);
+                        ptAlarm->alm_reset_send_ai_num++;
+        
+                        if(ptAlarm->alm_reset_send_ai_num ==3)
+                        {
+                            ptAlarm->alm_sended_ai_flag=0;
+                            ptAlarm->alm_reset_send_ai_num=0;
+                        }
+                    }
+                }
+                else
+                {
+                    break;
+                }
+            }
+        ALARM_AI_SEND_NUM = 1;
+    }
+    else
+    {
+        ALARM_AI_SEND_NUM = 0;
+    }
+	
 	
 	return;
 }
-void MGR_AlarmTable_Clear()
+
+
+
+/**
+* @brief   生成发送本地手咪告警/恢复表
+*
+* @param[in]		
+*
+* @return		void
+* @author		wdz
+*/
+void Send_Local_AlarmTable_Set()
 {
-	memset((UINT8 *)g_tMgrAlarm,0x00,sizeof(g_tMgrAlarm));
-	ALARM_SEND_NUM = 0;
-	g_auAlarmSendNum[0] = 0;
-	g_auAlarmSendNum[1] = 0;
+	int i = 0;
+    unsigned int alarm_num=0;
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+	
+    memset(local_Alarm,0x00,sizeof(local_Alarm));
+	
+
+	
+	for(i=0; i<MGR_ALARM_MAX; i++,ptAlarm++)
+	{
+		if(ptAlarm->alm_code!=0xff)
+		{
+		    ///////构建报警恢复表/////////////////////
+			if(DEF_ALM_OCCUR == ptAlarm->alm_exist)
+			{
+				MGR_Local_AlarmTable_Update_Send(local_Alarm,i,DEF_ALM_OCCUR);
+                ptAlarm->alm_sended_center_flag=1;
+                ptAlarm->alm_reset_send_center_num=0;
+                alarm_num++;
+			}
+            else if((ptAlarm->alm_clear==1)&&(ptAlarm->alm_sended_center_flag==1)&&(ptAlarm->alm_reset_send_center_num <3))
+            {
+                MGR_Local_AlarmTable_Update_Send(local_Alarm,i,DEF_ALM_NORMAL);
+                ptAlarm->alm_reset_send_center_num++;
+                alarm_num++;
+                if(ptAlarm->alm_reset_send_center_num ==3)
+                {
+                    ptAlarm->alm_sended_center_flag=0;
+                    ptAlarm->alm_reset_send_center_num=0;   
+                }
+            }
+		}
+        else
+        {
+            break;
+        }
+     }
+    
+    ALARM_LOCAL_SEND_NUM=alarm_num;
+	
 	return;
 }
+
+
+
+/**
+* @brief   手咪主动查询生成发送本地手咪告警/恢复表
+*
+* @param[in]		
+*
+* @return		void
+* @author		wdz
+*/
+void Center_Query_AlarmTable_Set()
+{
+	int i = 0;
+    int alarm_num=0;
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+	
+    memset(center_query_alarmtable,0x00,sizeof(center_query_alarmtable));
+	
+	for(i=0; i<MGR_ALARM_MAX; i++,ptAlarm++)
+	{
+		if(ptAlarm->alm_code!=0xff)
+		{
+			if(DEF_ALM_OCCUR == ptAlarm->alm_exist)
+			{
+				MGR_Local_AlarmTable_Update_Send(center_query_alarmtable,i,DEF_ALM_OCCUR);
+				alarm_num++;
+			}
+			#if 0
+			else if(ptAlarm->alm_clear ==1)   //告警清除标记
+			{
+				MGR_Local_AlarmTable_Update_Send(ptAlarm,&center_query_alarmtable[alarm_num],DEF_ALM_RESUME);
+				alarm_num++;
+			}
+			#endif
+		}
+        else
+        {
+            break;
+        }
+	}
+ 
+	CENTER_QUERY_ALARM_NUM=alarm_num;
+	
+	return;
+}
+
+
+
+/**
+* @brief   中心网管主动查询生成发送本地手咪告警/恢复表
+*
+* @param[in]		
+*
+* @return		void
+* @author		wdz
+*/
+void Center_Nm_Query_AlarmTable_Set()
+{
+	int i = 0;
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+	
+    memset(center_nm_query_alarmtable,0x00,sizeof(center_nm_query_alarmtable));
+	
+	for(i=0; i<MGR_ALARM_MAX; i++,ptAlarm++)
+	{
+		if(ptAlarm->alm_code!=0xff)
+		{
+			if(DEF_ALM_OCCUR == ptAlarm->alm_exist)
+			{
+				MGR_Local_AlarmTable_Update_Send(center_nm_query_alarmtable,i,DEF_ALM_OCCUR);
+			}
+			#if 0
+			else if(ptAlarm->alm_clear ==1)   //告警清除标记
+			{
+				MGR_Local_AlarmTable_Update_Send(ptAlarm,&center_query_alarmtable[alarm_num],DEF_ALM_RESUME);
+				alarm_num++;
+			}
+			#endif
+		}
+        else
+        {
+            break;
+        }
+	}	
+	return;
+}
+
+
+
 /**
 * @brief   告警模块提供给外部使用接口
 *
@@ -426,24 +648,79 @@ void MGR_AlarmTable_Clear()
 * @author		ztt
 * @bug
 */
-UINT8  MGR_Alarm_Update_Status(UINT32 type,UINT8 uStatus)
+UINT8  MGR_Alarm_Update_Status(UINT32 type,UINT8 uStatus,UINT32 value)
 {
 	UINT32 i;
-	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_center;
+    ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
 	
-	if((2 <=  uStatus)
-		||(NULL == ptAlarm))
+    if((NULL == ptAlarm))
 		return 0;
-	
-	for(i = 0;i< MGR_ALARM_MAX*2;i++,ptAlarm++)
+	sem_ipc_p();
+	for(i = 0;i< MGR_ALARM_MAX;i++,ptAlarm++)
 	{
 		if(type == ptAlarm->alm_code)
 		{
 			ptAlarm->uStatus = uStatus;
+			ptAlarm->value = value;
+
+			sem_ipc_v();
 			return 1;
 		}
 	}
+	sem_ipc_v();
 
+	return 0;
+}
+
+#if 0
+/**
+* @brief   告警模块提供给外部使用接口
+*
+* @param[in]		type		告警类型
+* @param[in]		uStatus	空口是否发送
+*
+* @return		0失败1成功
+* @author		ztt
+* @bug
+*/
+UINT8  MGR_Alarm_Update_AI_SendFlag(UINT32 type,UINT8 uFlag)
+{
+	int i;
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_center;
+
+	for(i = 0;i< MGR_ALARM_MAX*3;i++,ptAlarm++)
+	{
+		if(type == ptAlarm->alm_code)
+		{
+			ptAlarm->alm_aiflag  = uFlag;
+			return 1;
+		}
+	}
+	return 0;
+}
+/**
+* @brief   告警模块提供给外部使用接口
+*
+* @param[in]		type		告警类型
+* @param[in]		uStatus	是否发送给中心
+*
+* @return		0失败1成功
+* @author		ztt
+* @bug
+*/
+UINT8  MGR_Alarm_Update_Center_SendFlag(UINT32 type,UINT8 uFlag)
+{
+	int i;
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_center;
+
+	for(i = 0;i< MGR_ALARM_MAX*3;i++,ptAlarm++)
+	{
+		if(type == ptAlarm->alm_code)
+		{
+			ptAlarm->send_center  = uFlag;
+			return 1;
+		}
+	}
 	return 0;
 }
 /**
@@ -466,7 +743,7 @@ UINT8  MGR_E_Alarm_Set(UINT32 type,UINT8 uStatus)
 	
 	if(type)//是紧急告警
 	{
-		for(i = 0;i< MGR_ALARM_MAX*2;i++,ptAlarm++)
+		for(i = 0;i< MGR_ALARM_MAX*3;i++,ptAlarm++)
 		{
 			if(type == ptAlarm->alm_code)
 			{
@@ -480,6 +757,8 @@ UINT8  MGR_E_Alarm_Set(UINT32 type,UINT8 uStatus)
 	}
 	return 0;
 }
+
+#endif
 /**
  * @brief    告警组包
  *
@@ -490,34 +769,26 @@ UINT8  MGR_E_Alarm_Set(UINT32 type,UINT8 uStatus)
  * @author		ztt
  * @bug
  */
-void MGR_Alarm_AI_Build(NAS_INF_DL_T *pAlarm,ALARM_ITEM_SEND *ptAlarmSrc,ALARM_TYPE type,UINT8 num)
+void MGR_Alarm_AI_Build(NAS_INF_DL_T *pAlarm,ALARM_TYPE type)
 {
-	int i;
 	DATA_LINK_T *ptLink = NULL;
 	NAS_AI_PAYLOAD *ptPayload = NULL;
 	
-	if((NULL == pAlarm)
-		||(NULL == ptAlarmSrc)
-		||(num > 8))
+	if(NULL == pAlarm)
 	{
-		//打印
+		printf("MGR_Alarm_AI_Build error \n");
 		return;
 	}
-	
-
 	ptLink = (DATA_LINK_T *)&(pAlarm->tDataLink[0]);
 	ptPayload = (NAS_AI_PAYLOAD *)(ptLink->PayLoad);
 	
-	ptPayload->cmd_code = 0;//需要改
-	ptPayload->src_id = shm_cfg_addr->dev_id.val;
+	ptPayload->cmd_code = CMD_CODE_ALARM;//需要改
+	ptPayload->src_id = local_dev_id;
 	ptPayload->dst_id = 0x1f;
 	ptPayload->op_code = OP_CODE_ALARM;
 	ptPayload->nm_type = NM_TYPE_NM;
 	
-	for(i = 0;i < num;i++)
-	{
-		ptPayload->data[i] = (ptAlarmSrc->alm_code << 2) |(ptAlarmSrc->alm_status);//需要测试
-	}
+	memcpy(ptPayload->data,(unsigned char *)g_tMgrAlarm,sizeof(g_tMgrAlarm));
 	ptPayload->crc = crc8((unsigned char *)ptPayload, sizeof(NAS_AI_PAYLOAD) - 1);
 
 	pAlarm->TimeStamp = 0xffffffff;
@@ -531,6 +802,11 @@ void MGR_Alarm_AI_Build(NAS_INF_DL_T *pAlarm,ALARM_ITEM_SEND *ptAlarmSrc,ALARM_T
 	ptLink->DataType = DI_MSG_NM;
 	ptLink->DataLen = sizeof(NAS_AI_PAYLOAD);
 
+	if(ptIPCShm->mgr_printf[0])	
+    {
+	    LOG_PrintM(s_i4LogMsgId,(UINT8 *) pAlarm, sizeof(NAS_INF_DL_T));
+	}
+
 	return;
 }
 /**
@@ -542,42 +818,38 @@ void MGR_Alarm_AI_Build(NAS_INF_DL_T *pAlarm,ALARM_ITEM_SEND *ptAlarmSrc,ALARM_T
  * @author		ztt
  * @bug
  */
-void MGR_Alarm_Center_Build(NM_IPC_MSG *pAlarm,ALARM_ITEM_SEND *ptAlarmSrc,ALARM_TYPE type)
+void MGR_Alarm_Center_Build(NM_IPC_MSG *pAlarm,ALARM_TYPE type,UINT8 num)
 {
-	int i,u4SendNum = NM_IPC_MSG_PAYLOAD_SIZE + 1;
 	
-	if((NULL == pAlarm) ||(NULL == ptAlarmSrc))
+	if(NULL == pAlarm)
 	{
-		//打印
-		return;
-	}
-
-	u4SendNum = ALARM_SEND_NUM;
-	pAlarm->op_code = OP_CODE_ALARM;
-	
-	if(u4SendNum > NM_IPC_MSG_PAYLOAD_SIZE)
-	{
-		//打印
+		LOG_ERROR(s_i4LogMsgId,"[MGR_Alarm_RESET_Center_Send]NULL");
 		return;
 	}
 		
-	pAlarm->cmd_code = 0;//需要改
-	pAlarm->src_id = shm_cfg_addr->dev_id.val;
+	pAlarm->cmd_code = CMD_CODE_ALARM;
+	pAlarm->src_id = local_dev_id;
 	pAlarm->dst_id = 0xff;
 	pAlarm->nm_type = NM_TYPE_CENTER;
-	
-	for(i = 0;i < u4SendNum;i++,ptAlarmSrc++)
-	{
-		pAlarm->payload[i] = (ptAlarmSrc->alm_code << 2) |(ptAlarmSrc->alm_status);//需要测试
-	}
+    pAlarm->op_code = OP_CODE_ALARM;
 
-	if(ptIPCShm->mgr_printf[0])
-	{	
-		LOG_DEBUG(s_i4LogMsgId,"[MGR_Alarm_Center_Send][Alarm Num=%d]",ALARM_SEND_NUM);
+   memcpy(pAlarm->payload,(unsigned char *)local_Alarm,sizeof(local_Alarm));
+
+    
+    if(ptIPCShm->mgr_printf[0])	
+    {
+		LOG_DEBUG(s_i4LogMsgId,"[MGR_Alarm_Center_Build][Alarm Num=%d]:",num);
+	    LOG_PrintM(s_i4LogMsgId,(UINT8 *) pAlarm, sizeof(NM_IPC_MSG));
 	}
+	
 	
 	return;
 }
+
+
+
+
+#if 0
 /**
  * @brief   获取普通告警分包个数
  *
@@ -591,18 +863,18 @@ void  MGR_Alarm_Packet_Num(UINT8 *pPacketNum,ALARM_TYPE type)
 {
 	if(type == ALARM_TYPE_NORMAL)
 	{
-		*pPacketNum = ALARM_SEND_NUM/8;
-		if(ALARM_SEND_NUM%8)
+		*pPacketNum = ALARM_AI_SEND_NUM/8;
+		if(ALARM_AI_SEND_NUM%8)
 			*pPacketNum = (*pPacketNum ) +1;
 
 	       if(1 == *pPacketNum)
 		{
-			g_auAlarmSendNum[0] = ALARM_SEND_NUM;
+			g_auAlarmSendNum[0] = ALARM_AI_SEND_NUM;
 		}
 		else if(2 == *pPacketNum)
 		{
 			g_auAlarmSendNum[0] = 8;
-			g_auAlarmSendNum[1] = (ALARM_SEND_NUM%8 == 0) ? 8 :  ALARM_SEND_NUM%8;
+			g_auAlarmSendNum[1] = (ALARM_AI_SEND_NUM%8 == 0) ? 8 :  ALARM_AI_SEND_NUM%8;
 		}
 		else
 		{
@@ -613,39 +885,41 @@ void  MGR_Alarm_Packet_Num(UINT8 *pPacketNum,ALARM_TYPE type)
 	{
 		
 	}
-
 	return ;
 }
+
+
+#endif
 /**
  * @brief   告警状态空口发送
  *
  * @param[in]		u4SocketFd		发送句柄
  * @param[in]		type		见ALARM_TYPE
- * @param[in]		ptAlarmSrc		告警表数据源
  *
  * @return		void
  * @author		ztt
  * @bug
  */
-void MGR_Alarm_AI_Send(UINT32 u4SocketFd,ALARM_TYPE type,ALARM_ITEM_SEND *ptAlarmSrc)
+void MGR_Alarm_AI_Send(UINT32 u4SocketFd,ALARM_TYPE type)
 {
 	
 	NAS_INF_DL_T tMGRAlarm;
-	UINT8 i,u4Num ;
-	
-	MGR_Alarm_Packet_Num(&u4Num,type);
 
-	if(ptIPCShm->mgr_printf[0])
-	{
-		LOG_DEBUG(s_i4LogMsgId,"[MGR_Alarm_AI_Send][%d Packet will be send AlarmNum1=%d AlarmNum2=%d]",u4Num,g_auAlarmSendNum[0],g_auAlarmSendNum[1]);
-	}
-	
-	for(i = 0;i<u4Num;i++)
-	{
-		memset(&tMGRAlarm,0x00,sizeof(NAS_INF_DL_T));
-		MGR_Alarm_AI_Build(&tMGRAlarm,&ptAlarmSrc[i*8],type,g_auAlarmSendNum[i]);//测试
-		sendto(u4SocketFd, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_adp, sizeof(sockaddr_mgrh_adp));
-	}
+    if(ALARM_AI_SEND_NUM==0)
+        return;
+	if(ptIPCShm->mgr_printf[0]) 
+    	LOG_DEBUG(s_i4LogMsgId,"[MGR_Alarm_AI_Send][ AlarmNum=%d]",ALARM_AI_SEND_NUM);
+    
+	memset(&tMGRAlarm,0x00,sizeof(NAS_INF_DL_T));
+	MGR_Alarm_AI_Build(&tMGRAlarm,type);//测试
+
+
+    //////////////////////////发送四次告警信息/////////////////////////
+	sendto(u4SocketFd, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_adp, sizeof(sockaddr_mgrh_adp));
+    sendto(u4SocketFd, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_adp, sizeof(sockaddr_mgrh_adp));
+    sendto(u4SocketFd, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_adp, sizeof(sockaddr_mgrh_adp));
+    sendto(u4SocketFd, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_adp, sizeof(sockaddr_mgrh_adp));
+    
 	
 	return;
 }
@@ -658,48 +932,55 @@ void MGR_Alarm_AI_Send(UINT32 u4SocketFd,ALARM_TYPE type,ALARM_ITEM_SEND *ptAlar
  * @author		ztt
  * @bug给中心的告警可以一包处理
  */
-void MGR_Alarm_Center_Send(UINT32 u4SocketFd,ALARM_TYPE type,ALARM_ITEM_SEND *ptAlarmSrc)
+void MGR_Alarm_Center_Send(ALARM_TYPE type)
 {
-	if(ALARM_SEND_NUM == 0)
+	if(ALARM_LOCAL_SEND_NUM == 0)
 	{
-		if(ptIPCShm->mgr_printf[0])
-		{
-			LOG_DEBUG(s_i4LogMsgId,"[MGR_Alarm_Center_Send][Alarm Num=0]");
-		}
 		return;
 	}
 	
 	NM_IPC_MSG tMGRAlarm;
 	memset(&tMGRAlarm,0x00,sizeof(NM_IPC_MSG));
-	MGR_Alarm_Center_Build(&tMGRAlarm,ptAlarmSrc,type);
-	sendto(u4SocketFd, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_mgra, sizeof(sockaddr_mgrh_mgra));
+	MGR_Alarm_Center_Build(&tMGRAlarm,type,ALARM_LOCAL_SEND_NUM);
+	sendto(sock_ipc, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_mgra, sizeof(sockaddr_mgrh_mgra));
 	return;
 }
-/**
- * @brief   告警状态发送
- *
- * @param[in]		u4SocketFd		发送句柄
- *
- * @return		void
- * @author		ztt
- * @bug
- */
-void MGR_Alarm_Send(UINT32 u4SocketFd)
+
+
+
+void send_center_query_alarmtable_ack(ALARM_TYPE type)
 {
 	
-	if(ptIPCShm->is_connect_cc)//中心
-	{
-		//网管包
-		MGR_Alarm_Center_Send(u4SocketFd,ALARM_TYPE_NORMAL,g_tMgrAlarm);
+	NM_IPC_MSG tMGRAlarm;
+	memset(&tMGRAlarm,0x00,sizeof(NM_IPC_MSG));
+
+
+    
+	tMGRAlarm.cmd_code = CMD_CODE_ALARM;//
+	tMGRAlarm.src_id = local_dev_id;
+	tMGRAlarm.dst_id = 0xff;
+	tMGRAlarm.nm_type = NM_TYPE_CENTER;
+    tMGRAlarm.op_code = OP_CODE_ALARM;
+
+
+    memcpy(tMGRAlarm.payload,(unsigned char *)center_query_alarmtable,sizeof(center_query_alarmtable));
+    if (shm_ipc_addr->mgr_printf[1])
+    {
+		LOG_DEBUG(s_i4LogMsgId,\
+			    "\n |%s||%s||%d|\n"
+			    "\r nm_type  : 0x%X\n"
+			    "\r src_id   : 0x%X\n"
+			    "\r dst_id   : 0x%X\n"
+			    "\r cmd_code : 0x%X\n"
+			    "\r op_code  : 0x%X\n",\
+			    __FILE__, __FUNCTION__, __LINE__,\
+			    tMGRAlarm.nm_type, tMGRAlarm.src_id, tMGRAlarm.dst_id, tMGRAlarm.cmd_code, tMGRAlarm.op_code);
 	}
-	else
-	{
-		//空口数据包	
-		MGR_Alarm_AI_Send(u4SocketFd,ALARM_TYPE_NORMAL,g_tMgrAlarm);
-	}
-			
+	sendto(sock_ipc, &tMGRAlarm, sizeof(tMGRAlarm), 0, (struct sockaddr *)&sockaddr_mgrh_mgra, sizeof(sockaddr_mgrh_mgra));
 	return;
 }
+
+
 /**
  * @brief   获取共享内存首地址
  *
@@ -785,17 +1066,19 @@ int main(void)
 		return -1;
 	}
 */ 
+   
 	if (init_fpga_mem_nm())
 	{
 		printf("<%s> <%s> <%d> init_fpga_mem_nm err\n", __FILE__, __FUNCTION__, __LINE__);
 		return -1;
 	}
-    
+ 
     if (init_fpga_mem_iq())
     {
         printf("<%s> <%s> <%d> init_fpga_mem_iq err\n", __FILE__, __FUNCTION__, __LINE__);
         return -1;
     }
+
 	if (init_fpga_param())
 	{
 		printf("<%s> <%s> <%d> init_fpga_param err\n", __FILE__, __FUNCTION__, __LINE__);
@@ -813,13 +1096,13 @@ int main(void)
 		printf("<%s> <%s> <%d> mgrh_msg_queue_create err\n", __FILE__, __FUNCTION__, __LINE__);
 		return -1;
 	}
-	
+/*	
 	if (init_alarm_table())
 	{
 		printf("init_alarm_table err\n");
 		return -1;
 	}
-
+*/
 	if (mgrh_pthread_create())
 	{
 		printf("<%s> <%s> <%d> mgrh_pthread_create err\n", __FILE__, __FUNCTION__, __LINE__);
@@ -859,6 +1142,7 @@ int init_eeprom(void)
 	}
 	return 0;
 }
+
 
 
 /**
@@ -1003,6 +1287,7 @@ void *get_iqdata_sd_task(void *p)
         {
             LOG_ERROR(s_i4LogMsgId, "[%s:%s:%d]\n\t ReadNum=%d\n", __FILE__, __FUNCTION__, __LINE__, ReadNum);
             perror("read fd>");
+            
             if (0 == cnt--)
             {
                 break;
@@ -1107,7 +1392,6 @@ int init_fpga_mem_iq(void)
 
 
 
-
 int init_fpga_mem_nm(void)
 {
 	if((fpga_mem_nm_fd = open("/dev/axiram-nm",O_RDWR)) < 0)
@@ -1136,7 +1420,7 @@ int init_fpga_mem_nm(void)
 	fpga_mem_nm_r = (MGRH_FPGA_MSG *)((unsigned char *)fpga_mem_nm_start + 512);
 	fpga_mem_nm_param = (INIT_FPGA_PARAM *)((unsigned char *)fpga_mem_nm_start + 1024);
 	fpga_mem_nm_share = (unsigned char *)fpga_mem_nm_start + 2048;
-	fpga_mem_nm_alarm = (unsigned char *)fpga_mem_nm_start + 2048 + 256;
+	fpga_mem_nm_alarm = (FPGA_ALARM_STRUCT *)((unsigned char *)fpga_mem_nm_start + 2048 + 256);
 	fpga_mem_nm_debug = (FPGA_DEBUG_PRINT *)((unsigned char *)fpga_mem_nm_start + 3072);
 
 	/*printf("\nfpga_mem_nm_w = %p\n", fpga_mem_nm_w);
@@ -1263,7 +1547,7 @@ int mgrh_pthread_create(void)
 		return -1;
 	}
 	pthread_detach(tid_alarm_status);
-
+	
     if (pthread_create(&tid_alarm_send, NULL, pthread_func_alarm_send, NULL)) 
 	{
 		printf("pthread_create pthread_func_alarm_send err\n");
@@ -1522,8 +1806,8 @@ void * pthread_msg_handle(void *arg)
 	unsigned int freq_offset=0;
 	unsigned char scan[8]={0};
 	unsigned char scan_tran[2]={0};
-	unsigned int scan_flag=0; 
-    unsigned int save_data_switch=0;
+	unsigned int scan_flag=0;
+	unsigned int save_data_switch=0;
 	FILE * fd;
 	while(1)
 	{
@@ -2016,18 +2300,20 @@ void * pthread_msg_handle(void *arg)
 							combined_data.power = (unsigned char)tmp_val;
 
 							combined_data.start_neighbor = (unsigned char)shm_cfg_addr->start_neighbor.val;
+							combined_data.start_alarm_report=(unsigned char)shm_cfg_addr->alarm_switch_status.val;
 							combined_data.neighbor_period = (unsigned short)(shm_cfg_addr->neighbor_period.val*2);
 
 						    if (shm_ipc_addr->mgr_printf[1])
 						    {
 							    LOG_DEBUG(s_i4LogMsgId,\
 									     "\n |%s||%s||%d|\n"
-									     "\r read freq            : 0x%X\n"
-									     "\r read power           : 0x%X\n"
-									     "\r read start_neighbor  : 0x%X\n"
-									     "\r read neighbor_period : 0x%X\n",\
+									     "\r read freq                : 0x%X\n"
+									     "\r read power               : 0x%X\n"
+									     "\r read start_neighbor      : 0x%X\n"
+									     "\r read start_alarm_report  : 0x%X\n"
+									     "\r read neighbor_period     : 0x%X\n",\
 									     __FILE__, __FUNCTION__, __LINE__,\
-									    combined_data.freq, combined_data.power, combined_data.start_neighbor, combined_data.neighbor_period);
+									    combined_data.freq, combined_data.power, combined_data.start_neighbor, combined_data.start_alarm_report,combined_data.neighbor_period);
 						    }
 							
 							if (q_msg.ipc_msg.src_id == local_dev_id)
@@ -2098,30 +2384,39 @@ void * pthread_msg_handle(void *arg)
 							       shm_cfg_addr->power.val = combined_data.power;
 							       sem_cfg_v();  
 							    }
-                                if(combined_data.start_neighbor!= 0xFF)
-                                {
-                                   sem_cfg_p();
-							       shm_cfg_addr->start_neighbor.val = combined_data.start_neighbor;
-							       sem_cfg_v();  
-							    }
+  
                                 if(combined_data.neighbor_period!= 0xFFFF)
                                 {
                                    sem_cfg_p();
 							       shm_cfg_addr->neighbor_period.val = combined_data.neighbor_period / 2;
 							       sem_cfg_v();  
 							    }
+
+
+                                if((combined_data.start_alarm_report ==1)&&(shm_cfg_addr->alarm_switch_status.val !=combined_data.start_alarm_report))
+                                {
+                                    sem_ipc_p();
+                                    clear_report_ai_alarm_flag();
+                                    sem_ipc_v();
+                                }
+
+								sem_cfg_p();
+							    shm_cfg_addr->start_neighbor.val = combined_data.start_neighbor;
+								shm_cfg_addr->alarm_switch_status.val=combined_data.start_alarm_report;
+							    sem_cfg_v();
 								save_ini_file();
 
 								if (shm_ipc_addr->mgr_printf[1])
 								{
 									LOG_DEBUG(s_i4LogMsgId,\
 											 "\n |%s||%s||%d|\n"
-											 "\r save freq			  : 0x%X\n"
-											 "\r save power 		  : 0x%X\n"
-											 "\r save start_neighbor  : 0x%X\n"
-											 "\r save neighbor_period : 0x%X\n",\
+											 "\r save freq			      : 0x%X\n"
+											 "\r save power 		      : 0x%X\n"
+											 "\r save start_neighbor      : 0x%X\n"
+											 "\r save start_alarm_report  : 0x%X\n"
+											 "\r save neighbor_period     : 0x%X\n",\
 											 __FILE__, __FUNCTION__, __LINE__,\
-											combined_data.freq, combined_data.power, combined_data.start_neighbor, combined_data.neighbor_period / 2);
+											combined_data.freq, combined_data.power, combined_data.start_neighbor,combined_data.start_alarm_report, combined_data.neighbor_period / 2);
 								}
 
 								if (q_msg.ipc_msg.src_id == local_dev_id)
@@ -2150,28 +2445,39 @@ void * pthread_msg_handle(void *arg)
 				    }
 					else
 					{
-						if(combined_data.start_neighbor!= 0xFF)
-						{
-						   sem_cfg_p();
-						   shm_cfg_addr->start_neighbor.val = combined_data.start_neighbor;
-						   sem_cfg_v();  
-						}
 						if(combined_data.neighbor_period!= 0xFFFF)
 						{
 						   sem_cfg_p();
 						   shm_cfg_addr->neighbor_period.val = combined_data.neighbor_period / 2;
 						   sem_cfg_v();  
 						}
+
+
+                        if((combined_data.start_alarm_report ==1)&&(shm_cfg_addr->alarm_switch_status.val !=combined_data.start_alarm_report))
+                        {
+                            sem_ipc_p();
+                            clear_report_ai_alarm_flag();
+                            sem_ipc_v();
+                        }
+
+
+						
+						sem_cfg_p();
+						shm_cfg_addr->start_neighbor.val = combined_data.start_neighbor;
+						shm_cfg_addr->alarm_switch_status.val=combined_data.start_alarm_report;
+						sem_cfg_v();
+
 						save_ini_file();
 
 						if (shm_ipc_addr->mgr_printf[1])
 						{
 							LOG_DEBUG(s_i4LogMsgId,\
 									 "\n |%s||%s||%d|\n"
-									 "\r save start_neighbor  : 0x%X\n"
-									 "\r save neighbor_period : 0x%X\n",\
+									 "\r save start_neighbor      : 0x%X\n"
+									 "\r save start_alarm_report  : 0x%X\n"
+									 "\r save neighbor_period     : 0x%X\n",\
 									 __FILE__, __FUNCTION__, __LINE__,\
-									combined_data.start_neighbor, combined_data.neighbor_period /2);
+									combined_data.start_neighbor, combined_data.start_alarm_report,combined_data.neighbor_period /2);
 						}
 
 						if (q_msg.ipc_msg.src_id == local_dev_id)
@@ -2538,49 +2844,8 @@ void * pthread_msg_handle(void *arg)
 					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
 				}
 				break;
-			case CMD_CODE_SET_998:
-				fpga_mem_nm_r->flag = FLAG_CLR;
-				fpga_mem_nm_w->flag = FLAG_OK;
-				fpga_mem_nm_w->cmd_code = q_msg.ipc_msg.cmd_code;
-				fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code;
-				memcpy((unsigned char *)&addr_998, q_msg.ipc_msg.payload, sizeof(unsigned int));
-				memcpy(fpga_mem_nm_w->payload, q_msg.ipc_msg.payload, sizeof(unsigned int));
 
-				notify_fpga();
-				
-				for (i = 0; i < timeout_cnt; i++)
-				{
-					delay.tv_sec = 0;
-					delay.tv_usec = POLLING_INTERVA;
-					select(0, NULL, NULL, NULL, &delay);
-					if (FLAG_OK == fpga_mem_nm_r->flag)
-					{
-						if (shm_ipc_addr->mgr_printf[1])
-						{
-							LOG_DEBUG(s_i4LogMsgId,\
-									"\n |%s||%s||%d|\n"
-									"\r read fpga - flag	 : 0x%X\n"
-									"\r read fpga - cmd_code : 0x%X\n"
-									"\r read fpga - op_code  : 0x%X\n",\
-									__FILE__, __FUNCTION__, __LINE__,\
-									fpga_mem_nm_r->flag, fpga_mem_nm_r->cmd_code, fpga_mem_nm_r->op_code);
-						}
-
-								
-						if (shm_ipc_addr->mgr_printf[1])
-						{
-							LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| set 998addr = %u\n", __FILE__, __FUNCTION__, __LINE__, addr_998);
-						}
-						send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
-						break;
-					}
-				}
-				if (i == timeout_cnt)
-				{
-					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
-				}
-				break;
-            
+			
             case CMD_CODE_SAVE_IQ_DATA:
             {
                 if (iq_excess_volumn_flag != 0)  // 标志指示异常，各种异常  满60M 设置1
@@ -2707,6 +2972,50 @@ void * pthread_msg_handle(void *arg)
                 }
                 break;
             }
+			
+			case CMD_CODE_SET_998:
+				fpga_mem_nm_r->flag = FLAG_CLR;
+				fpga_mem_nm_w->flag = FLAG_OK;
+				fpga_mem_nm_w->cmd_code = q_msg.ipc_msg.cmd_code;
+				fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code;
+				memcpy((unsigned char *)&addr_998, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				memcpy(fpga_mem_nm_w->payload, q_msg.ipc_msg.payload, sizeof(unsigned int));
+
+				notify_fpga();
+				
+				for (i = 0; i < timeout_cnt; i++)
+				{
+					delay.tv_sec = 0;
+					delay.tv_usec = POLLING_INTERVA;
+					select(0, NULL, NULL, NULL, &delay);
+					if (FLAG_OK == fpga_mem_nm_r->flag)
+					{
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId,\
+									"\n |%s||%s||%d|\n"
+									"\r read fpga - flag	 : 0x%X\n"
+									"\r read fpga - cmd_code : 0x%X\n"
+									"\r read fpga - op_code  : 0x%X\n",\
+									__FILE__, __FUNCTION__, __LINE__,\
+									fpga_mem_nm_r->flag, fpga_mem_nm_r->cmd_code, fpga_mem_nm_r->op_code);
+						}
+
+								
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| set 998addr = %u\n", __FILE__, __FUNCTION__, __LINE__, addr_998);
+						}
+						send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
+						break;
+					}
+				}
+				if (i == timeout_cnt)
+				{
+					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
+				}
+				break;
+
 			case CMD_CODE_QUERY_981:
 				fpga_mem_nm_r->flag = FLAG_CLR;
 				fpga_mem_nm_w->flag = FLAG_OK;
@@ -3658,6 +3967,275 @@ void * pthread_msg_handle(void *arg)
 					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
 				}
 				break;
+           case CMD_CODE_CLOSE_TRAN_THRESHOLD: 
+				fpga_mem_nm_r->flag = FLAG_CLR;
+				fpga_mem_nm_w->flag = FLAG_OK;
+				fpga_mem_nm_w->cmd_code = q_msg.ipc_msg.cmd_code;
+				fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code;
+				if (q_msg.ipc_msg.op_code == OP_CODE_SET)
+				{
+					memcpy(fpga_mem_nm_w->payload, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				}
+				notify_fpga();
+					
+				for (i = 0; i < timeout_cnt; i++)
+				{
+					delay.tv_sec = 0;
+					delay.tv_usec = POLLING_INTERVA;
+					select(0, NULL, NULL, NULL, &delay);
+					if (FLAG_OK == fpga_mem_nm_r->flag)
+					{
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId,\
+									"\n |%s||%s||%d|\n"
+									"\r read fpga - flag	 : 0x%X\n"
+									"\r read fpga - cmd_code : 0x%X\n"
+									"\r read fpga - op_code  : 0x%X\n",\
+									__FILE__, __FUNCTION__, __LINE__,\
+									fpga_mem_nm_r->flag, fpga_mem_nm_r->cmd_code, fpga_mem_nm_r->op_code);
+						}
+						if (q_msg.ipc_msg.op_code == OP_CODE_GET)
+						{
+							send_local_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type, fpga_mem_nm_r->payload);
+						}
+						else
+						{
+						    memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+							if (shm_cfg_addr->close_transmit_threshold.val != tmp_val)
+							{
+								sem_cfg_p();
+								shm_cfg_addr->close_transmit_threshold.val = tmp_val;
+								sem_cfg_v();
+								save_ini_file();
+									
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| close_transmit_threshold = %u\n", __FILE__, __FUNCTION__, __LINE__, tmp_val);
+								}
+							}
+							else
+							{
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| the same value in config file, don't need save\n", __FILE__, __FUNCTION__, __LINE__);
+								}
+							}
+							send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
+					
+						}
+							break;
+					}
+				}
+				if (i == timeout_cnt)
+				{
+					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
+				}
+				break;
+
+           case CMD_CODE_RESUME_TRAN_THRESHOLD: 
+				fpga_mem_nm_r->flag = FLAG_CLR;
+				fpga_mem_nm_w->flag = FLAG_OK;
+				fpga_mem_nm_w->cmd_code = q_msg.ipc_msg.cmd_code;
+				fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code;
+				if (q_msg.ipc_msg.op_code == OP_CODE_SET)
+				{
+					memcpy(fpga_mem_nm_w->payload, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				}
+				notify_fpga();
+					
+				for (i = 0; i < timeout_cnt; i++)
+				{
+					delay.tv_sec = 0;
+					delay.tv_usec = POLLING_INTERVA;
+					select(0, NULL, NULL, NULL, &delay);
+					if (FLAG_OK == fpga_mem_nm_r->flag)
+					{
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId,\
+									"\n |%s||%s||%d|\n"
+									"\r read fpga - flag	 : 0x%X\n"
+									"\r read fpga - cmd_code : 0x%X\n"
+									"\r read fpga - op_code  : 0x%X\n",\
+									__FILE__, __FUNCTION__, __LINE__,\
+									fpga_mem_nm_r->flag, fpga_mem_nm_r->cmd_code, fpga_mem_nm_r->op_code);
+						}
+						if (q_msg.ipc_msg.op_code == OP_CODE_GET)
+						{
+							send_local_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type, fpga_mem_nm_r->payload);
+						}
+						else
+						{
+						    memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+							if (shm_cfg_addr->resume_transmit_threshold.val != tmp_val)
+							{
+								sem_cfg_p();
+								shm_cfg_addr->resume_transmit_threshold.val = tmp_val;
+								sem_cfg_v();
+								save_ini_file();
+									
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| resume_transmit_threshold = %u\n", __FILE__, __FUNCTION__, __LINE__, tmp_val);
+								}
+							}
+							else
+							{
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| the same value in config file, don't need save\n", __FILE__, __FUNCTION__, __LINE__);
+								}
+							}
+							send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
+					
+						}
+							break;
+					}
+				}
+				if (i == timeout_cnt)
+				{
+					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
+				}
+				break;
+           case CMD_CODE_START_TEMP_ALARM: 
+				fpga_mem_nm_r->flag = FLAG_CLR;
+				fpga_mem_nm_w->flag = FLAG_OK;
+				fpga_mem_nm_w->cmd_code = q_msg.ipc_msg.cmd_code;
+				fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code;
+				if (q_msg.ipc_msg.op_code == OP_CODE_SET)
+				{
+				    memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+                    tmp_val=(unsigned int )((tmp_val*6.25+424)*1023/2500);
+					memcpy(fpga_mem_nm_w->payload, (unsigned char *)&tmp_val, sizeof(unsigned int));
+				}
+				notify_fpga();
+					
+				for (i = 0; i < timeout_cnt; i++)
+				{
+					delay.tv_sec = 0;
+					delay.tv_usec = POLLING_INTERVA;
+					select(0, NULL, NULL, NULL, &delay);
+					if (FLAG_OK == fpga_mem_nm_r->flag)
+					{
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId,\
+									"\n |%s||%s||%d|\n"
+									"\r read fpga - flag	 : 0x%X\n"
+									"\r read fpga - cmd_code : 0x%X\n"
+									"\r read fpga - op_code  : 0x%X\n",\
+									__FILE__, __FUNCTION__, __LINE__,\
+									fpga_mem_nm_r->flag, fpga_mem_nm_r->cmd_code, fpga_mem_nm_r->op_code);
+						}
+						if (q_msg.ipc_msg.op_code == OP_CODE_GET)
+						{
+						    memcpy((unsigned char *)&tmp_val, fpga_mem_nm_r->payload, sizeof(unsigned int));
+                            tmp_val=(unsigned int)((tmp_val*2500/1023-424)/6.25)+1;
+							send_local_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type, (unsigned char *)&tmp_val);
+						}
+						else
+						{
+						    memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+							if (shm_cfg_addr->tempratue_alarm_start_threshold.val != tmp_val)
+							{
+								sem_cfg_p();
+								shm_cfg_addr->tempratue_alarm_start_threshold.val = tmp_val;
+								sem_cfg_v();
+								save_ini_file();
+									
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| tempratue_alarm_start_threshold = %u\n", __FILE__, __FUNCTION__, __LINE__, tmp_val);
+								}
+							}
+							else
+							{
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| the same value in config file, don't need save\n", __FILE__, __FUNCTION__, __LINE__);
+								}
+							}
+							send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
+					
+						}
+							break;
+					}
+				}
+				if (i == timeout_cnt)
+				{
+					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
+				}
+				break;
+           case CMD_CODE_CLOSE_TEMP_ALARM: 
+				fpga_mem_nm_r->flag = FLAG_CLR;
+				fpga_mem_nm_w->flag = FLAG_OK;
+				fpga_mem_nm_w->cmd_code = q_msg.ipc_msg.cmd_code;
+				fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code;
+				if (q_msg.ipc_msg.op_code == OP_CODE_SET)
+				{
+					memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+                    tmp_val=(unsigned int )((tmp_val*6.25+424)*1023/2500);
+					memcpy(fpga_mem_nm_w->payload, (unsigned char *)&tmp_val, sizeof(unsigned int));
+				}
+				notify_fpga();
+					
+				for (i = 0; i < timeout_cnt; i++)
+				{
+					delay.tv_sec = 0;
+					delay.tv_usec = POLLING_INTERVA;
+					select(0, NULL, NULL, NULL, &delay);
+					if (FLAG_OK == fpga_mem_nm_r->flag)
+					{
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId,\
+									"\n |%s||%s||%d|\n"
+									"\r read fpga - flag	 : 0x%X\n"
+									"\r read fpga - cmd_code : 0x%X\n"
+									"\r read fpga - op_code  : 0x%X\n",\
+									__FILE__, __FUNCTION__, __LINE__,\
+									fpga_mem_nm_r->flag, fpga_mem_nm_r->cmd_code, fpga_mem_nm_r->op_code);
+						}
+						if (q_msg.ipc_msg.op_code == OP_CODE_GET)
+						{
+							memcpy((unsigned char *)&tmp_val, fpga_mem_nm_r->payload, sizeof(unsigned int));
+                            tmp_val=(unsigned int)((tmp_val*2500/1023-424)/6.25)+1;
+							send_local_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type, (unsigned char *)&tmp_val);
+						}
+						else
+						{
+						    memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+							if (shm_cfg_addr->tempratue_alarm_close_threshold.val != tmp_val)
+							{
+								sem_cfg_p();
+								shm_cfg_addr->tempratue_alarm_close_threshold.val = tmp_val;
+								sem_cfg_v();
+								save_ini_file();
+									
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| tempratue_alarm_close_threshold = %u\n", __FILE__, __FUNCTION__, __LINE__, tmp_val);
+								}
+							}
+							else
+							{
+								if (shm_ipc_addr->mgr_printf[1])
+								{
+									LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| the same value in config file, don't need save\n", __FILE__, __FUNCTION__, __LINE__);
+								}
+							}
+							send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
+					
+						}
+							break;
+					}
+				}
+				if (i == timeout_cnt)
+				{
+					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
+				}
+				break;
 /*		   case CMD_CODE_SCAN_MODE:
 					
 			    fpga_mem_nm_r->flag = FLAG_CLR;
@@ -3852,6 +4430,136 @@ void * pthread_msg_handle(void *arg)
 					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
 				}
 				break;
+
+			case CMD_CODE_ALARM_SWITCH:
+				if (q_msg.ipc_msg.op_code == OP_CODE_GET)
+				{
+					send_local_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type,(unsigned char *)&shm_cfg_addr->alarm_switch_status.val);
+				}
+				else
+				{
+					memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+					if (shm_cfg_addr->alarm_switch_status.val != tmp_val)
+					{
+						sem_cfg_p();
+						shm_cfg_addr->alarm_switch_status.val = tmp_val;
+						sem_cfg_v();
+						save_ini_file();
+						
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| save alarm_switch_status = %u\n", __FILE__, __FUNCTION__, __LINE__, shm_cfg_addr->alarm_switch_status.val);
+						}
+						if(tmp_val ==1)
+						{
+						    sem_ipc_p();
+						    clear_report_ai_alarm_flag();
+                            sem_ipc_v();
+						}
+					}
+					else
+					{
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| the same value in config file, don't need save\n", __FILE__, __FUNCTION__, __LINE__);
+						}
+					}
+					send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
+				}
+				break;
+			case CMD_CODE_CENTER_QUERY_ALARM : ///////手咪查询告警
+
+				sem_ipc_p();
+				Center_Query_AlarmTable_Set();
+				send_center_query_alarmtable_ack(ALARM_TYPE_NORMAL);
+				sem_ipc_v();
+                break;
+            case CMD_CODE_QUERY_ALARM ://///中心网管查询告警
+
+				sem_ipc_p();
+				Center_Nm_Query_AlarmTable_Set();
+				sem_ipc_v();
+                if (q_msg.ipc_msg.src_id == local_dev_id)
+				{
+                     send_local_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type, (unsigned char *)center_nm_query_alarmtable);
+				}
+				else
+				{
+					 send_remote_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type, q_msg.ipc_msg.dst_id, q_msg.ipc_msg.src_id, (unsigned char *)center_nm_query_alarmtable); 
+				}
+                break;
+            case CMD_CODE_UPDATE_LOADAPP:
+                if(update_loadapp())
+                {
+                    sem_ipc_p();
+                    shm_ipc_addr->update_flag=-1;
+                    sem_ipc_v();
+                    break;
+                }
+				sem_ipc_p();
+                shm_ipc_addr->update_flag=1;
+				sem_ipc_v();
+                break;
+            case CMD_CODE_UPDATE_DTB:
+                if(update_dtb())
+                {
+                    sem_ipc_p();
+                    shm_ipc_addr->update_flag=-1;
+                    sem_ipc_v();
+                    break;
+                }
+				sem_ipc_p();
+                shm_ipc_addr->update_flag=1;
+				sem_ipc_v();
+                break;
+            case CMD_CODE_UPDATE_UBOOT:
+                if(update_uboot())
+                {
+                    sem_ipc_p();
+                    shm_ipc_addr->update_flag=-1;
+                    sem_ipc_v();
+                    break;
+                }
+				sem_ipc_p();
+                shm_ipc_addr->update_flag=1;
+				sem_ipc_v();
+                break;
+            case CMD_CODE_UPDATE_FILE_SYSTEM:
+                if(update_file_system())
+                {
+                    sem_ipc_p();
+                    shm_ipc_addr->update_flag=-1;
+                    sem_ipc_v();
+                    break;
+                }
+				sem_ipc_p();
+                shm_ipc_addr->update_flag=1;
+				sem_ipc_v();
+                break;
+            case CMD_CODE_UPDATE_RBF:
+                if(update_rbf())
+                {
+                    sem_ipc_p();
+                    shm_ipc_addr->update_flag=-1;
+                    sem_ipc_v();
+                    break;
+                }
+				sem_ipc_p();
+                shm_ipc_addr->update_flag=1;
+				sem_ipc_v();
+                break;
+             case CMD_CODE_UPDATE_ZIMAGE:
+                if(update_zimage())
+                {
+                    sem_ipc_p();
+                    shm_ipc_addr->update_flag=-1;
+                    sem_ipc_v();
+                    break;
+                }
+				sem_ipc_p();
+                shm_ipc_addr->update_flag=1;
+				sem_ipc_v();
+                break;
 			default:
 				printf("<%s> <%s> <%d> unknown cmd_code\n", __FILE__, __FUNCTION__, __LINE__);
 				break;
@@ -3865,66 +4573,98 @@ void * pthread_msg_handle(void *arg)
 
 void * pthread_func_alarm_handle(void *arg)
 {
+	
 	while(1)
 	{
 		sleep(3);
+
+		sem_ipc_p();
 		MGR_Alarm_Set();
+		Send_Local_AlarmTable_Set();           //创建发往本地手咪告警/恢复表
+		MGR_Alarm_Center_Send(ALARM_TYPE_NORMAL);      //发往本地手咪告警表
+        sem_ipc_v();
 	}
 	pthread_exit(NULL);
 }
-
 
 void * pthread_func_alarm_status(void *arg)
 {
+    int i=0;
+	FPGA_ITEM_ALARM_STRUCT q;
 	while(1)
 	{
 		sleep(2);
-
-		if (shm_ipc_addr->mgr_printf[1] > 0)
+		for(i=0;i<MGR_ALARM_FPGA_NUM;i++)
 		{
-			if (shm_ipc_addr->mgr_printf[1] < 100)
-			{
-				MGR_Alarm_Update_Status(MGR_ALARM_FPGA_1, 0);
-			}
-			else
-			{
-				MGR_Alarm_Update_Status(MGR_ALARM_FPGA_1, 1);
-			}
+
+           memcpy((unsigned char *)&q,((unsigned char *)fpga_mem_nm_alarm)+(i*sizeof(FPGA_ITEM_ALARM_STRUCT)),sizeof(FPGA_ITEM_ALARM_STRUCT));
+
+		   MGR_Alarm_Update_Status(MGR_ALARM_FPGA_1+i, q.alarm_status,q.alarm_value);
+        //   printf("print_select = %u\n",ptIPCShm->printf_select);
+		   //MGR_Alarm_Update_Status(MGR_ALARM_FPGA_1+i, 1,0);
+		  
 		}
+    /*
+        for(i=0;i<MGR_ALARM_CENTER_NUM;i++)
+		{
+		 //  memcpy((unsigned char *)&q,fpga_mem_nm_alarm+(i*sizeof(FPGA_ITEM_ALARM_STRUCT)),sizeof(FPGA_ITEM_ALARM_STRUCT));
+
+		   MGR_Alarm_Update_Status(MGR_ALARM_CENTER_1+i, ptIPCShm->mgr_printf[5],1);
+		   //MGR_Alarm_Update_Status(MGR_ALARM_FPGA_1+i, 1,0);
+		  
+		}
+
+        for(i=0;i<MGR_ALARM_SERVER_NUM;i++)
+		{
+		//   memcpy((unsigned char *)&q,fpga_mem_nm_alarm+(i*sizeof(FPGA_ITEM_ALARM_STRUCT)),sizeof(FPGA_ITEM_ALARM_STRUCT));
+
+		   MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1+i, ptIPCShm->mgr_printf[4],1);
+		   //MGR_Alarm_Update_Status(MGR_ALARM_FPGA_1+i, 1,0);
+		  
+		}
+	*/
 	}
 	
 	pthread_exit(NULL);
 }
+
 void * pthread_func_alarm_send(void *arg)
 {
-	int i;
-
-	UINT32 u4SocketFd;//空口
-	
-	u4SocketFd = socket(PF_INET, SOCK_DGRAM, 0);
-	if(0 > u4SocketFd)
-	{
-		printf("[pthread_func_alarm_send][socketfd error!!!]\n");
-		return NULL;
-	}
+	int report_time;
+    int report_total_time;
+	int report_remain_time;
 	
 	while(1)
 	{
+	
 		//获取随机事件
-		i = rand()%10;//获取休眠时间单位分钟
-
-		//sleep(i*60);
-
-		sleep(3);
+		if(shm_cfg_addr->alarm_switch_status.val == 1)
+        {
+            srand((unsigned int) time(NULL));
+		    report_total_time=ALARM_REPORT_TIME * 60;
+		    report_time = rand()%report_total_time;//获取休眠时间单位分钟
+		    report_remain_time=report_total_time-report_time;
 		
+		    if(ptIPCShm->mgr_printf[0])
+		    {
+			    LOG_DEBUG(s_i4LogMsgId,"[pthread_func_alarm_send]time=%d sec",report_time);
+		    }
+		    sleep(report_time);      
+		    sem_ipc_p();
+		    MGR_Ai_AlarmTable_Set();
+		    MGR_Alarm_AI_Send(sock_ipc,ALARM_TYPE_NORMAL);
+		    sem_ipc_v();
 
-		if(ptIPCShm->mgr_printf[0])
-		{
-			LOG_DEBUG(s_i4LogMsgId,"[pthread_func_alarm_send]time=%d min",i);
-		}
-		MGR_AlarmTable_Set();
-		MGR_Alarm_Send(u4SocketFd);
-		MGR_AlarmTable_Clear();
+		    sleep(report_remain_time);
+        }
+        else
+        {
+            if(ptIPCShm->mgr_printf[0])
+		    {
+			    LOG_DEBUG(s_i4LogMsgId,"ai alarm report switch close\n");
+		    }
+            sleep(3);
+        }
 	}
 	
 	pthread_exit(NULL);
@@ -3961,7 +4701,7 @@ void * pthread_func_kill_monitor(void *arg)
 				printf("Cancel kill process!!!\n");
 			}
 		}
-
+							
 		if (kill_start == 0)
 		{
 			if (shm_cfg_addr->kill_flag.val == NAS_KILL_FLAG)
@@ -4102,14 +4842,15 @@ void * pthread_fpga_debug(void *arg)
 
 			LOG_DEBUG(s_i4LogMsgId,\
 				"\n ***************************************\n"
-				"\r u_half_rssi               : %u\n"
-				"\r prohibit_transmit_flag    : 0x%X\n"
-				"\r data1                     : 0x%X\n"
-				"\r data2                     : 0x%X\n"
-				"\r data3                     : 0x%X\n"
-				"\r data4                     : 0x%X\n"
-				"\r data5                     : 0x%X\n"
-				"\r data6                     : 0x%X\n"
+				"\r u_half_rssi_low                : 0x%x\n"
+				"\r u_half_rssi_high               : 0x%x\n"
+				"\r prohibit_transmit_flag         : 0x%X\n"
+                "\r data1                          : 0x%X\n"
+                "\r data2                          : 0x%X\n"
+                "\r data3                          : 0x%X\n"
+                "\r data4                          : 0x%X\n"
+                "\r data5                          : 0x%X\n"
+                "\r data6                          : 0x%X\n"
 				"\r vari_threshold    : 0x%X\n"
 				"\r lock_flag         : 0x%x\n"
 				"\r f1s1              : 0x%X\n"
@@ -4122,14 +4863,15 @@ void * pthread_fpga_debug(void *arg)
 				"\r f2s1_crc_flag     : 0x%X\n"
 				"\r f2s2_crc_flag     : 0x%X\n"
 				"\r ***************************************\n",\
-				fpga_mem_nm_debug->u_half_rssi,\
-				fpga_mem_nm_debug->prohibit_transmit_flag,\
-				fpga_mem_nm_debug->data1,\
-				fpga_mem_nm_debug->data2,\
-				fpga_mem_nm_debug->data3,\
-				fpga_mem_nm_debug->data4,\
-				fpga_mem_nm_debug->data5,\
-				fpga_mem_nm_debug->data6,\
+				(fpga_mem_nm_debug->u_half_rssi)&0xffff,\
+				((fpga_mem_nm_debug->u_half_rssi)>>16)&0xffff,\
+				fpga_mem_nm_debug->prohibit_transmit_flag,\	
+                fpga_mem_nm_debug->data1,\
+                fpga_mem_nm_debug->data2,\
+                fpga_mem_nm_debug->data3,\
+                fpga_mem_nm_debug->data4,\
+                fpga_mem_nm_debug->data5,\
+                fpga_mem_nm_debug->data6,\
 				fpga_mem_nm_debug->vari_threshold,\
 				fpga_mem_nm_debug->lock_flag,\
 				fpga_mem_nm_debug->f1s1,\
@@ -4272,7 +5014,10 @@ void send_remote_nm_get_ack(unsigned short cmd_code, unsigned char nm_type, unsi
 			nm_ai_msg.tDataLink[0].MsgType, nm_ai_msg.tDataLink[0].CC, nm_ai_msg.tDataLink[0].DataType, nm_ai_msg.tDataLink[0].DataLen);
 	}
 	
-	sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in)); 
+	sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in));  ////////////////发送四次应答
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in)); 
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in)); 
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in)); 
 }
 
 
@@ -4328,7 +5073,11 @@ void send_remote_nm_set_ack(unsigned short cmd_code, unsigned char nm_type, unsi
 			nm_ai_msg.tDataLink[0].MsgType, nm_ai_msg.tDataLink[0].CC, nm_ai_msg.tDataLink[0].DataType, nm_ai_msg.tDataLink[0].DataLen);			
 	}
 	
-	sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in)); 
+	sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in));  //////发送四次应答
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in));
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in));
+    sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in));
+    
 }
 
 
@@ -4413,6 +5162,27 @@ void send_cc_set_cmd(unsigned short cmd_code, unsigned char * payload)
 	sendto(sock_ipc, &nm_ipc_msg, sizeof(NM_IPC_MSG), 0, (struct sockaddr *)(&sockaddr_mgra_cc), sizeof(struct sockaddr_in)); 
 }
 
+void init_local_val(void)
+{
+	sem_cfg_p();
+	local_dev_id = shm_cfg_addr->dev_id.val;
+	local_cc = shm_cfg_addr->cc.val;
+	local_stun_flag = shm_cfg_addr->stun_flag.val;
+	local_kill_flag = shm_cfg_addr->kill_flag.val;
+	sem_cfg_v();
+}
+
+
+void notify_fpga(void)
+{
+    unsigned char gpio_value = 0;
+	usleep(10000);
+    write(fpga_mem_nm_fd, &gpio_value, 1);
+	usleep(100);
+	gpio_value = 1;
+	write(fpga_mem_nm_fd, &gpio_value, 1);
+}
+
 
 void send_cc_get_response_cmd(unsigned short cmd_code, unsigned char * payload)
 {
@@ -4441,60 +5211,10 @@ void send_cc_get_response_cmd(unsigned short cmd_code, unsigned char * payload)
 	sendto(sock_ipc, &nm_ipc_msg, sizeof(NM_IPC_MSG), 0, (struct sockaddr *)(&sockaddr_mgra_cc), sizeof(struct sockaddr_in)); 
 }
 
-void init_local_val(void)
-{
-	sem_cfg_p();
-	local_dev_id = shm_cfg_addr->dev_id.val;
-	local_cc = shm_cfg_addr->cc.val;
-	local_stun_flag = shm_cfg_addr->stun_flag.val;
-	local_kill_flag = shm_cfg_addr->kill_flag.val;
-	sem_cfg_v();
-}
-
-int init_alarm_table(void)
-{
-	int i = 0;
-	UINT8 alarm_code;
-	
-	ptMgrAlarm = ptIPCShm->alarm_center;
-	memset(ptMgrAlarm,0x00,MGR_ALARM_MAX * 3 * sizeof(ALARM_ITEM));
-
-	for(i = 0;i < MGR_ALARM_MAX * 3; i++)
-	{
-		ptMgrAlarm->alm_code = 0xff;
-		ptMgrAlarm++;
-	}
-
-	ptMgrAlarm = ptIPCShm->alarm_center;
-	alarm_code = MGR_ALARM_CENTER_1;
-	for(i = 0;i < MGR_ALARM_CENTER_NUM; i++,ptMgrAlarm++)
-	{
-		ptMgrAlarm->alm_code = alarm_code++;
-	}
-
-	ptMgrAlarm = ptIPCShm->alarm_fpga;
-	alarm_code = MGR_ALARM_FPGA_1;
-	for(i = 0;i < MGR_ALARM_FPGA_NUM; i++,ptMgrAlarm++)
-	{
-		ptMgrAlarm->alm_code = alarm_code++;
-	}
-
-	memset(g_tMgrAlarm,0x00,sizeof(g_tMgrAlarm));
-	return 0;
-}
-void notify_fpga(void)
-{
-    unsigned char gpio_value = 0;
-	usleep(10000);
-    write(fpga_mem_nm_fd, &gpio_value, 1);
-	usleep(100);
-	gpio_value = 1;
-	write(fpga_mem_nm_fd, &gpio_value, 1);
-}
-
 
 int init_fpga_param(void)
 {
+    
     unsigned int count=10;
 	int i=0;
     
@@ -4513,8 +5233,11 @@ int init_fpga_param(void)
 	printf("nm_memory_locking_time = %u\n", shm_cfg_addr->locking_time.val);
 	printf("nm_memory_half_variance_threshold = %u\n", shm_cfg_addr->half_variance_threshold.val);
 	printf("nm_memory_dev_call_timeout = %u\n", shm_cfg_addr->dev_call_timeout.val);
-
-
+	printf("alarm switch status  = %u\n", shm_cfg_addr->alarm_switch_status.val);
+    printf("nm_memory_close_transmit_threshold.val  = 0x%x\n", shm_cfg_addr->close_transmit_threshold.val);
+    printf("nm_memory_resume_transmit_threshold.val  = 0x%x\n", shm_cfg_addr->resume_transmit_threshold.val);
+    printf("nm_memory_tempratue_alarm_start_threshold  =0x%x\n", shm_cfg_addr->tempratue_alarm_start_threshold.val);
+    printf("nm_memory_tempratue_alarm_close_threshold  = 0x%x\n", shm_cfg_addr->tempratue_alarm_close_threshold.val);
 
 	fpga_mem_nm_param->scan_mode= shm_cfg_addr->scan_mode.val;
 	fpga_mem_nm_param->freq_offset= shm_cfg_addr->freq_offset.val*1000;
@@ -4523,6 +5246,7 @@ int init_fpga_param(void)
 	fpga_mem_nm_param->open_close_loop = shm_cfg_addr->open_close_loop.val;
 	fpga_mem_nm_param->locking_time = shm_cfg_addr->locking_time.val * 92160;
 	fpga_mem_nm_param->half_variance_threshold = shm_cfg_addr->half_variance_threshold.val;
+    
 	if(shm_cfg_addr->dev_call_timeout.val < 20)
 	{
 
@@ -4532,10 +5256,17 @@ int init_fpga_param(void)
 	   save_ini_file();									
 	}
 	fpga_mem_nm_param->dev_call_timeout= shm_cfg_addr->dev_call_timeout.val*5760000;
-	fpga_mem_nm_w->flag = FLAG_PARAM;
+    fpga_mem_nm_param->close_transmit_threshold=shm_cfg_addr->close_transmit_threshold.val;
+    fpga_mem_nm_param->resume_transmit_threshold=shm_cfg_addr->resume_transmit_threshold.val;
+    fpga_mem_nm_param->tempratue_alarm_start_threshold=(unsigned int)((shm_cfg_addr->tempratue_alarm_start_threshold.val*6.25+424)*1023/2500);
+    fpga_mem_nm_param->tempratue_alarm_close_threshold=(unsigned int)((shm_cfg_addr->tempratue_alarm_close_threshold.val*6.25+424)*1023/2500);
     
-	usleep(500000);
+	fpga_mem_nm_w->flag = FLAG_PARAM;
+
+    usleep(500000);
 	notify_fpga();
+
+    
     while(--count)
 	{
 		sleep(1);
@@ -4560,7 +5291,6 @@ int init_fpga_param(void)
         printf("/****************************************/\n");
 	}
 
-    
     printf("scan_mode = %u\n", fpga_mem_nm_param->scan_mode);
 	printf("freq_offset = %u\n", fpga_mem_nm_param->freq_offset);
 	printf("freq = %u\n", fpga_mem_nm_param->freq);
@@ -4569,6 +5299,10 @@ int init_fpga_param(void)
 	printf("locking_time = %u\n", fpga_mem_nm_param->locking_time);
 	printf("half_variance_threshold = %u\n", fpga_mem_nm_param->half_variance_threshold);
 	printf("dev_call_timeout = %u\n", fpga_mem_nm_param->dev_call_timeout);
+    printf("close_transmit_threshold = %u\n", fpga_mem_nm_param->close_transmit_threshold);
+    printf("resume_transmit_threshold = %u\n", fpga_mem_nm_param->resume_transmit_threshold);
+    printf("tempratue_alarm_start_threshold = %u\n", fpga_mem_nm_param->tempratue_alarm_start_threshold);
+    printf("tempratue_alarm_close_threshold = %u\n", fpga_mem_nm_param->tempratue_alarm_close_threshold);
 	return 0;
 }
 
@@ -4695,142 +5429,35 @@ void net_config(void)
 
 int test_code(int status)
 {
-    if (-1 == status)
-    {
+    if (-1 == status) 
+    { 
         printf("system return failed!\n");
-        return -1;
-    }
-    else
+		return -1;
+			
+	}
+	else
     {
         if (WIFEXITED(status))
-        {
-            if(0 == WEXITSTATUS(status))
-            {
-                return 0;
-            }
-            else
-            {
-                printf(" WEXITSTATUS(status) failed!\n");
-                return -1;
-            }
-        }
-        else
-        {
-            printf("WIFEXITED(status) failed!\n");
-            return -1;
-        }
-    }
+		{
+		    if(0 == WEXITSTATUS(status))
+			{
+		        return 0;
+			}
+			else
+			{
+			    printf(" WEXITSTATUS(status) failed!\n");	   
+		   		return -1;
+			}
+		}
+		else  
+		{  
+		    printf("WIFEXITED(status) failed!\n");
+			return -1;
+		   	
+		}
+	}
 }
 
-
-#if 0
-void signal_handler(int num)
-{
-    unsigned int area_flag = 0;
-    int status=0;
-
-    if (iq_switch_status == 1)  // 打开-FPGA
-    {
-        if(0 == iq_switch_open_count)
-        {
-            status=system("mount /dev/mmcblk0p1 /mnt");
-            if(-1==test_code(status))
-            {
-                printf("mount /dev/mmcblk0p1 fail\n");
-                iq_mount_sd_flag=0;
-                send_iq_close_to_queque();
-                return ;
-            }
-            else
-            {
-                mem_fd_fp= fopen("/mnt/iqdata.txt","wb");
-                iq_mount_sd_flag=1;
-                if(mem_fd_fp == NULL)
-                {
-                    printf("File /mnt/iqdata.txt open error\n");
-                    system("umount /mnt");
-                    iq_mount_sd_flag=0;
-                    fclose(mem_fd_fp);
-                    send_iq_close_to_queque();
-                    return;
-                }
-            }
-            ++iq_switch_open_count;
-        }
-
-
-        if ((ftell(mem_fd_fp)+DATA_LENGTH) > MAX_VOLUMN_IQ_DATA)
-        {
-            printf("save iq data excess 60M \n");
-            if(mem_fd_fp != NULL)
-            {
-                fclose(mem_fd_fp);
-                system("umount /mnt");
-                iq_mount_sd_flag = 0;
-                mem_fd_fp=NULL;
-            }
-            send_iq_close_to_queque();
-            return;
-        }
-        else
-        {
-
-
-            area_flag = ioctl(mem_fd, GET_DATA_AREA_CMD, 0);
-
-            if(area_flag == UP_AREA_FLAG)
-            {
-                printf("first area write\n");
-                fwrite(iq_start_addr, DATA_LENGTH, 1, mem_fd_fp);
-            }
-            else if(area_flag == DOWN_AREA_FLAG)
-            {
-
-                printf("second area write\n");
-                fwrite(iq_start_addr+MEM_LENGTH/2,DATA_LENGTH,1,mem_fd_fp);
-            }
-            else
-            {
-                printf("app ioctl error!\n");
-            }
-        }
-    }
-
-    return;
-}
-#endif
-
-#if 0
-// 通知FPGA关闭
-void send_iq_close_to_queque(void)
-{
-    QUEUE_MSG q_msg;
-
-    int close = 0x00;
-    iq_excess_volumn_flag = 0;  // 设置正常情况，通知FPGA关闭
-
-    q_msg.mtype = MSG_TYPE_CMD;
-
-    q_msg.ipc_msg.dst_id=local_dev_id;
-    q_msg.ipc_msg.src_id=local_dev_id;
-    q_msg.ipc_msg.nm_type=NM_TYPE_NM;
-    q_msg.ipc_msg.cmd_code=CMD_CODE_SAVE_IQ_DATA;
-    q_msg.ipc_msg.op_code=OP_CODE_SET;
-
-    memcpy(q_msg.ipc_msg.payload, &close, sizeof(int));  //通知FPGA关闭数据保存
-
-    if (-1 == msgsnd(qid_mgrh, &q_msg, sizeof(NM_IPC_MSG), 0))
-    {
-        // 没通知成功
-        printf("<%s> <%s> <%d> qid_mgrh msgsnd err, errno = %d\n", __FILE__, __FUNCTION__, __LINE__, errno);
-
-    }
-    else
-    {
-       iq_excess_volumn_flag=1;  // 设置为异常  (通知成功)
-    }
-}
-#endif
 
 // 通知FPGA关闭
 void send_iq_close_to_queque(int flag)
@@ -4862,5 +5489,276 @@ void send_iq_close_to_queque(int flag)
     }
 }
 
+
+
+void clear_report_ai_alarm_flag()
+{
+   int i = 0;
+
+	
+	ALARM_ITEM *ptAlarm = ptIPCShm->alarm_struct;
+    
+	for(i=0; i<MGR_ALARM_MAX; i++,ptAlarm++)
+	{		
+		ptAlarm->alm_sended_ai_flag=0;
+        ptAlarm->alm_reset_send_ai_num=0;
+	} 
+}
+
+
+
+
+
+int  confirm_mount_point()
+{
+    unsigned int size;
+    pid_t status;
+
+    FILE *fd;
+
+    fd = popen("/loadapp/mount.sh", "r");
+
+    if(fd==NULL)
+    {
+        printf("open /loadapp/mount.sh file error!\n");
+        return -1;
+    }
+
+    memset(buffer,0x00,sizeof(buffer));
+
+    if(fgets((char*)buffer, sizeof(buffer), fd)==NULL)
+    {
+        printf("get mount point error!\n");
+        return -1 ;
+    }
+
+    printf("current mount point %s on /loadapp\n",buffer);
+
+    pclose(fd);
+
+    if(strcmp((char*)buffer,"/dev/mtdblock6\n")==0)
+    {
+        status = system("mount -t jffs2 /dev/mtdblock7 /mnt");
+        printf("mount /dev/mtdblock7 on /mnt\n");
+    }
+    else
+    {
+        status = system("mount -t jffs2 /dev/mtdblock6 /mnt");
+        printf("mount /dev/mtdblock6 on /mnt\n");
+    }
+
+    if (-1 == status)
+    {
+        printf("mount /dev/mtdblockx on /mnt failed!\n");
+        return -1 ;
+    }
+    else
+    {
+        if (WIFEXITED(status))
+        {
+            if (0 == WEXITSTATUS(status))
+            {
+                	chdir("/mnt");
+	                return 0;
+            }
+            else
+            {
+                printf("mount /dev/mtdblockx on /mnt WEXITSTATUS(status) failed!\n");
+                return -1 ;
+            }
+        }
+        else
+        {
+            printf("mount /dev/mtdblockx on /mnt WIFEXITED(status) failed!\n");
+            return -1 ;
+        }
+    }
+
+}
+
+
+int update_loadapp()
+{
+	char buffer_active[]="active\n";
+	char buffer_back[]="back\n";
+	FILE * fd;
+	unsigned  int size;
+	int status=0;
+	if(confirm_mount_point())
+	{
+		printf("confirm_mount_point failed!\n");
+		return -1;	   
+	}
+	
+	status =system(" cp -rf /home/* /mnt");
+	if(test_code(status))
+	{
+		printf("system cp -rf * /mnt failed!\n");
+		printf("status = %d\n",status);
+		return -1;	
+	}
+	
+	fd=fopen("/mnt/loadflag","wb");
+		       
+	if(fd == NULL)
+	{
+		printf("open /mnt/loadflag file error!\n");
+		chdir("/");
+		system("umount /mnt");
+		return -1;
+		        
+	}
+	size=strlen(buffer_active);
+	fwrite(buffer_active,size,1,fd);
+	fclose(fd);
+	if(strcmp((char *)buffer,"/dev/mtdblock5\n")!=0)
+	{
+		               
+		fd=fopen("/loadapp/loadflag","wb");
+		       
+		if(fd == NULL)
+		{
+		    printf("open /loadapp/loadflag file failed!\n");
+		    chdir("/");
+		    system("umount /mnt");
+		    return -1;
+		}
+		size=strlen(buffer_back);
+		fwrite(buffer_back,size,1,fd);
+		fclose(fd); 
+	}
+    system("cp -rf /loadapp/nas_config.ini /mnt");
+    system("cp -rf /loadapp/ConfigFile     /mnt");
+    system("cp -rf /loadapp/config.ini /mnt");
+    chdir("/");
+	system("umount /mnt");
+    printf("update loadapp success\n");
+	return 0;  
+}
+
+
+int update_dtb()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("flash_eraseall /dev/mtd2");
+    if(test_code(status))
+	{
+		printf("status=%d\n",status);
+		printf("flash_eraseall failed!\n");
+		return -1;   
+	}
+	else
+	{
+		status =system("flashcp soc_system.dtb /dev/mtd2");
+		if(test_code(status))
+		{
+			printf("flashcp failed!\n");
+		   	return -1;
+		}
+	}
+    printf("update dtb success\n");
+    return 0;
+}
+
+
+int update_uboot()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("flash_eraseall /dev/mtd0");
+    if(test_code(status))
+    {
+        printf("flash_eraseall failed!\n");
+        return -1;   
+    }
+    else
+    {
+        status =system("flashcp bootloader /dev/mtd0");
+        if(test_code(status))
+        {
+            printf("flashcp failed!\n");
+            return -1;
+        }
+    }
+    printf("update uboot success\n");
+    return 0;
+}
+
+int update_file_system()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("flash_eraseall /dev/mtd4");
+    if(test_code(status))
+    {
+        printf("flash_eraseall failed!\n");
+        return -1;   
+    }
+    else
+    {
+        status =system("flashcp ramdisk.image.gz /dev/mtd4");
+        if(test_code(status))
+        {
+            printf("flashcp failed!\n");
+            return -1;
+        }
+    }
+    printf("update file_system  success\n");
+    return 0;
+}
+
+
+int update_rbf()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("flash_eraseall /dev/mtd1");
+    if(test_code(status))
+    {
+        printf("flash_eraseall failed!\n");
+        return -1;   
+    }
+    else
+    {
+        status =system("flashcp soc_system.rbf /dev/mtd1");
+        if(test_code(status))
+        {
+            printf("flashcp failed!\n");
+            return -1;
+        }
+    }
+    printf("update rbf  success\n");
+    return 0;
+}
+
+
+int update_zimage()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("flash_eraseall /dev/mtd3");
+    if(test_code(status))
+    {
+        printf("flash_eraseall failed!\n");
+        return -1;   
+    }
+    else
+    {
+        status =system("flashcp zImage /dev/mtd3");
+        if(test_code(status))
+        {
+            printf("flashcp failed!\n");
+            return -1;
+        }
+    }
+    printf("update zimage success\n");
+    return 0;
+}
 
 

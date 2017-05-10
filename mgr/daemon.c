@@ -51,6 +51,11 @@ SHM_CFG_STRU * shm_cfg_addr = NULL;
 SHM_IPC_STRU * shm_ipc_addr = NULL;
 SHM_NM_STRU * shm_nm_addr = NULL;
 SHM_IPC_STRU * ptIPCShm = NULL;
+/**
+ * @var ptMgrAlarm
+ * @brief 告警表指针
+ */
+ALARM_ITEM *ptMgrAlarm = NULL;
 
 char src_buf[4096];
 /* bit0-配置项变化 bit1-版本变化 bit2-打开配置文件失败 bit3-配置文件不存在 */
@@ -106,6 +111,12 @@ int main()
 	fill_shm_ipc_default();
 	
 	fill_shm_nm_default();
+
+	if (init_alarm_table())
+	{
+		printf("init_alarm_table err\n");
+		return -1;
+	}
 	
 	if (0 == access(NAS_CONFIG_FILE, F_OK))
 	{
@@ -171,6 +182,39 @@ int main()
 	return 0;
 }
 
+
+
+int init_alarm_table(void)
+{
+	int i = 0;
+	UINT8 alarm_code;
+
+	sem_ipc_p();
+
+	
+	ptMgrAlarm = ptIPCShm->alarm_struct;
+	memset(ptMgrAlarm,0x00,MGR_ALARM_MAX * sizeof(ALARM_ITEM));
+
+	for(i = 0;i < MGR_ALARM_MAX ; i++)
+	{
+		ptMgrAlarm->alm_code = 0xff;
+		ptMgrAlarm++;
+	}
+
+
+    ptMgrAlarm = ptIPCShm->alarm_struct;
+    alarm_code=MGR_ALARM_CENTER_1;
+    for(i = 0;i < (MGR_ALARM_CENTER_NUM+MGR_ALARM_FPGA_NUM+MGR_ALARM_SERVER_NUM);i++)
+	{
+		ptMgrAlarm->alm_code = alarm_code;
+        alarm_code++;
+		ptMgrAlarm++;
+	}
+
+    sem_ipc_v();
+	
+	return 0;
+}
 
 int start_child_task(CHILD_TASK * sub)
 {
@@ -463,22 +507,22 @@ void fill_shm_cfg_default(void)
 	memcpy(shm_cfg_addr->gateway.buf, DEFAULT_GATEWAY, sizeof(shm_cfg_addr->gateway.buf));
 
 	shm_cfg_addr->work_time_out.id= 0x13;
-	memcpy(shm_cfg_addr->work_time_out.name, "work_time_out", 20);
+	memcpy(shm_cfg_addr->work_time_out.name, "work_timeout", 20);
 	shm_cfg_addr->work_time_out.len = 4;
 	shm_cfg_addr->work_time_out.val=DEFAULT_WORK_TIME_OUT;
 
 	shm_cfg_addr->gps_time_out.id= 0x14;
-	memcpy(shm_cfg_addr->gps_time_out.name, "gps_time_out", 20);
+	memcpy(shm_cfg_addr->gps_time_out.name, "gps_timeout", 20);
 	shm_cfg_addr->gps_time_out.len = 4;
 	shm_cfg_addr->gps_time_out.val=DEFAULT_GPS_TIME_OUT;
 
 	shm_cfg_addr->stun_time_out.id= 0x15;
-	memcpy(shm_cfg_addr->stun_time_out.name, "stun_time_out", 20);
+	memcpy(shm_cfg_addr->stun_time_out.name, "stun_timeout", 20);
 	shm_cfg_addr->stun_time_out.len = 4;
 	shm_cfg_addr->stun_time_out.val=DEFAULT_STUN_TIME_OUT;
 
 	shm_cfg_addr->start_time_out.id= 0x16;
-	memcpy(shm_cfg_addr->start_time_out.name, "start_time_out", 20);
+	memcpy(shm_cfg_addr->start_time_out.name, "start_timeout", 20);
 	shm_cfg_addr->start_time_out.len = 4;
 	shm_cfg_addr->start_time_out.val=DEFAULT_START_TIME_OUT;
 
@@ -488,7 +532,7 @@ void fill_shm_cfg_default(void)
 	memcpy(shm_cfg_addr->fpga_version.buf, FPGA_VERSION, sizeof(shm_cfg_addr->fpga_version.buf));
 	
 	shm_cfg_addr->dev_call_timeout.id= 0x18;
-	memcpy(shm_cfg_addr->dev_call_timeout.name, "dev_call_timeout", 20);
+	memcpy(shm_cfg_addr->dev_call_timeout.name, "call_timeout", 20);
 	shm_cfg_addr->dev_call_timeout.len = 4;
 	shm_cfg_addr->dev_call_timeout.val=DEFAULT_DEV_CALL_TIMEOUT;
 
@@ -504,7 +548,30 @@ void fill_shm_cfg_default(void)
     shm_cfg_addr->freq_offset.len = 4;
 	shm_cfg_addr->freq_offset.val=DEFAULT_FREQ_OFFSET;
 
-	
+	shm_cfg_addr->alarm_switch_status.id= 0x1b;
+    memcpy(shm_cfg_addr->alarm_switch_status.name, "alarm_status", 20);
+    shm_cfg_addr->alarm_switch_status.len = 4;
+	shm_cfg_addr->alarm_switch_status.val=DEFAULT_ALARM_SWITCH_STATUS;
+
+    shm_cfg_addr->close_transmit_threshold.id= 0x1c;
+    memcpy(shm_cfg_addr->close_transmit_threshold.name, "close_threshold", 20);
+    shm_cfg_addr->close_transmit_threshold.len = 4;
+	shm_cfg_addr->close_transmit_threshold.val=DEFAULT_CLOSE_TRAN_THRESHOLD;
+
+    shm_cfg_addr->tempratue_alarm_start_threshold.id= 0x1d;
+    memcpy(shm_cfg_addr->tempratue_alarm_start_threshold.name, "start_temp", 20);
+    shm_cfg_addr->tempratue_alarm_start_threshold.len = 4;
+	shm_cfg_addr->tempratue_alarm_start_threshold.val=DEFAULT_START_TEMP_ALARM;
+
+    shm_cfg_addr->tempratue_alarm_close_threshold.id= 0x1e;
+    memcpy(shm_cfg_addr->tempratue_alarm_close_threshold.name, "close_temp", 20);
+    shm_cfg_addr->tempratue_alarm_close_threshold.len = 4;
+	shm_cfg_addr->tempratue_alarm_close_threshold.val=DEFAULT_CLOSE_TEMP_ALARM;
+
+    shm_cfg_addr->resume_transmit_threshold.id= 0x1f;
+    memcpy(shm_cfg_addr->resume_transmit_threshold.name, "resume_threshold", 20);
+    shm_cfg_addr->resume_transmit_threshold.len = 4;
+	shm_cfg_addr->resume_transmit_threshold.val=DEFAULT_RESUME_TRAN_THRESHOLD;
 	sem_cfg_v();
 }
 

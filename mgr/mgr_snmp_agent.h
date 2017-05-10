@@ -86,6 +86,41 @@ Netsnmp_Node_Handler handle_id30Power;
 Netsnmp_Node_Handler handle_id31Power;
 Netsnmp_Node_Handler handle_id32Power;
 
+Netsnmp_Node_Handler handle_id1QueryAlarm;
+Netsnmp_Node_Handler handle_id2QueryAlarm;
+Netsnmp_Node_Handler handle_id3QueryAlarm;
+Netsnmp_Node_Handler handle_id4QueryAlarm;
+Netsnmp_Node_Handler handle_id5QueryAlarm;
+Netsnmp_Node_Handler handle_id6QueryAlarm;
+Netsnmp_Node_Handler handle_id7QueryAlarm;
+Netsnmp_Node_Handler handle_id8QueryAlarm;
+Netsnmp_Node_Handler handle_id9QueryAlarm;
+Netsnmp_Node_Handler handle_id10QueryAlarm;
+Netsnmp_Node_Handler handle_id11QueryAlarm;
+Netsnmp_Node_Handler handle_id12QueryAlarm;
+Netsnmp_Node_Handler handle_id13QueryAlarm;
+Netsnmp_Node_Handler handle_id14QueryAlarm;
+Netsnmp_Node_Handler handle_id15QueryAlarm;
+Netsnmp_Node_Handler handle_id16QueryAlarm;
+Netsnmp_Node_Handler handle_id17QueryAlarm;
+Netsnmp_Node_Handler handle_id18QueryAlarm;
+Netsnmp_Node_Handler handle_id19QueryAlarm;
+Netsnmp_Node_Handler handle_id20QueryAlarm;
+Netsnmp_Node_Handler handle_id21QueryAlarm;
+Netsnmp_Node_Handler handle_id22QueryAlarm;
+Netsnmp_Node_Handler handle_id23QueryAlarm;
+Netsnmp_Node_Handler handle_id24QueryAlarm;
+Netsnmp_Node_Handler handle_id25QueryAlarm;
+Netsnmp_Node_Handler handle_id26QueryAlarm;
+Netsnmp_Node_Handler handle_id27QueryAlarm;
+Netsnmp_Node_Handler handle_id28QueryAlarm;
+Netsnmp_Node_Handler handle_id29QueryAlarm;
+Netsnmp_Node_Handler handle_id30QueryAlarm;
+Netsnmp_Node_Handler handle_id31QueryAlarm;
+Netsnmp_Node_Handler handle_id32QueryAlarm;
+
+
+
 Netsnmp_Node_Handler handle_localFreq;
 Netsnmp_Node_Handler handle_localPower;
 Netsnmp_Node_Handler handle_emissiveVCOFreq;
@@ -138,6 +173,14 @@ Netsnmp_Node_Handler handle_devCallTimeout;
 Netsnmp_Node_Handler handle_scanMode;
 Netsnmp_Node_Handler handle_errorRateFreq;
 Netsnmp_Node_Handler handle_saveIqData;
+Netsnmp_Node_Handler handle_alarmSwitchStatus;
+Netsnmp_Node_Handler handle_closeTranThreshold;
+Netsnmp_Node_Handler handle_tempAlarmStartThreshold;
+Netsnmp_Node_Handler handle_tempAlarmCloseThreshold;
+Netsnmp_Node_Handler handle_resumeTranThreshold;
+
+
+
 
 
 

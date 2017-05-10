@@ -17,6 +17,9 @@
 
 #include "mgr.h"
 
+
+
+
 void init_local_val(void);
 int mgra_ack_msg_queue_create(void);
 int init_ipc_socket(void);

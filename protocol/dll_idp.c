@@ -1001,7 +1001,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(CSBK_LEN+2),(UINT8 *)&NasAiData);
+        CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
     }
     else
@@ -2480,7 +2480,6 @@ int IDP_NasNegrReportFun(NAS_AI_PAYLOAD * pvNasData)
         GenNasCclData(ptCclData, CT_NEGHR_REPORT, pvNasData->dst_id, pvNasData->src_id, (NER_LEN+1), pvNasData->data);
         IDP_SendCclData(ptCclData);
     }
-
     return NO_ERR;
 }
 
@@ -2993,7 +2992,7 @@ void INFNasDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     }
 
 
-
+    // ¶ÏÁ´¸æ¾¯»Ö¸´
     if ((ptCFGShm->start_neighbor.val == 1) && (g_discon_state == DISCON_HAPPEN))
     {
         set_alarm_discon_switch(TURN_OFF);

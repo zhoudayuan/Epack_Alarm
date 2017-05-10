@@ -353,7 +353,7 @@ void * pthread_mgrh_mgra_recv(void *arg)
 			{
 				continue;
 			}
-
+           
 			if (shm_ipc_addr->mgr_printf[1])
 			{
 				LOG_DEBUG(s_i4LogMsgId,\
@@ -366,6 +366,9 @@ void * pthread_mgrh_mgra_recv(void *arg)
 						__FILE__, __FUNCTION__, __LINE__,\
 						ack_msg.nm_type, ack_msg.src_id, ack_msg.dst_id, ack_msg.cmd_code, ack_msg.op_code);
 			}
+           //////////////////测试////////////////
+           
+		   
 
 			if (ack_msg.nm_type == NM_TYPE_CENTER)
 			{
@@ -437,15 +440,16 @@ void * pthread_adp_mgra_recv(void *arg)
 
 			if ((nas_ai_payload.op_code == OP_CODE_ALARM) || (nas_ai_payload.op_code == OP_CODE_E_ALARM))
 			{
-				if (shm_ipc_addr->is_connect_cc == 1)
+				if (nas_ai_payload.src_id !=local_dev_id)
 				{
+				    ///////发送本地手咪
 					if (nas_ai_payload.crc != crc8((unsigned char *)&nas_ai_payload, sizeof(NAS_AI_PAYLOAD) - 1))
 					{
 						printf("<%s> <%s> <%d> crc8 err\n", __FILE__, __FUNCTION__, __LINE__);
 						continue;
 					}
 
-					ack_msg.nm_type = nas_ai_payload.nm_type;
+					ack_msg.nm_type =NM_TYPE_CENTER;
 					ack_msg.src_id = nas_ai_payload.src_id;
 					ack_msg.dst_id = nas_ai_payload.dst_id;
 					ack_msg.cmd_code = nas_ai_payload.cmd_code;
@@ -464,11 +468,9 @@ void * pthread_adp_mgra_recv(void *arg)
 								__FILE__, __FUNCTION__, __LINE__,\
 								ack_msg.nm_type, ack_msg.src_id, ack_msg.dst_id, ack_msg.cmd_code, ack_msg.op_code);
 					}
-
 					sendto(sock_ipc, &ack_msg, sizeof(NM_IPC_MSG), 0, (struct sockaddr *)(&sockaddr_mgra_cc), sizeof(struct sockaddr_in)); 
-				}
-				else
-				{
+
+					/////////////////发往空口
 					if (recv_ai_msg.RxFreq1 == 0x01)
 					{
 						if (recv_ai_msg.SlotNum == 0x00)
@@ -506,8 +508,15 @@ void * pthread_adp_mgra_recv(void *arg)
 			
 					send_ai_msg.TimeStamp += 2;
 					send_ai_msg.ResFrqSlot = 0;
+
+					if (shm_ipc_addr->mgr_printf[1])
+					{
+						LOG_DEBUG(s_i4LogMsgId,\
+								"\n alarm send ai success\n");
+					}
 			
-					sendto(sock_ipc, &send_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in)); 
+					sendto(sock_ipc, &send_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgra_adp), sizeof(struct sockaddr_in));
+					
 				}
 			}
 			else
@@ -639,17 +648,16 @@ void * pthread_ack_handle(void *arg)
 				shm_nm_addr->dev_freq.ack_flag = ACK_FLAG_OK;
 				sem_nm_v();
 				break;
-            
-			case CMD_CODE_SAVE_IQ_DATA:
-				sem_nm_p();
-				memcpy(&shm_nm_addr->save_iq_data.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
-				shm_nm_addr->save_iq_data.ack_flag = ACK_FLAG_OK;
-				sem_nm_v();
-				break;
 			case CMD_CODE_DEV_POWER:
 				sem_nm_p();
 				memcpy(&shm_nm_addr->dev_Power.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
 				shm_nm_addr->dev_Power.ack_flag = ACK_FLAG_OK;
+				sem_nm_v();
+				break;
+			case CMD_CODE_SAVE_IQ_DATA:
+				sem_nm_p();
+				memcpy(&shm_nm_addr->save_iq_data.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				shm_nm_addr->save_iq_data.ack_flag = ACK_FLAG_OK;
 				sem_nm_v();
 				break;
 			case CMD_CODE_COMBINED_DATA:
@@ -973,8 +981,44 @@ void * pthread_ack_handle(void *arg)
 				memcpy(&shm_nm_addr->scan_mode.data, q_msg.ipc_msg.payload, sizeof(unsigned int)*2);
 				shm_nm_addr->scan_mode.ack_flag= ACK_FLAG_OK;
 				sem_nm_v();
-				break;	
+				break;
 
+			case CMD_CODE_ALARM_SWITCH:
+				sem_nm_p();
+				memcpy(&shm_nm_addr->alarm_switch_status.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				shm_nm_addr->alarm_switch_status.ack_flag= ACK_FLAG_OK;
+				sem_nm_v();
+				break;
+            case CMD_CODE_QUERY_ALARM:
+				sem_nm_p();
+				memcpy(&shm_nm_addr->alarm_data.data, q_msg.ipc_msg.payload, MGR_ALARM_BYTE_MAX);
+				shm_nm_addr->alarm_data.ack_flag= ACK_FLAG_OK;
+				sem_nm_v();
+				break;
+            case CMD_CODE_CLOSE_TRAN_THRESHOLD:
+				sem_nm_p();
+				memcpy(&shm_nm_addr->close_transmit_threshold.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				shm_nm_addr->close_transmit_threshold.ack_flag= ACK_FLAG_OK;
+				sem_nm_v();
+				break;
+            case CMD_CODE_START_TEMP_ALARM :
+				sem_nm_p();
+				memcpy(&shm_nm_addr->tempratue_alarm_start_threshold.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				shm_nm_addr->tempratue_alarm_start_threshold.ack_flag= ACK_FLAG_OK;
+				sem_nm_v();
+				break;
+            case CMD_CODE_CLOSE_TEMP_ALARM :
+				sem_nm_p();
+				memcpy(&shm_nm_addr->tempratue_alarm_close_threshold.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				shm_nm_addr->tempratue_alarm_close_threshold.ack_flag= ACK_FLAG_OK;
+				sem_nm_v();
+				break;
+            case CMD_CODE_RESUME_TRAN_THRESHOLD :
+				sem_nm_p();
+				memcpy(&shm_nm_addr->resume_transmit_threshold.data, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				shm_nm_addr->resume_transmit_threshold.ack_flag= ACK_FLAG_OK;
+				sem_nm_v();
+				break;
 			default:
 				printf("<%s> <%s> <%d> unknown cmd_code\n", __FILE__, __FUNCTION__, __LINE__);
 				break;

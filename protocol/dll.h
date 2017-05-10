@@ -238,7 +238,7 @@
 #define     TURN_OFF                 0     // 设置邻点断链告警开关[关闭]
 #define     DISCON_DISABLE          -1     // 没有邻点断链告警功能
 #define     DISCON_HAPPEN            1     // 检测到邻点断链出现，
-#define     DISCON_RECOVER           0     // 检测到邻点断链恢复，当前不断链状态，
+#define     DISCON_RECOVER           0     // 检测到邻点断链已恢复，当前为不断链状态，
 
 
 /******************************************************************************
