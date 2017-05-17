@@ -462,17 +462,17 @@ int semaphore_v(int sem_id)
     }
     if ((rtpdata[0] >> 6) != 2)  //Currently, the version is 2, if is not 2, unsupported.
     {
-        LOG_ERROR(s_LogMsgId,"[CCL][%s]the version is not 2", __FUNCTION__);
+        LOG_ERROR(s_LogMsgId,"[CCL][%s] the version is not 2", __FUNCTION__);
         return -1;
     }
     if (rtpdata[0] & 0x20)// Padding present.
     {
         PaddingLength = rtpdata[size - 1];
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s]PaddingLength len=%d ", __FUNCTION__,PaddingLength);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] PaddingLength len=%d ", __FUNCTION__,PaddingLength);
         if (PaddingLength + 12 > size)
         {
 
-            LOG_ERROR(s_LogMsgId,"[CCL][%s]Padding present lenth   error", __FUNCTION__);
+            LOG_ERROR(s_LogMsgId,"[CCL][%s] Padding present lenth   error", __FUNCTION__);
             return -1;
         }
         size -= PaddingLength;

@@ -105,12 +105,12 @@ void IDP_Getlcdata(unsigned char *pvDllData);
 /**
 * @brief    打印PTT 命令响应函数
 */
-void    IDP_CclPrintpttack(unsigned char *CenterData);
+void IDP_CclPrintpttack(unsigned char *CenterData);
 
 /**
  * @brief   打印PTT 命令函数
  */
-void IDP_Ccl_printpttcmd(unsigned char *CenterData);
+void IDP_Ccl_PrintPttCmd(unsigned char *CenterData);
 
 
 /**
@@ -122,7 +122,7 @@ void  IDP_CclPrintDllData(unsigned char * ptDllData);
 * @brief    打印 上行短消息
 */
 
- void IDP_CclPrintsms(unsigned char* CenterData);
+void IDP_CclPrintSms(unsigned char* CenterData);
 /**
 * @brief    封装上行至中心GPS 数据包
 */

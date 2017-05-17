@@ -1,4 +1,3 @@
-
 /**
  * Copyright (C), 2016-2020, Hytera Comm. Co., Ltd.
  * @file    cclul.c
@@ -31,6 +30,7 @@
 #include "ccl_fun.h"
 
 
+
 /******************************************************************************
  *   ¿‡–Õ∂®“Â
  *   *************************************************************************/
@@ -45,11 +45,24 @@ extern CCL_PRINT_T * tcclPrint;
 extern FILE *pLogFd;
 extern SMS_CCL_DLL_EN *SMS_CCL_DLL;
 extern unsigned char s_tLast_Relay_Flg;
+
 /**
  * @var g_DllGlobalCfg
  * @brief »´æ÷≈‰÷√œÓ
  */
 extern DLL_GLB_CFG_T g_DllGlobalCfg;
+/**
+ * @brief µ˜ ‘¥Ú”°–≈œ¢
+ */
+
+extern TYPE_PRINT_T *pTable_sms;
+extern unsigned short pTable_sms_len;
+extern TYPE_PRINT_T *pTable_msg;
+extern unsigned short pTable_msg_len;
+extern TYPE_PRINT_T *pTable_data;
+extern unsigned short pTable_data_len;
+
+
 
  /******************************************************************************
  *   »´æ÷±‰¡ø∂®“Â
@@ -68,7 +81,7 @@ extern DLL_GLB_CFG_T g_DllGlobalCfg;
  *   ƒ⁄≤ø∫Ø ˝ µœ÷
  *   *************************************************************************/
  /**
- * @brief   Ω´‘¥ID ∫ÕƒøµƒID “‘ ÆΩ¯÷∆ ¥Ú”°≥ˆ¿¥£¨∑Ω±„µ˜ ‘ø¥
+ * @brief  ¥Û∂À◊™–°∂À£¨Ω´‘¥ID∫ÕƒøµƒID“‘ ÆΩ¯÷∆¥Ú”°≥ˆ¿¥£¨∑Ω±„µ˜ ‘ø¥
  * @author ÷‹¥Û‘™
  * @since
  * @bug
@@ -80,15 +93,12 @@ void PrintIDbyDec(unsigned char *src, unsigned char *dst)
     unsigned int  src_val;
     unsigned int  dst_val;
 
-
-
     if ((src[1]==0 && src[2]==0) || (dst[1]== 0 && dst[2]== 0))
     {
-        LOG_DEBUG(s_LogMsgId,"[CCL] \tsnd=%d rcv=%d\n", src[0], dst[0]);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] snd=%d-->rcv=%d", __FUNCTION__, src[0], dst[0]);
     }
     else
     {
-
         // ◊™ªÿ–°∂Àƒ£ Ω
         src_tmp[0] = src[2];
         src_tmp[1] = src[1];
@@ -100,7 +110,7 @@ void PrintIDbyDec(unsigned char *src, unsigned char *dst)
         dst_tmp[3] = '\0';
         memcpy(&src_val, src_tmp, sizeof(src_tmp));
         memcpy(&dst_val, dst_tmp, sizeof(dst_tmp));
-        LOG_DEBUG(s_LogMsgId,"[CCL] \tsnd=%d rcv=%d\n", src_val, dst_val);
+        LOG_DEBUG(s_LogMsgId,"[CCL] snd=%d-->rcv=%d", src_val, dst_val);
     }
 }
 
@@ -115,7 +125,7 @@ void PrintIDbyDec(unsigned char *src, unsigned char *dst)
  * @bug
  */
 
-void  IDP_GenPttOnAckpacket(unsigned  char *pvCenterData, int *Len,unsigned  char PttCmdResult)
+void IDP_GenPttOnAckpacket(unsigned  char *pvCenterData, int *Len,unsigned  char PttCmdResult)
 {
 
     PTT_ON_ACK *ptCenterData =(  PTT_ON_ACK *) pvCenterData;
@@ -190,7 +200,7 @@ void  IDP_GenNasStatePack(unsigned char pvrelayflg,unsigned char *pvCenterData,i
 }
 
 /**
- * @brief   ∑‚◊∞PTT √¸¡Ó ˝æ›∞¸
+ * @brief ∑‚◊∞PTT √¸¡Ó ˝æ›∞¸
  * @param [in] pvDllData   DLL…œ–– ˝æ›
  * @param [in] cmd      PTT√¸¡Ó±Í ∂
  * @param [out] pvCenterData  …œ––µΩ÷––ƒµƒ ˝æ›∞¸÷∏’Î
@@ -202,32 +212,31 @@ void  IDP_GenNasStatePack(unsigned char pvrelayflg,unsigned char *pvCenterData,i
 
 void IDP_GenPttCmd(unsigned char *pvDllData,unsigned char *pvCenterData,unsigned char cmd,int *Len)
 {
-   PTT_CMD *ptCenterData =(PTT_CMD *)pvCenterData;
-   ptCenterData->SharedHead.SigHead=0xec13;          //œ˚œ¢Õ∑
-   ptCenterData->SharedHead.SigType=0x000a;          //PTT√¸¡Ó
-   ptCenterData->SharedHead.Datalength=100;          //–≈¡Ó”––ß≥§∂»
-   ptCenterData->SharedHead.CheckVal=0xffff;         //01°¢02∞Ê±æ»´≤øÃÓ–¥F ±Í ∂Œﬁ–£—È
+    PTT_CMD *ptCenterData =(PTT_CMD *)pvCenterData;
+    ptCenterData->SharedHead.SigHead = 0xec13;          //œ˚œ¢Õ∑
+    ptCenterData->SharedHead.SigType = 0x000a;          //PTT√¸¡Ó
+    ptCenterData->SharedHead.Datalength = 100;          //–≈¡Ó”––ß≥§∂»
+    ptCenterData->SharedHead.CheckVal = 0xffff;         //01°¢02∞Ê±æ»´≤øÃÓ–¥F ±Í ∂Œﬁ–£—È
+    ptCenterData->CalledNum[0]  = LC_DATA.DesId[0];
+    ptCenterData->CalledNum[1]  = LC_DATA.DesId[1];
+    ptCenterData->CalledNum[2]  = LC_DATA.DesId[2];
+    ptCenterData->CallingNum[0] = LC_DATA.SourceId[0];
+    ptCenterData->CallingNum[1] = LC_DATA.SourceId[1];
+    ptCenterData->CallingNum[2] = LC_DATA.SourceId[2];
 
-                                                     //PPT  √¸¡Ó  ±Í ∂PTT–≈¡Ó◊¥Ã¨£®«Î«ÛCMD_ON=0x06°¢ Õ∑≈CMD_OFF=0x07£
-   ptCenterData->CalledNum[0] =LC_DATA.DesId[0];
-   ptCenterData->CalledNum[1] =LC_DATA.DesId[1];
-   ptCenterData->CalledNum[2] =LC_DATA.DesId[2];
-   ptCenterData->CallingNum[0]=LC_DATA.SourceId[0];
-   ptCenterData->CallingNum[1]=LC_DATA.SourceId[1];
-   ptCenterData->CallingNum[2]=LC_DATA.SourceId[2];
-   if(CMD_PTT_ON==cmd)
-   {
-       ptCenterData->PttStat=0x06 ;
-   }
-   else
-   {
-       ptCenterData->PttStat=0x07 ;
-   }
-   *Len=CENTER_SHARE_HEAD_LEN+PTT_ACK_VALID_LEN;
-
-   if(1 == tcclPrint->CclUp)
-   {
-        IDP_Ccl_printpttcmd((unsigned char *)ptCenterData);
+    //PPT  √¸¡Ó  ±Í ∂PTT–≈¡Ó◊¥Ã¨£®«Î«ÛCMD_ON=0x06°¢ Õ∑≈CMD_OFF=0x07£
+    if (CMD_PTT_ON == cmd)
+    {
+        ptCenterData->PttStat = CMD_PTT_ON;
+    }
+    else
+    {
+        ptCenterData->PttStat = CMD_PTT_OFF;
+    }
+    *Len = CENTER_SHARE_HEAD_LEN + PTT_ACK_VALID_LEN;
+    if (1 == tcclPrint->CclUp)
+    {
+        IDP_Ccl_PrintPttCmd((unsigned char *)ptCenterData);
     }
 }
 /**
@@ -241,20 +250,20 @@ void IDP_GenPttCmd(unsigned char *pvDllData,unsigned char *pvCenterData,unsigned
 */
 void IDP_GenSmsPacket(unsigned char *pvDllData,unsigned char *pvCenterData,int *Len)
 {
-    DLL_CCL_UL_T* ptDllData=( DLL_CCL_UL_T*)pvDllData;
-    SMS_CENTER_CCL_DL* ptCenterData =(SMS_CENTER_CCL_DL*)pvCenterData;
-    ptCenterData->SharedHead.SigHead=0xec13;
-    ptCenterData->SharedHead.SigType=SIG_SMS_SEND;
-    ptCenterData->SmsType=MESSAGE_GROUP_CALL;
+    DLL_CCL_UL_T* ptDllData = ( DLL_CCL_UL_T*)pvDllData;
+    SMS_CENTER_CCL_DL* ptCenterData = (SMS_CENTER_CCL_DL*)pvCenterData;
+    ptCenterData->SharedHead.SigHead = 0xec13;
+    ptCenterData->SharedHead.SigType = SIG_SMS_SEND;
+    ptCenterData->SmsType = MESSAGE_GROUP_CALL;
     ptCenterData->SharedHead.Datalength = sizeof(SMS_CENTER_CCL_DL)-CENTER_SHARE_HEAD_LEN;;
-    SMS_CCL_DLL=(SMS_CCL_DLL_EN*) ptDllData->PayLoad;
-    ptCenterData->SenderNum[0]=ptDllData->SrcId[0];
-    ptCenterData->SenderNum[1]=ptDllData->SrcId[1];
-    ptCenterData->SenderNum[2]=ptDllData->SrcId[2];
-    ptCenterData->ReceiverNum[0]=ptDllData->DstId[0];
-    ptCenterData->ReceiverNum[1]=ptDllData->DstId[1];
-    ptCenterData->ReceiverNum[2]=ptDllData->DstId[2];
-    ptCenterData->ValidLength=ptDllData->DataLen-5;
+    SMS_CCL_DLL = (SMS_CCL_DLL_EN*) ptDllData->PayLoad;
+    ptCenterData->SenderNum[0] = ptDllData->SrcId[0];
+    ptCenterData->SenderNum[1] = ptDllData->SrcId[1];
+    ptCenterData->SenderNum[2] = ptDllData->SrcId[2];
+    ptCenterData->ReceiverNum[0] = ptDllData->DstId[0];
+    ptCenterData->ReceiverNum[1] = ptDllData->DstId[1];
+    ptCenterData->ReceiverNum[2] = ptDllData->DstId[2];
+    ptCenterData->ValidLength = ptDllData->DataLen-5;
 
     LitToBigSmsData(ptCenterData->SmsData,SMS_CCL_DLL->SmsPayLoad,ptDllData->DataLen-5);
 
@@ -262,7 +271,7 @@ void IDP_GenSmsPacket(unsigned char *pvDllData,unsigned char *pvCenterData,int *
     if(1 == tcclPrint->CclUp)
     {
         LOG_PrintM(s_LogMsgId,SMS_CCL_DLL->SmsPayLoad,30);
-        IDP_CclPrintsms((unsigned char *)ptCenterData);
+        IDP_CclPrintSms((unsigned char *)ptCenterData);
         LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,30);
     }
 }
@@ -345,7 +354,7 @@ void IDP_GenAlarm_ClearData(unsigned char type, unsigned char *pvDlldata, unsign
 
     if (1 == tcclPrint->CclUp)
     {
-        IDP_CclPrintsms((unsigned char *)ptCenterData);
+        IDP_CclPrintSms((unsigned char *)ptCenterData);
         //LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,20);
     }
 }
@@ -385,7 +394,7 @@ void  IDP_GenMsAckData(unsigned char datatype,unsigned char * pvDlldata,unsigned
     *Len=sizeof(SMS_CENTER_CCL_DL);
     if(1 == tcclPrint->CclUp)
     {
-        IDP_CclPrintsms((unsigned char *)ptCenterData);
+        IDP_CclPrintSms((unsigned char *)ptCenterData);
         LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,20);
     }
 }
@@ -397,60 +406,60 @@ void  IDP_GenMsAckData(unsigned char datatype,unsigned char * pvDlldata,unsigned
 * @since
 * @bug
 */
-
-void  IDP_GenNasSigAckData(unsigned char pvsigtype,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len)
+void IDP_GenNasSigAckData(unsigned char pvsigtype, unsigned char *pvDlldata, unsigned char *pvCenterData, int *Len)
 {
-    DLL_CCL_UL_T* ptDllData=( DLL_CCL_UL_T*)pvDlldata;
+    DLL_CCL_UL_T* ptDllData = ( DLL_CCL_UL_T*)pvDlldata;
     SMS_CENTER_CCL_DL* ptCenterData =(SMS_CENTER_CCL_DL*)pvCenterData;
-    ptCenterData->SharedHead.SigHead=0xec13;
-    ptCenterData->SharedHead.Datalength=sizeof(SMS_CENTER_CCL_DL)-CENTER_SHARE_HEAD_LEN;
-    ptCenterData->SharedHead.SigType=SIG_SMS_SEND;
+    ptCenterData->SharedHead.SigHead = 0xec13;
+    ptCenterData->SharedHead.SigType = SIG_SMS_SEND;
+    ptCenterData->SharedHead.Datalength = sizeof(SMS_CENTER_CCL_DL) - CENTER_SHARE_HEAD_LEN;
+    ptCenterData->SenderNum[0] = ptDllData->SrcId[0];
+    ptCenterData->SenderNum[1] = ptDllData->SrcId[1];
+    ptCenterData->SenderNum[2] = ptDllData->SrcId[2];
+    ptCenterData->ReceiverNum[0] = ptDllData->DstId[0];
+    ptCenterData->ReceiverNum[1] = ptDllData->DstId[1];
+    ptCenterData->ReceiverNum[2] = ptDllData->DstId[2];
 
-    ptCenterData->SenderNum[0]=ptDllData->SrcId[0];
-    ptCenterData->SenderNum[1]=ptDllData->SrcId[1];
-    ptCenterData->SenderNum[2]=ptDllData->SrcId[2];
-    ptCenterData->ReceiverNum[0]=ptDllData->DstId[0];
-    ptCenterData->ReceiverNum[1]=ptDllData->DstId[1];
-    ptCenterData->ReceiverNum[2]=ptDllData->DstId[2];
-    if( CT_STUN_ACK_NAS ==pvsigtype) //“£‘ŒNAS
+    if( CT_STUN_ACK_NAS == pvsigtype) //“£‘ŒNAS
     {
-        ptCenterData->SmsType=STUN_REQ_NAS_ACK;
+        ptCenterData->SmsType = STUN_REQ_NAS_ACK;
     }
-    else if(CT_KILL_ACK_NAS ==pvsigtype) //“£±–
+    else if(CT_KILL_ACK_NAS == pvsigtype) //“£±–
     {
-        ptCenterData->SmsType=KILL_REQ_NAS_ACK;
+        ptCenterData->SmsType = KILL_REQ_NAS_ACK;
     }
-    else if(CT_ENABLE_ACK_NAS ==pvsigtype)  //º§ªÓ
+    else if(CT_ENABLE_ACK_NAS == pvsigtype)  //º§ªÓ
     {
-        ptCenterData->SmsType=REVIVE_REQ_NAS_ACK;
+        ptCenterData->SmsType = REVIVE_REQ_NAS_ACK;
     }
-    else if(CT_STUN_RPT_NAS ==pvsigtype)
+    else if(CT_STUN_RPT_NAS == pvsigtype)
     {
-        ptCenterData->SmsType=STUN_REQ_NAS;
+        ptCenterData->SmsType = STUN_REQ_NAS;
     }
-    else if(CT_KILL_RPT_NAS ==pvsigtype)
+    else if(CT_KILL_RPT_NAS == pvsigtype)
     {
-        ptCenterData->SmsType=KILL_REQ_NAS;
+        ptCenterData->SmsType = KILL_REQ_NAS;
     }
-    else if(CT_ENABLE_RPT_NAS ==pvsigtype)
+    else if(CT_ENABLE_RPT_NAS == pvsigtype)
     {
-        ptCenterData->SmsType=REVIVE_REQ_NAS;
+        ptCenterData->SmsType = REVIVE_REQ_NAS;
     }
     else
     {
-        LOG_ERROR(s_LogMsgId,"[CCL][%s]GPS DATATYPE ERROR ", __FUNCTION__);
+        LOG_ERROR(s_LogMsgId, "[CCL][%s]GPS DATATYPE ERROR", __FUNCTION__);
     }
-    ptCenterData->ValidLength=4;
-    ptCenterData->SmsData[0]=0;
-    ptCenterData->SmsData[1]=0;
-    ptCenterData->SmsData[2]=0;
-    ptCenterData->SmsData[3]=ptDllData->SrcId[0];
 
-    *Len=sizeof(SMS_CENTER_CCL_DL);
+    ptCenterData->ValidLength = 4;
+    ptCenterData->SmsData[0] = 0;
+    ptCenterData->SmsData[1] = 0;
+    ptCenterData->SmsData[2] = 0;
+    ptCenterData->SmsData[3] = ptDllData->SrcId[0];
+
+    *Len = sizeof(SMS_CENTER_CCL_DL);
     if(1 == tcclPrint->CclUp)
     {
-        IDP_CclPrintsms((unsigned char *)ptCenterData);
-        LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,20);
+        IDP_CclPrintSms((unsigned char *)ptCenterData);
+        LOG_PrintM(s_LogMsgId, ptCenterData->SmsData, 20);
     }
 }
 
@@ -463,7 +472,7 @@ void  IDP_GenNasSigAckData(unsigned char pvsigtype,unsigned char * pvDlldata,uns
 * @since
 * @bug
 */
-void  IDP_GenGpsData(unsigned char pvsigtype ,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len,unsigned char *callidnet)
+void IDP_GenGpsData(unsigned char pvsigtype ,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len,unsigned char *callidnet)
 {
     CC_CVID_SUBNET_DATA *ptCccaldnet= (CC_CVID_SUBNET_DATA *)callidnet;
     DLL_CCL_UL_T* ptDllData=( DLL_CCL_UL_T*)pvDlldata;
@@ -514,7 +523,7 @@ void  IDP_GenGpsData(unsigned char pvsigtype ,unsigned char * pvDlldata,unsigned
     *Len=sizeof(SMS_CENTER_CCL_DL);
     if(1 == tcclPrint->CclUp)
     {
-        IDP_CclPrintsms((unsigned char *)ptCenterData);
+        IDP_CclPrintSms((unsigned char *)ptCenterData);
         IDP_CclPrintGpsData(ptCenterData->SmsData);
         LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,30);
     }
@@ -567,7 +576,7 @@ void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDlldata,unsigne
     *Len=sizeof(SMS_CENTER_CCL_DL);
     if(1 == tcclPrint->CclUp)
     {
-        IDP_CclPrintsms((unsigned char *)ptCenterData);
+        IDP_CclPrintSms((unsigned char *)ptCenterData);
         LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,30);
     }
 }
@@ -584,7 +593,7 @@ void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDlldata,unsigne
 * @since
 * @bug
 */
-void  IDP_GenThrethHoldData( unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len)
+void IDP_GenThrethHoldData( unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len)
 {
     unsigned short ThredholdAvg;
     DLL_CCL_UL_T* ptDllData=( DLL_CCL_UL_T*)pvDlldata;
@@ -607,7 +616,7 @@ void  IDP_GenThrethHoldData( unsigned char * pvDlldata,unsigned char * pvCenterD
     *Len=sizeof(SMS_CENTER_CCL_DL);
     if(1 == tcclPrint->CclUp)
     {
-        IDP_CclPrintsms((unsigned char *)ptCenterData);
+        IDP_CclPrintSms((unsigned char *)ptCenterData);
         LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,30);
     }
 }
@@ -622,50 +631,49 @@ void  IDP_GenThrethHoldData( unsigned char * pvDlldata,unsigned char * pvCenterD
 * @bug
 */
 
-void IDP_GenVoiceDataPaket(unsigned char *pvDllData,unsigned char *pvCenterData,int *Len)
+void IDP_GenVoiceDataPaket(unsigned char *pvDllData, unsigned char *pvCenterData, int *Len)
 {
     //unsigned short Threshold=0;
     DLL_CCL_UL_T* ptDllData=( DLL_CCL_UL_T*)pvDllData;
     CENTER_VOICE_DATA* ptCenterData =(CENTER_VOICE_DATA*)pvCenterData;
-    ptCenterData->Rtp_Head.csrc_count=0;
-    ptCenterData->Rtp_Head.version=2;
-    ptCenterData->Rtp_Head.ex_head_flag=0;
-    ptCenterData->Rtp_Head.padding_flag=0;
-    ptCenterData->Rtp_Head.payload_type=0;
-    ptCenterData->Rtp_Head.marker=0;
-    ptCenterData->Rtp_Head.csrc_count=0;
+    ptCenterData->Rtp_Head.csrc_count = 0;
+    ptCenterData->Rtp_Head.version = 2;
+    ptCenterData->Rtp_Head.ex_head_flag = 0;
+    ptCenterData->Rtp_Head.padding_flag = 0;
+    ptCenterData->Rtp_Head.payload_type = 0;
+    ptCenterData->Rtp_Head.marker = 0;
+    ptCenterData->Rtp_Head.csrc_count = 0;
+    ptCenterData->Rtp_Ex.profile_head = htons(0x0000);
+    ptCenterData->Rtp_Ex.exhead_length = htons(4);
+    ptCenterData->Rtp_Ex.voice_id = 0xffffffff;
+    ptCenterData->Rtp_Ex.gps = 0;
+    ptCenterData->Rtp_Ex.codec_flag = 0xff;
+    ptCenterData->Rtp_Ex.encode_flag = 0;
+    ptCenterData->Rtp_Ex.pack_rate = 60;
 
-
-    ptCenterData->Rtp_Ex.profile_head=htons(0x0000);
-    ptCenterData->Rtp_Ex.exhead_length=htons(4);
-    ptCenterData->Rtp_Ex.voice_id= 0xffffffff;
-    ptCenterData->Rtp_Ex.gps=0;
-    ptCenterData->Rtp_Ex.codec_flag=0xff;
-    ptCenterData->Rtp_Ex.encode_flag=0;
-    ptCenterData->Rtp_Ex.pack_rate=60;
-    if(DLL_VOICE_UL_PAYLOADLEN != ptDllData->DataLen)
+    if (DLL_VOICE_UL_PAYLOADLEN != ptDllData->DataLen)
     {
-        LOG_WARNING(s_LogMsgId,"[CCL][%s]  MsgType=%d   DATALEN ERROR DataLen=%d ", __FUNCTION__,ptDllData->MsgType,ptDllData->DataLen);
+        LOG_WARNING(s_LogMsgId,"[CCL][%s] MsgType=%d DATALEN ERROR DataLen=%d ", __FUNCTION__, ptDllData->MsgType, ptDllData->DataLen);
         ptDllData->DataLen = DLL_VOICE_UL_PAYLOADLEN;
     }
-    memcpy(ptCenterData->Payload,ptDllData->PayLoad,ptDllData->DataLen);
-    if(s_tLast_Relay_Flg != ptDllData->Prohibit)
+    memcpy(ptCenterData->Payload, ptDllData->PayLoad, ptDllData->DataLen);
+    if (s_tLast_Relay_Flg != ptDllData->Prohibit)
     {
-        s_tLast_Relay_Flg=ptDllData->Prohibit;
-        s_tNas_STOP_RELAY=1;
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s]STOPRELAY  FLAG=%d", __FUNCTION__,s_tNas_STOP_RELAY);
+        s_tLast_Relay_Flg = ptDllData->Prohibit;
+        s_tNas_STOP_RELAY = 1;
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] STOPRELAY  FLAG=%d", __FUNCTION__,s_tNas_STOP_RELAY);
     }
     if (FT_VOICE_A == ptDllData->FrmType)
     {
-        ThresholdSum=0;
+        ThresholdSum = 0;
     }
-    ThresholdSum+=(ptDllData->Vari[0]<<8 |ptDllData->Vari[1]);
+    ThresholdSum += (ptDllData->Vari[0] <<8 | ptDllData->Vari[1]);
 
     *Len=sizeof(CENTER_VOICE_DATA);
     if (1 == tcclPrint->DllUp)
     {
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s]  MsgType=%d   FrmType=%d DataLen=%d  ThresholdSum=%d", __FUNCTION__,ptDllData->MsgType,
-                                                                            ptDllData->FrmType,ptDllData->DataLen,ThresholdSum);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] MsgType=%d FrmType=%d DataLen=%d ThresholdSum=%d", __FUNCTION__,
+        ptDllData->MsgType, ptDllData->FrmType, ptDllData->DataLen,ThresholdSum);
     }
 }
 /**
@@ -675,10 +683,10 @@ void IDP_GenVoiceDataPaket(unsigned char *pvDllData,unsigned char *pvCenterData,
  * @since
  * @bug
  */
-void    IDP_CclPrintpttack(unsigned char *CenterData)
+void IDP_CclPrintpttack(unsigned char *CenterData)
 {
-    PTT_ON_ACK *ptCenterData=(PTT_ON_ACK *)CenterData;
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s]  SigType=%d   ackstate=%d" , __FUNCTION__,ptCenterData->SharedHead.SigType,ptCenterData->Ack);
+    PTT_ON_ACK *ptCenterData = (PTT_ON_ACK *)CenterData;
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] SigType=%#x Ack=%#x(OK=0x04,Fail=0x05)", __FUNCTION__, ptCenterData->SharedHead.SigType, ptCenterData->Ack);
 }
 /**
  * @brief   ¥Ú”°PTT √¸¡Ó∫Ø ˝
@@ -687,23 +695,15 @@ void    IDP_CclPrintpttack(unsigned char *CenterData)
  * @since
  * @bug
  */
-
-void IDP_Ccl_printpttcmd(unsigned char *CenterData)
+void IDP_Ccl_PrintPttCmd(unsigned char *CenterData)
 {
-  PTT_CMD *ptCenterData=(PTT_CMD *)CenterData;
-  LOG_DEBUG(s_LogMsgId,"[CCL][%s]ccl_cc PTTcmd  SigType=%d   PTTDMD=%d callNum %d %d %d,calledNum %d %d %d",
-
-                                                                                                    __FUNCTION__,
-                                                                                    ptCenterData->SharedHead.SigType,
-                                                                                    ptCenterData->PttStat,
-                                                                                    ptCenterData->CallingNum[0],
-                                                                                    ptCenterData->CallingNum[1],
-                                                                                    ptCenterData->CallingNum[2],
-                                                                                    ptCenterData->CalledNum[0],
-                                                                                    ptCenterData->CalledNum[1],
-                                                                                    ptCenterData->CalledNum[2]);
-
-
+    PTT_CMD *ptCenterData=(PTT_CMD *)CenterData;
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] ccl2cc SigType=%d PTTCmd=%d call=[%d:%d:%d] called=[%d:%d:%d]",
+    __FUNCTION__,
+    ptCenterData->SharedHead.SigType,
+    ptCenterData->PttStat,
+    ptCenterData->CallingNum[0], ptCenterData->CallingNum[1], ptCenterData->CallingNum[2],
+    ptCenterData->CalledNum[0], ptCenterData->CalledNum[1], ptCenterData->CalledNum[2]);
 }
 
 
@@ -717,26 +717,34 @@ void IDP_Ccl_printpttcmd(unsigned char *CenterData)
 * @bug
 */
 
- void IDP_CclPrintsms(unsigned char* CenterData)
+void IDP_CclPrintSms(unsigned char* CenterData)
 {
+    unsigned int i;
     SMS_CENTER_CCL_DL* ptCenterData = (SMS_CENTER_CCL_DL* )CenterData;
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s]SigType=%#x SmsType=%#x Length=%d Cid=%d vid=%d snd[%#x %#x %#x] rcv[%#x %#x %#x]",
-        __FUNCTION__,
-        ptCenterData->SharedHead.SigType,
-        ptCenterData->SmsType,
-        ptCenterData->ValidLength,
-        ptCenterData->CallId,
-        ptCenterData->VoiceId,
-        ptCenterData->SenderNum[0],
-        ptCenterData->SenderNum[1],
-        ptCenterData->SenderNum[2],
-        ptCenterData->ReceiverNum[0],
-        ptCenterData->ReceiverNum[1],
-        ptCenterData->ReceiverNum[2]);
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] SigType=%#x SmsType=%#x Length=%d Cid=%d vid=%d snd[%#x %#x %#x] rcv[%#x %#x %#x]",
+    __FUNCTION__,
+    ptCenterData->SharedHead.SigType, ptCenterData->SmsType, ptCenterData->ValidLength,
+    ptCenterData->CallId, ptCenterData->VoiceId,
+    ptCenterData->SenderNum[0], ptCenterData->SenderNum[1], ptCenterData->SenderNum[2],
+    ptCenterData->ReceiverNum[0], ptCenterData->ReceiverNum[1], ptCenterData->ReceiverNum[2]);
+
+    // ¥Ú”°Sms
+    for (i = 0; i < pTable_sms_len; i++)
+    {
+        if (ptCenterData->SmsType == pTable_sms[i].Type)
+        {
+            if (pTable_sms[i].TypeStr != NULL)
+            {
+                LOG_DEBUG(s_LogMsgId,"[CCL][%s] SMS:[%#x-%s]", __FUNCTION__, pTable_sms[i].Type, pTable_sms[i].TypeStr);
+                break;
+            }
+        }
+    }
 
     PrintIDbyDec(ptCenterData->SenderNum, ptCenterData->ReceiverNum);
-
 }
+
+
 /**
 * @brief    ¥Ú”° dll_ccl  ˝æ›
 * @param [in] ptDllData  DLL…œ–– ˝æ›
@@ -744,29 +752,34 @@ void IDP_Ccl_printpttcmd(unsigned char *CenterData)
 * @since
 * @bug
 */
-void  IDP_CclPrintDllData(unsigned char *DllData)
+void IDP_CclPrintDllData(unsigned char *DllData)
 {
     DLL_CCL_UL_T *ptDllData=(DLL_CCL_UL_T *)DllData;
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s]MsgType=%d FrmType=%d DataType=%#x ValidLen=%d ", __FUNCTION__,
-                                                                             ptDllData->MsgType,
-                                                                             ptDllData->FrmType,
-                                                                             ptDllData->DataType,
-                                                                             ptDllData->DataLen);
-
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] MsgType=%d FrmType=%d DataType=%#x ValidLen=%d Src[%#x:%#x:%#x] Dst[%#x:%#x:%#x]", 
+        __FUNCTION__,
+        ptDllData->MsgType,
+        ptDllData->FrmType,
+        ptDllData->DataType,
+        ptDllData->DataLen,
+        ptDllData->SrcId[0], ptDllData->SrcId[1], ptDllData->SrcId[2],
+        ptDllData->DstId[0], ptDllData->DstId[1], ptDllData->DstId[2]);
+    PrintMsgDatalog(ptDllData);  // by zhoudayuan
 }
+
 
 void IDP_CclPrintGpsData(unsigned char *pvGpsData)
 {
     GPS_DATA_CC_T*ptGpsData=(GPS_DATA_CC_T *)pvGpsData;
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s]NS=%d EW=%d NDEG=%d NMINmm=%d NMINF=%d EDEG=%d EMINmm=%d EMINF=%d  ", __FUNCTION__,       //EMINmm=%d  EMINF=%d"  , __FUNCTION__,
-                                                                             ptGpsData->GPSCCLDATA.NS,
-                                                                             ptGpsData->GPSCCLDATA.EW,
-                                                                             ptGpsData->GPSCCLDATA.NDEG,
-                                                                             ptGpsData->GPSCCLDATA.NMINmm,
-                                                                             ptGpsData->GPSCCLDATA.NMINF,
-                                                                             ptGpsData->GPSCCLDATA.EDEG,
-                                                                             ptGpsData->GPSCCLDATA.EMINmm,
-                                                                             ptGpsData->GPSCCLDATA.EMINF);
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s]NS=%d EW=%d NDEG=%d NMINmm=%d NMINF=%d EDEG=%d EMINmm=%d EMINF=%d", 
+        __FUNCTION__,       //EMINmm=%d  EMINF=%d"  , __FUNCTION__,
+        ptGpsData->GPSCCLDATA.NS,
+        ptGpsData->GPSCCLDATA.EW,
+        ptGpsData->GPSCCLDATA.NDEG,
+        ptGpsData->GPSCCLDATA.NMINmm,
+        ptGpsData->GPSCCLDATA.NMINF,
+        ptGpsData->GPSCCLDATA.EDEG,
+        ptGpsData->GPSCCLDATA.EMINmm,
+        ptGpsData->GPSCCLDATA.EMINF);
 }
 
 

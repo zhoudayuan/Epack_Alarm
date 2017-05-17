@@ -22,6 +22,13 @@
 #include "sap.h"
 #include "ccl.h"
 #include "dll_fun.h"
+#include "log.h"
+
+// 与打印时间相关
+#define MONTH_PER_YEAR   12   // 一年12月
+#define YEAR_MONTH_DAY   20   // 年月日缓存大小
+#define HOUR_MINUTES_SEC 20   // 时分秒缓存大小
+
 
 /******************************************************************************
  *   全局变量定义
@@ -57,9 +64,8 @@ SHM_IPC_STRU *ptIPCShm = NULL;
 SHM_CFG_STRU *ptCFGShm = NULL;
 
 
+static void GetCompileTime(void);
 
-
-#include "log.h"
 
 /******************************************************************************
  *   内部函数实现
@@ -78,7 +84,9 @@ int main(void)
     key_t msqKey;
 
     printf("\n");
-    //log写文件
+    // 打印编译时间
+    GetCompileTime();
+    // log写文件
     pLogFd = fopen("./LOG.txt", "r+");
     if(NULL == pLogFd)
     {
@@ -87,7 +95,7 @@ int main(void)
     }
     fseek(pLogFd, 0, SEEK_END);
 
-    //log日志输出
+    // log日志输出
     if((msqKey = ftok("/", LOG_MSG_ID)) == -1)
     {
         LOG_WFile(pLogFd, "[SAP]Creat msqKey Error");
@@ -133,6 +141,42 @@ int main(void)
 
     return 0;
 }
+
+
+/**
+ * @brief   打印编译时间
+ *
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
+void GetCompileTime(void)
+{
+
+    const char year_month[MONTH_PER_YEAR][4] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+    char compile_date[YEAR_MONTH_DAY]   = {0};
+    char compile_time[HOUR_MINUTES_SEC] = {0};
+    char str_month[4] = {0};
+    int year=0, month=0, day=0, hour=0, minutes=0, seconds=0;
+    int i;
+
+    sprintf(compile_date, "%s", __DATE__);      // "Jan 23 2017"
+    sprintf(compile_time, "%s", __TIME__);      // "10:59:19"
+
+    sscanf(compile_date, "%s %d %d", str_month, &day, &year);
+    sscanf(compile_time, "%d:%d:%d", &hour, &minutes, &seconds);
+
+    for(i = 0; i < MONTH_PER_YEAR; ++i)
+    {
+        if (strncmp(str_month, year_month[i], 3) == 0)
+        {
+            month = i + 1;
+            break;
+        }
+    }
+    printf("[%s] compile time: %d-%d-%d %d:%d:%d\n", TASK_NAME, year, month, day, hour, minutes, seconds);
+}
+
 
 
 /**
@@ -233,7 +277,7 @@ void _CFG_Shm()
 int sem_ipc_p(void)
 {
     struct sembuf sem_b;
-    
+
     sem_b.sem_num = 0;
     sem_b.sem_op = -1; /* P() */
     sem_b.sem_flg = SEM_UNDO;
@@ -254,7 +298,7 @@ int sem_ipc_p(void)
 int sem_ipc_v(void)
 {
     struct sembuf sem_b;
-    
+
     sem_b.sem_num = 0;
     sem_b.sem_op = 1; /* V() */
     sem_b.sem_flg = SEM_UNDO;

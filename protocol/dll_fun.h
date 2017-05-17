@@ -210,6 +210,8 @@ void milliseconds_sleep(unsigned long mSec);
 
 void microseconds_sleep(unsigned long uSec);
 
+void PrintNasCmdOpLog(NAS_AI_PAYLOAD *pNasAiData);
+void PrintInfDataLog(DATA_LINK_T *pDataLink);
 
 #endif
 

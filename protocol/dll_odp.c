@@ -373,6 +373,7 @@ void SapDataStr(UINT8 SAPType, char *SapStr)
 }
 
 
+
 /**
  * @brief  主呼下行向接口层发送数据处理
  *
@@ -430,11 +431,11 @@ void CallingShootData(UINT8 MsgT, UINT8 FrmT, UINT8 DataT, UINT8 Len, UINT8 *Pay
  * @since   trunk.00001
  * @bug
  */
-void ODP_SendInfData(NAS_INF_DL_T * pdInfData, UINT8 SAPType)
+void ODP_SendInfData(NAS_INF_DL_T *pdInfData, UINT8 SAPType)
 {
     if (tDllPrint->AIDown == 1)
     {
-        ODP_AiPrintf(pdInfData, SAPType);
+        ODP_AiPrintf(pdInfData, SAPType);
     }
     sendto(INFSocket, pdInfData, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&InfAddr), AddrSize);
     return;
@@ -494,16 +495,16 @@ void ODP_AiPrintf(NAS_INF_DL_T * pdInfData, UINT8 SAPType)
     {
         SapDataStr(SAPType, SapStr);
         LOG_DEBUG(s_LogMsgId,"[DLL][%s] TimS:%ld F%dS%d MsgT_%d FrmT_%d CC_%d DataT_%d Len_%d %s",
-                _F_,
-                pdInfData->TimeStamp,
-                (Frq+1),
-                (pdInfData->SlotNum+1),
-                pdInfData->tDataLink[Frq].MsgType,
-                pdInfData->tDataLink[Frq].FrmType,
-                pdInfData->tDataLink[Frq].CC,
-                pdInfData->tDataLink[Frq].DataType,
-                pdInfData->tDataLink[Frq].DataLen,
-                SapStr);
+            _F_,
+            pdInfData->TimeStamp,
+            (Frq+1),
+            (pdInfData->SlotNum+1),
+            pdInfData->tDataLink[Frq].MsgType,
+            pdInfData->tDataLink[Frq].FrmType,
+            pdInfData->tDataLink[Frq].CC,
+            pdInfData->tDataLink[Frq].DataType,
+            pdInfData->tDataLink[Frq].DataLen,
+            SapStr);
     }
 
     if ((tDllPrint->PrintLv == PRINT_MEMRY || tDllPrint->PrintLv == PRINT_ALL) && pdInfData->tDataLink[Frq].DataLen < 35)
@@ -702,9 +703,7 @@ void ODP_GenNasLcHeader(void)
     }
 
     CallingShootData(DI_MSG_DATA,FT_VOICE_NO,DT_LC_HEADER,(FLC_LEN+3),(UINT8 *)auULC);
-
     ODP_SendInfData(ptInfData, S_NAS_PRE_LC);
-
     return;
 }
 
@@ -916,18 +915,14 @@ int ODP_GenNasPreCSBKFun(UINT8 cbf, UINT8* Dst, UINT8* Src, UINT8 GI)
     NasAiData.op_code = OP_CODE_GET;
     NasAiData.data[0] = cbf;
     NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-    LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%d(%#04x), op_code=%d(%#04x), Seq_%d, dst_id_%d, src_id_%d",
+    LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%#04x, op_code_%#04x, Seq_[%d], dst_id_%d, src_id_%d",
                     _F_,
-                    NasAiData.cmd_code, NasAiData.cmd_code,
-                    NasAiData.op_code,  NasAiData.op_code,
+                    NasAiData.cmd_code, NasAiData.op_code,
                     NasAiData.data[0],
-                    NasAiData.dst_id,
-                    NasAiData.src_id
-                    );
+                    NasAiData.dst_id, NasAiData.src_id );
 
     CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
     ODP_SendInfData(ptInfData, S_CSBK_PRE);
-
     return NO_ERR;
 }
 
@@ -1685,7 +1680,7 @@ int ODP_NasGpsReportFun(CCL_DLL_DL_T * pvCclData)
         return ERR;
     }
 
-    if (g_DllGlobalCfg.auNodeId == pvCclData->DstId[0])
+    if (g_DllGlobalCfg.auNodeId == pvCclData->DstId[0])   // 本地节点查询
     {
         GpsDevData = (GPS_DEV_DATA_T *)(p_DllFpgaShm->GpsData);
         IDP_GpsDevToNas(GpsDevData, &GpsNasData);
@@ -1718,7 +1713,7 @@ int ODP_NasGpsReportFun(CCL_DLL_DL_T * pvCclData)
         IDP_SendCclData(ptCclData);
 
     }
-    else
+    else   // 其他节点查询
     {
         NasAiData.cmd_code = CMD_CODE_GPS_REPORT;
         NasAiData.nm_type = NM_TYPE_CENTER;
@@ -1736,7 +1731,7 @@ int ODP_NasGpsReportFun(CCL_DLL_DL_T * pvCclData)
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
 
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_NAS_GPS_REQ);
     }
 
@@ -1772,33 +1767,28 @@ int ODP_NasEnableFun(CCL_DLL_DL_T * pvCclData)
     {
         g_DllGlobalCfg.auStunFlag = 0;
         g_DllGlobalCfg.auKillFlag = 0;
-        ptCFGShm->kill_flag.val = 0;
+        ptCFGShm->kill_flag.val   = 0;
         ptCFGShm->stun_flag.val   = 0;
         p_DllFpgaShm->StunFlag[0] = 0;
         p_DllFpgaShm->StunFlag[1] = 0;
         p_DllFpgaShm->StunFlag[2] = 0;
         p_DllFpgaShm->StunFlag[3] = 0;
-
-        ptCclData->MsgType = DI_MSG_WLU;
-        ptCclData->FrmType = FT_VOICE_NO;
+        ptCclData->MsgType  = DI_MSG_WLU;
+        ptCclData->FrmType  = FT_VOICE_NO;
         ptCclData->DataType = CT_ENABLE_ACK_NAS;
-
         memcpy(ptCclData->SrcId, pvCclData->SrcId, 3);
         memcpy(ptCclData->DstId, pvCclData->DstId, 3);
         ptCclData->DataLen = 0;
-
         IDP_SendCclData(ptCclData);
-
     }
     else
     {
         NasAiData.cmd_code = CMD_CODE_ENABLE;
-        NasAiData.nm_type = NM_TYPE_CENTER;
-        NasAiData.op_code = OP_CODE_SET;
+        NasAiData.nm_type  = NM_TYPE_CENTER;
+        NasAiData.op_code  = OP_CODE_SET;
         NasAiData.src_id = g_DllGlobalCfg.auNodeId;
         NasAiData.dst_id = pvCclData->DstId[0];
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
         //发送多个预载波
         DstId = NasAiData.dst_id;
         SrcId = NasAiData.src_id;
@@ -1806,9 +1796,8 @@ int ODP_NasEnableFun(CCL_DLL_DL_T * pvCclData)
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_NAS_ENABLE_REQ);
     }
 
@@ -2119,6 +2108,9 @@ void CCLVoiceProcess(CCL_DLL_DL_T * pvCclData)
  */
 void CCLDataProcess(CCL_DLL_DL_T * pvCclData)
 {
+
+ 
+
     switch (pvCclData->DataType)
     {
         case CT_PI_HEADER:
@@ -2288,7 +2280,7 @@ void *CCLDownloadTask(void * p)
             pvCclData = (CCL_DLL_DL_T *)RecvBuf;
             if (tDllPrint->CCDown == 1)
             {
-                ODP_CclPrintf(pvCclData);
+                ODP_CclPrintf(pvCclData);
             }
 
             if (g_DllGlobalCfg.auStunFlag == NAS_KILL_FLAG || g_DllGlobalCfg.auKillFlag == NAS_KILL_FLAG)
@@ -2304,12 +2296,12 @@ void *CCLDownloadTask(void * p)
                 }
                 else
                 {
-                    LOG_WARNING(s_LogMsgId,"[DLL][%s] Nas is Stun", _F_);
+                    LOG_WARNING(s_LogMsgId, "[DLL][%s] Nas is Stun", _F_);
                     continue;
                 }
             }
 
-            if((CCL_HEAD_LEN+pvCclData->DataLen) != RetSize)
+            if((CCL_HEAD_LEN + pvCclData->DataLen) != RetSize)
             {
                 LOG_WARNING(s_LogMsgId,"[DLL][%s] recvfrom size error(Resize:%d)", _F_, RetSize);
                 continue;
@@ -2320,7 +2312,6 @@ void *CCLDownloadTask(void * p)
             }
             else
             {
-
                 // 当FPGA处于转发状态时, 摇晕摇毙等链路机命令可以使能
                 if ((pvCclData->MsgType == DI_MSG_WLU)  && (pvCclData->DstId[0] == g_DllGlobalCfg.auNodeId))
                 {

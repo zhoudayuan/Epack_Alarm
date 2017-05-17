@@ -231,7 +231,7 @@ DLL_PRINT_T *tDllPrint;
  * @brief 断链状态
  */
 UINT8 g_discon_state = 0;
-    
+
 
 /**
  * @var g_DisconCnt
@@ -689,7 +689,6 @@ static int check_discon_state()
         g_DisconCnt ++;
         if ((g_DisconCnt % 2) == 0)     // 连续断链两次则告警
         {
-//            printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA====DISCON HAPPEN==AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n");
             LOG_DEBUG(s_LogMsgId, "[DLL][%s] DISCON HAPPEN", _F_);
             return (g_discon_state = DISCON_HAPPEN);  //有断链
         }
@@ -703,13 +702,11 @@ void set_alarm_discon_switch(int AlarmSwitch)
     if ((AlarmSwitch == TURN_OFF) && (g_discon_state == DISCON_HAPPEN))
     {
         g_discon_state = DISCON_RECOVER;
-//        printf("CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC====Tell mgr [TURN_OFF] Alarm==CCCCCCCCCCCCCCCCCCCCCCCCCCCC\n");
         LOG_DEBUG(s_LogMsgId, "[DLL][%s] Tell mgr [TURN_OFF] Alarm ", _F_);
         MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);
     }
     else if (AlarmSwitch == TURN_ON)
     {
-//      printf("BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB====Tell mgr [TURN_ON] Alarm==BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB\n");
         LOG_DEBUG(s_LogMsgId,"[DLL][%s] Tell mgr [TURN_ON] Alarm ", _F_);
         MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_ON, 0);
     }
@@ -728,8 +725,6 @@ void set_alarm_discon_switch(int AlarmSwitch)
 void * DLL_NerBurstTask(void * p)
 {
     int ret;
-    UINT8 DstId;
-    UINT8 SrcId;
     UINT16 u2CRC;
     UINT16 LeftDelay = 0;
     UINT16 BurstCyc = g_DllGlobalCfg.auNegrCyc*60;      //秒
@@ -821,7 +816,7 @@ void * DLL_NerBurstTask(void * p)
         // 邻点上报
         if (BurstCnt % 2 == 0)
         {
-            if (LeftDelay < 5)      //邻点突发和邻点上报消息保护间隔
+            if (LeftDelay < 5)  // 邻点突发和邻点上报消息保护间隔
             {
                 sleep(5);
             }
@@ -832,20 +827,11 @@ void * DLL_NerBurstTask(void * p)
                 NasAiData.cmd_code = CMO_CODE_NER_REPORT;
                 NasAiData.nm_type = NM_TYPE_CENTER;
                 NasAiData.op_code = OP_CODE_GET_ACK;
-                NasAiData.src_id = 31;      // 11111
-                NasAiData.dst_id = 31;      // 11111
-
+                NasAiData.src_id = 31;  // 11111
+                NasAiData.dst_id = 31;  // 11111
                 NasAiData.data[0] = g_DllGlobalCfg.auNodeId;
                 memcpy(&NasAiData.data[1], (UINT8 *)&g_DllGlobalCfg.auNegrId2, NER_LEN);
                 NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
-                DstId = NasAiData.dst_id;
-                SrcId = NasAiData.src_id;
-                ODP_GenNasPreCSBKFun(4, &DstId, &SrcId, 1);
-                ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
-                ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
-                ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
-
 
                 //封装下行fpga数据帧
                 memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
@@ -860,7 +846,12 @@ void * DLL_NerBurstTask(void * p)
                 ptInfData->tDataLink[F_1].DataType = DI_MSG_WLU;
                 ptInfData->tDataLink[F_1].DataLen  = CSBK_LEN+2;
                 memcpy(ptInfData->tDataLink[F_1].PayLoad, &NasAiData, (CSBK_LEN+2));
-                ODP_SendInfData(ptInfData, S_NEGR_RPT);         //邻点上报
+                PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
+                // 主动上报4份 by zhoudayuan
+                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 4-邻点上报
+                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 3-邻点上报
+                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 2-邻点上报
+                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 1-邻点上报
 
                 //备份本地邻点信息
                 g_DllGlobalCfg.auNegrId2 = g_DllGlobalCfg.auNegrId1;

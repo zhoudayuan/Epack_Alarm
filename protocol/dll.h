@@ -1450,7 +1450,7 @@ typedef struct _VOICE_LC_PDU_T
  */
 typedef struct _TD_LC_PDU_T
 {
-    UINT8 uFLCO                     :6;
+    UINT8 uFLCO                     :6;  // 完整链路控制码 TD_LC=0X30
     UINT8 uRV                       :1;
     UINT8 uPF                       :1;
     UINT8 uFID;
@@ -1460,7 +1460,7 @@ typedef struct _TD_LC_PDU_T
     UINT8 uS                        :1;
     UINT8 uRV1                      :1;
     UINT8 uF                        :1;
-    UINT8 uA                        :1;
+    UINT8 uA                        :1;   // Response Request 响应请求标识
     UINT8 uGI                       :1;
     UINT8 uCRC[3];
 

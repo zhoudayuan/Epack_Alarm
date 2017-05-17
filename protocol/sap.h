@@ -129,6 +129,12 @@ typedef struct _DLL_CCL_UL_T
 
 } DLL_CCL_UL_T;
 
+// 调试打印信息
+typedef struct _TYPE_PRINT_T
+{
+    int Type;
+    const char *TypeStr;
+} TYPE_PRINT_T;
 
 
 /******************************************************************************
@@ -167,7 +173,6 @@ int _LocalCfgPrint();
 
 extern int sem_ipc_p(void);
 extern int sem_ipc_v(void);
-
 
 #endif
 

@@ -1,4 +1,3 @@
-
 #ifndef __CCL_DL_H__
 #define __CCL_DL_H__
 /**
@@ -86,7 +85,7 @@ void ODP_CclprintLc(unsigned char  * pvDllData);
 * @brief  打印中心信令
 * @bug
 */
-void  ODP_CclPrintCcdlsig(unsigned char *Pttcmd);
+void  ODP_CclPrintCcSig(unsigned char *Pttcmd);
 /**
 * @brief    打印 ccl_dll 数据
 */

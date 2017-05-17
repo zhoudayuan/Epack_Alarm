@@ -30,10 +30,9 @@
 #include<math.h>
 #include <linux/unistd.h>
 #include <linux/kernel.h>
-
 #include "sap.h"
 #include "ccl_thread.h"
-//#include "dll_common.h"
+
 
 /******************************************************************************
  *   类型定义
@@ -43,44 +42,44 @@
  *   宏定义
  *   *************************************************************************/
 
-#define     LONGTITUDE  1
-#define     LATITUDE 0
-#define     GPS_LATITUDE_LEN 10
-#define     GPS_LONGITUEDE_LEN 9
-#define     GPS_SPEED_LEN    3
-#define     GPS_DIRECTION_LEN 3
-#define     GPS_DATE_LEN   6
-#define     GPS_TIME_LEN    6
+#define LONGTITUDE                  1
+#define LATITUDE                    0
+#define GPS_LATITUDE_LEN            10
+#define GPS_LONGITUEDE_LEN          9
+#define GPS_SPEED_LEN               3
+#define GPS_DIRECTION_LEN           3
+#define GPS_DATE_LEN                6
+#define GPS_TIME_LEN                6
 
 
 /**
  * @def  false
  * @brief  逻辑假
  */
-#ifndef   false
-#define false                           0
+#ifndef false
+#define false                       0
 #endif
 
 /**
  * @def   true
  * @brief 逻辑真
  */
-#ifndef   true
-#define true                           1
+#ifndef true
+#define true                        1
 #endif
 
 /**
  * @def
  * @brief信令回复结果
  */
-#define    ACK_OK                            0x04
-#define    ACK_FAIL                          0x05
+#define    ACK_OK                   0x04
+#define    ACK_FAIL                 0x05
 /**
  * @def
  * @brief PTT  信令状态
  */
-#define    CMD_PTT_ON                 0x06
-#define    CMD_PTT_OFF                0x07
+#define    CMD_PTT_ON               0x06
+#define    CMD_PTT_OFF              0x07
 /**
  * @def   INF_SHARE_HEAD_LEN
  * @brief 接入单元与中心交互公用头长度
@@ -90,42 +89,42 @@
  * @def   Lc_Header_Len
  * @brief  语音LC 头长度
  */
-#define    LC_HEADER_LEN                    9
+#define    LC_HEADER_LEN            9
 /**
  * @def   TD_LC_Len
  * @brief  语音LC 头长度
  */
-#define    TD_LC_LEN                             9
+#define    TD_LC_LEN                9
 
 /**
  * @def  PTT_ACK_VALID_LEN
  * @brief  CCL层回复PTT命令有效数据长度
  */
-#define    PTT_ACK_VALID_LEN        100
+#define    PTT_ACK_VALID_LEN                100
 /**
  * @def  PTT_CMD_VALID_LEN
  * @brief  CCL层发送PTT命令有效数据长度
  */
-#define    PTT_CMD_VALID_LEN        100
+#define    PTT_CMD_VALID_LEN                100
 
 /**
  * @def  SMS_ACK_VALID_LEN
  * @brief  CCL回复短信有效数据长度
  */
-#define    SMS_ACK_VALID_LEN     12
+#define    SMS_ACK_VALID_LEN                12
 
 /**
  * @def   CCL_SMS_DL_HEADLEN
  * @brief  CCL层短消息下行头长度
  */
-#define    CCL_SMS_DL_HEADLEN    5
+#define    CCL_SMS_DL_HEADLEN               5
 
 
 /**
  * @def   DLL_CCL_MSG_HEADLEN
  * @brief  链路层CCL层消息头长度
  */
-#define    DLL_CCL_MSG_HEADLEN      20
+#define    DLL_CCL_MSG_HEADLEN              20
 
 
 
@@ -133,54 +132,54 @@
  * @def  CENTER_VOICE_DL_HEADLEN
  * @brief 中心下行语音帧头长度
  */
-#define    CENTER_VOICE_DL_HEADLEN       32//20
+#define    CENTER_VOICE_DL_HEADLEN          32//20
 
 /**
  * @def  CENTER_VOICE_DL_PAYLOADLEN
  * @brief 中心下行语音有效负载长度
  */
-#define    CENTER_VOICE_DL_PAYLOADLEN     27
+#define    CENTER_VOICE_DL_PAYLOADLEN       27
 /**
  * @def  SILENT_FRAME_DATA_LEN
  * @brief 静音帧有效数据长度
  */
-#define    SILENT_FRAME_DATA_LEN          27
+#define    SILENT_FRAME_DATA_LEN            27
 /**
  * @def   RTP_DATA_SIZE
  * @brief  RTP  数据包最大数据长度
  */
 
-#define      RTP_MAX_DATA_SIZE                 27 //36
+#define      RTP_MAX_DATA_SIZE              27 //36
 /**
  * @def  DLL_VOICE_UL_PAYLOADLEN
  * @brief 链路层语音负载长度
  */
-#define    DLL_VOICE_UL_PAYLOADLEN     27
+#define    DLL_VOICE_UL_PAYLOADLEN          27
 /**
  * @def DB_DATA_SIZE
  * @brief 信令消息有效数据长度
  */
 
-//#define             DB_DATA_SIZE                     (24)
+//#define             DB_DATA_SIZE          (24)
 /**
  * @def DLL_CCL_SMS_PAYLOADLEN
  * @brief DLL-CCL 层短消息最大有效负载长度
  */
 
-#define    DLL_CCL_SMS_PAYLOADLEN        480
+#define    DLL_CCL_SMS_PAYLOADLEN           480
 
 /**
 * @def CC_CCL_MSGPSRPT_PAYLODDLEN
 * @brief  cc 上拉终端GPS命令有效负载长度
 */
 
-#define    CC_CCL_MSGPSRPT_PAYLODDLEN    4
+#define    CC_CCL_MSGPSRPT_PAYLODDLEN       4
 /**
 * @def CC_CCL_SMS_PAYLODDLEN
 * @brief  CC 与CCL 层短消息最大有效数据长度
 */
 
-#define    CC_CCL_SMS_PAYLODDLEN    512
+#define    CC_CCL_SMS_PAYLODDLEN            512
 
 /******************************************************************************
  *   全局变量定义
@@ -201,12 +200,12 @@
  */
 typedef struct  _CC_CVID_SUBNET_DATA
 {
-    unsigned  char      SubNet;
-    unsigned  int       CallId;                  //控制面ID         标识一次呼叫的控制面ID
-    unsigned  int       VoiceId;                //业务面ID      标识一次呼叫的业务面ID
-    unsigned  char      srcid[3];
-    unsigned char       destid[3];
-}      CC_CVID_SUBNET_DATA;
+    unsigned char SubNet;
+    unsigned int  CallId;           // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int  VoiceId;          // 业务面ID 标识一次呼叫的业务面ID
+    unsigned char srcid[3];
+    unsigned char destid[3];
+} CC_CVID_SUBNET_DATA;
 
 /**
  * @struct _CENTER_CMD_SHAREHEADER
@@ -214,17 +213,17 @@ typedef struct  _CC_CVID_SUBNET_DATA
  */
 typedef struct  _CENTER_CMD_SHARE_HEAD
 {
-    unsigned  short     SigHead;                    //标识AC接口信令头标志(0x13ec)
-    unsigned  short     SigType;                    // 信令类型     标识AC接口PTT命令信令（0x000a）
-    unsigned  short     Datalength;                 //有效数据长度   标识信令有效数据长度（100）
-    unsigned  short     SourceID;                   // 源单元号             标识AC接口发送单元ID值
-    unsigned  short     DestID;                     //目的单元号      标识AC接口接收单元ID值
-    unsigned char       SourceType;                 //源单元设备类型        标识发送单元设备类型（制式）
-    unsigned char       SigVersion;                 //信令版本号        标识该信令适合版本号0x02(该信令与0x01版本不兼容)
-    unsigned char       PathNum;                    //通道号码          标识该信令属于该单元的通道号码，若不区分通道，则填全F
-    unsigned char       Exhead[11];                 //扩展头            扩展头中心无须关心参数
-    unsigned  int       CheckVal;                   //  校验值       标识信令校验结果(01版本 与02版本 目前都填写全F，标示无校验方式)
-}     CENTER_CMD_SHARE_HEAD ;
+    unsigned short SigHead;         // 标识AC接口信令头标志(0x13ec)
+    unsigned short SigType;         // 信令类型-标识AC接口PTT命令信令（0x000a）
+    unsigned short Datalength;      // 有效数据长度-标识信令有效数据长度（100）
+    unsigned short SourceID;        // 源单元号-标识AC接口发送单元ID值
+    unsigned short DestID;          // 目的单元号-标识AC接口接收单元ID值
+    unsigned char  SourceType;      // 源单元设备类型-标识发送单元设备类型（制式）
+    unsigned char  SigVersion;      // 信令版本号-标识该信令适合版本号0x02(该信令与0x01版本不兼容)
+    unsigned char  PathNum;         // 通道号码-标识该信令属于该单元的通道号码，若不区分通道，则填全F
+    unsigned char  Exhead[11];      // 扩展头-扩展头中心无须关心参数
+    unsigned int   CheckVal;        // 校验值-标识信令校验结果(01版本 与02版本 目前都填写全F，标示无校验方式)
+} CENTER_CMD_SHARE_HEAD ;
 
 /**
  * @struct  _PTT_CMD
@@ -232,15 +231,15 @@ typedef struct  _CENTER_CMD_SHARE_HEAD
  */
 typedef struct _PTT_CMD
 {
-    CENTER_CMD_SHARE_HEAD  SharedHead;
-    unsigned  int          CallId;                   //控制面ID         标识一次呼叫的控制面ID
-    unsigned  int          VoiceId;                 //业务面ID      标识一次呼叫的业务面ID
-    unsigned char          PttStat;                 //PTT信令状态  标识PTT信令状态（请求CMD_ON=0x06、释放CMD_OFF=0x07）
-    unsigned char          Reserved;                //字节对齐占位中心无须关心参数
-    unsigned char          TalkingNum[30];          //标识当次通话PTT的讲话方号码
-    unsigned char          CallingNum[30];          //标识当次呼叫的主叫号码
-    unsigned char          CalledNum[30];           //标识当次呼叫的被叫号码（组号、个号）
-}PTT_CMD;
+    CENTER_CMD_SHARE_HEAD SharedHead;
+    unsigned int  CallId;           // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int  VoiceId;          // 业务面ID 标识一次呼叫的业务面ID
+    unsigned char PttStat;          // PTT信令状态 标识PTT信令状态（请求CMD_ON=0x06、释放CMD_OFF=0x07）
+    unsigned char Reserved;         // 字节对齐占位中心无须关心参数
+    unsigned char TalkingNum[30];   // 标识当次通话PTT的讲话方号码
+    unsigned char CallingNum[30];   // 标识当次呼叫的主叫号码
+    unsigned char CalledNum[30];    // 标识当次呼叫的被叫号码（组号、个号）
+} PTT_CMD;
 
 /**
  * @struct  _PTT_ON_ACK
@@ -248,15 +247,15 @@ typedef struct _PTT_CMD
  */
 typedef struct _PTT_ON_ACK
 {
-    CENTER_CMD_SHARE_HEAD   SharedHead;
-    unsigned  int           CallId ;                        //控制面ID      标识一次呼叫的控制面ID
-    unsigned  int           VoiceId;                        //业务面ID      标识一次呼叫的业务面ID
-    unsigned char           Ack ;                           //标识PTT回复结果（成功ACK_OK=0x04、失败ACK_FAIL=0x05）
-    unsigned char           Reserved;                       //字节对齐占位中心无须关心参数
-    unsigned char           TalkingNum[30];                 //标识当次通话PTT的讲话方号码
-    unsigned char           CallingNum[30];                 //标识当次呼叫的主叫号码
-    unsigned char           CalledNum[30];                  //标识当次呼叫的被叫号码（组号、个号）
-}     PTT_ON_ACK;
+    CENTER_CMD_SHARE_HEAD SharedHead;
+    unsigned int  CallId;           // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int  VoiceId;          // 业务面ID 标识一次呼叫的业务面ID
+    unsigned char Ack;              // 标识PTT回复结果（成功ACK_OK=0x04、失败ACK_FAIL=0x05）
+    unsigned char Reserved;         // 字节对齐占位中心无须关心参数
+    unsigned char TalkingNum[30];   // 标识当次通话PTT的讲话方号码
+    unsigned char CallingNum[30];   // 标识当次呼叫的主叫号码
+    unsigned char CalledNum[30];    // 标识当次呼叫的被叫号码（组号、个号）
+} PTT_ON_ACK;
 
 /**
  * @struct  _PTT_ON_ACK
@@ -264,14 +263,14 @@ typedef struct _PTT_ON_ACK
  */
 typedef struct _PTT_OFF_ACK
 {
-    CENTER_CMD_SHARE_HEAD  SharedHead;
-    unsigned  int          CallId;                          //控制面ID      标识一次呼叫的控制面ID
-    unsigned  int          VoiceId;                         //业务面ID      标识一次呼叫的业务面ID
-    unsigned char          Reserved[2];                     //字节对齐占位中心无须关心参数
-    unsigned char          TalkingNum[30];                  //标识当次通话PTT的讲话方号码
-    unsigned char          CallingNum[30];                  //标识当次呼叫的主叫号码
-    unsigned char          CalledNum[30];                   //标识当次呼叫的被叫号码（组号、个号）
-}PTT_OFF_ACK;
+    CENTER_CMD_SHARE_HEAD SharedHead;
+    unsigned int  CallId;           // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int  VoiceId;          // 业务面ID 标识一次呼叫的业务面ID
+    unsigned char Reserved[2];      // 字节对齐占位中心无须关心参数
+    unsigned char TalkingNum[30];   // 标识当次通话PTT的讲话方号码
+    unsigned char CallingNum[30];   // 标识当次呼叫的主叫号码
+    unsigned char CalledNum[30];    // 标识当次呼叫的被叫号码（组号、个号）
+} PTT_OFF_ACK;
 
 /**
  * @struct SMS_CENTER_CCL_DL
@@ -280,21 +279,17 @@ typedef struct _PTT_OFF_ACK
 typedef struct SMS_CENTER_CCL_DL
 {
     CENTER_CMD_SHARE_HEAD  SharedHead;
-    unsigned  int          CallId;                          //控制面ID        标识一次呼叫的控制面ID
-    unsigned  int          VoiceId;                         //业务面ID        标识一次呼叫的业务面ID
-    unsigned char          SourceStat;                      //标识发送单元设备状态（空闲、故障、忙等）
-    unsigned char          SmsType ;                        //短消息类型（组呼、个呼），增加组呼状态消息和个呼状态消息
-    unsigned  short        ValidLength;                     //短消息有效长度（状态消息为2，短消息内容填2字节状态消息号码）
-    unsigned char          SmsFormat  ;                     //短消息格式（ASCII=0x00、UNICODE=0x01等）
-    unsigned char          SenderNum[30];                   //发送者号码
-    unsigned char          ReceiverNum[30];                 //接收者号码
-    unsigned char          SmsData[512];                    //短消息内容
-    unsigned char          Reserved[3];
-}    SMS_CENTER_CCL_DL;
-
-
-
-
+    unsigned int   CallId;          // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int   VoiceId;         // 业务面ID 标识一次呼叫的业务面ID
+    unsigned char  SourceStat;      // 标识发送单元设备状态（空闲、故障、忙等）
+    unsigned char  SmsType ;        // 短消息类型（组呼、个呼），增加组呼状态消息和个呼状态消息
+    unsigned short ValidLength;     // 短消息有效长度（状态消息为2，短消息内容填2字节状态消息号码）
+    unsigned char  SmsFormat  ;     // 短消息格式（ASCII=0x00、UNICODE=0x01等）
+    unsigned char  SenderNum[30];   // 发送者号码
+    unsigned char  ReceiverNum[30]; // 接收者号码
+    unsigned char  SmsData[512];    // 短消息内容
+    unsigned char  Reserved[3];
+} SMS_CENTER_CCL_DL;
 
 
 /**
@@ -304,11 +299,11 @@ typedef struct SMS_CENTER_CCL_DL
 typedef struct _SMS_ACK
 {
     CENTER_CMD_SHARE_HEAD   SharedHead;
-    unsigned  int           CallId;                 //控制面ID        标识一次呼叫的控制面ID
-    unsigned  int           VoiceId;                //业务面ID        标识一次呼叫的业务面ID
-    unsigned char           SourceStat;             //标识发送单元设备状态（空闲、故障、忙等）
-    unsigned char           Ack ;                   //标识短消息回复结果(成功ACK_OK=0x04、失败ACK_FAIL=0x05)
-    unsigned char           Reserved[2];
+    unsigned int  CallId;           // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int  VoiceId;          // 业务面ID 标识一次呼叫的业务面ID
+    unsigned char SourceStat;       // 标识发送单元设备状态（空闲、故障、忙等）
+    unsigned char Ack;              // 标识短消息回复结果(成功ACK_OK=0x04、失败ACK_FAIL=0x05)
+    unsigned char Reserved[2];
 }    SMS_ACK;
 
 /**
@@ -317,14 +312,14 @@ typedef struct _SMS_ACK
  */
 typedef struct _SMS_CCL_DLL_EN
 {
-    unsigned  short   Identification;                           //Ipc4报头识别值
-    unsigned char     DestIpId:          4;                     //目的IP地址索引
-    unsigned char     SrcIpId:           4;                     //源IP地址索引
-    unsigned char     SrcPortId :        7;                     //源端口索引
-    unsigned char     CmpresOpcode1:     1;                     //压缩头操作码高有效位
-    unsigned char     DestPortId :       7;                     //目的端口索引
-    unsigned char     CmpresOpcode2:     1;                     //压缩头操作码低有效位
-   // unsigned  short      ExtHeader1;                          //可选扩展头
+    unsigned short Identification;     // Ipc4报头识别值
+    unsigned char  DestIpId:4;         // 目的IP地址索引
+    unsigned char  SrcIpId:4;          // 源IP地址索引
+    unsigned char  SrcPortId:7;        // 源端口索引
+    unsigned char  CmpresOpcode1:1;    // 压缩头操作码高有效位
+    unsigned char  DestPortId:7;       // 目的端口索引
+    unsigned char  CmpresOpcode2:1;    // 压缩头操作码低有效位
+   // unsigned  short      ExtHeader1; // 可选扩展头
  //   unsigned  short      ExtHeader2;
     unsigned char     SmsPayLoad [480];
 } SMS_CCL_DLL_EN;
@@ -336,13 +331,13 @@ typedef struct _SMS_CCL_DLL_EN
  */
 typedef struct _DT_VOICE_LC_HEADER
 {
-    unsigned char   CtrOpcode:  6;                      //设置成0
-    unsigned char   Reserved:   1;                      //设置成0
-    unsigned char   ProtectFlg: 1;
-    unsigned char   FeatureId;                          //设置成0
-    unsigned char   ServiceOpt;
-    unsigned char   GroupAddr[3];
-    unsigned char   SourceAddr[3];
+    unsigned char CtrOpcode:6;          // 设置成0
+    unsigned char Reserved:1;           // 设置成0
+    unsigned char ProtectFlg:1;
+    unsigned char FeatureId;            // 设置成0
+    unsigned char ServiceOpt;
+    unsigned char GroupAddr[3];
+    unsigned char SourceAddr[3];
 }  DT_VOICE_LC_HEADER;
 
 
@@ -353,8 +348,8 @@ typedef struct _DT_VOICE_LC_HEADER
  */
 typedef struct _LC_HEADER_DATA
 {
-    unsigned char   SourceId[3] ;                    //源ID
-    unsigned char   DesId[3];                       //目的ID
+    unsigned char SourceId[3];          // 源ID
+    unsigned char DesId[3];             // 目的ID
 }  LC_HEADER_DATA;
 
 /**
@@ -363,18 +358,18 @@ typedef struct _LC_HEADER_DATA
  */
 typedef struct _DT_VOICE_LC_TERMINATOR
 {
-    unsigned char     ProtectFlg:      1;
-    unsigned char     Reserved1:       1;
-    unsigned char     CtrOpcode:       6;
-    unsigned char     FeatureId;
-    unsigned char     DestLinkId[3];
-    unsigned char     SrcLinkId[3] ;
-    unsigned char     CallType:         1;                                                            //Group or Individual
-    unsigned char     ResponseReq :     1;
-    unsigned char     FullMsgFlg :      1;
-    unsigned char     Reserved2:        1;
-    unsigned char     ReSyncFlg :       1;
-    unsigned char     SendSeqNum:       3;
+    unsigned char ProtectFlg:1;
+    unsigned char Reserved1:1;
+    unsigned char CtrOpcode:6;
+    unsigned char FeatureId;
+    unsigned char DestLinkId[3];
+    unsigned char SrcLinkId[3];
+    unsigned char CallType:1;           // Group or Individual
+    unsigned char ResponseReq:1;
+    unsigned char FullMsgFlg:1;
+    unsigned char Reserved2:1;
+    unsigned char ReSyncFlg:1;
+    unsigned char SendSeqNum:3;
 }  DT_VOICE_LC_TERMINATOR;
 
 /**  语音LC头、终结帧结构
@@ -383,13 +378,13 @@ typedef struct _DT_VOICE_LC_TERMINATOR
  */
 typedef struct _DT_VOICE_LC_EN
 {
-    unsigned char   Flco:       6;                          //为  0 组呼
-    unsigned char   Reserved:   1;                      //设置成0
-    unsigned char   ProtectFlg: 1;                      //设置成0
-    unsigned char   FeatureId;                          //设置成0
-    unsigned char   ServiceOpt;                         // 0非加密
-    unsigned char   GroupAddr[3];
-    unsigned char   SourceAddr[3];
+    unsigned char Flco:       6;      // 为  0 组呼
+    unsigned char Reserved:   1;      // 设置成0
+    unsigned char ProtectFlg: 1;      // 设置成0
+    unsigned char FeatureId;          // 设置成0
+    unsigned char ServiceOpt;         //  0非加密
+    unsigned char GroupAddr[3];
+    unsigned char SourceAddr[3];
 } DT_VOICE_LC_EN;
 
 /**
@@ -418,15 +413,15 @@ typedef struct _DT_VOICE_LC_EN
 
 typedef struct   _Rtp_Fix_Head
 {
-    unsigned char   version:2;
-    unsigned char   padding_flag:1;
-    unsigned char   ex_head_flag:1;
-    unsigned char   csrc_count:4;
-    unsigned char   marker:1;
-    unsigned char   payload_type:7;
-    unsigned short  sequence_num;
-    unsigned int    time_stamp;
-    unsigned int    ssrc;
+    unsigned char  version:2;
+    unsigned char  padding_flag:1;
+    unsigned char  ex_head_flag:1;
+    unsigned char  csrc_count:4;
+    unsigned char  marker:1;
+    unsigned char  payload_type:7;
+    unsigned short sequence_num;
+    unsigned int   time_stamp;
+    unsigned int   ssrc;
 } Rtp_Fix_Head;
 /**
  * @struct  _Rtp_Ex_Head
@@ -442,7 +437,7 @@ typedef struct _Rtp_Ex_Head
     unsigned int  gps;
     unsigned char codec_flag;
     unsigned char frame_flag;
-    unsigned char path_num;         // show which path voice 0xff indicates invalid value, "0" indicates the first path
+    unsigned char path_num;             // show which path voice 0xff indicates invalid value, "0" indicates the first path
     unsigned char pack_rate;           // packet rate "20" or "60" milliseconds
     unsigned char encrypt_flag;
     unsigned char encode_flag;
@@ -486,27 +481,27 @@ typedef struct _CENTER_VOICE_DATA
 
 typedef  struct  _CENTER_VOICE_DATA_DL
 {
-    unsigned char     Version:      2;
-    unsigned char     Padding :     1;                       //填充标记
-    unsigned char     ExtendHead  : 1;                       //扩展头标记
-    unsigned char     CsrcCount  :  4;                       //贡献源计数
-    unsigned char     Marker:       1;                       //RTP重要事件标记
-    unsigned char     PayloadType:  7;                       //RTP 负载类型
-    unsigned  short   SequenceNum ;                          //RTP 序列号
-    unsigned  int     TimeStamp;                             //RTP时间戳
-    unsigned  int     Ssrc;                                  //RTP 同步源
-    unsigned  short   ProfileHead;                           //rtp扩展头特性参数
-    unsigned  short   ExheadLen;                             //RTP扩展头数据长度
-    unsigned  int     VoiceId;                               //标识一次呼叫的业务面ID
-    unsigned  int     Gps;                                   //GPS时间
-    unsigned char     CodecFlg;                              //数据编解码编解码标识
-    unsigned char     FrameFlg;                              //数据帧标识
-    unsigned char     PathNum;                               //语音通道号码，若不区分通道，则填全F
-    unsigned char     PackRate;                              //标识语音包速率
-    unsigned char     EncryptFlag;                           //标识是否加密
-    unsigned char     Reserve[3];
-    unsigned char     VoiceData[507];
-    unsigned char     ReserveData[5];
+    unsigned char  Version:2;
+    unsigned char  Padding:1;       // 填充标记
+    unsigned char  ExtendHead:1;    // 扩展头标记
+    unsigned char  CsrcCount:4;     // 贡献源计数
+    unsigned char  Marker:1;        // RTP重要事件标记
+    unsigned char  PayloadType:7;   // RTP 负载类型
+    unsigned short SequenceNum;     // RTP序列号
+    unsigned int   TimeStamp;       // RTP时间戳
+    unsigned int   Ssrc;            // RTP同步源
+    unsigned short ProfileHead;     // rtp扩展头特性参数
+    unsigned short ExheadLen;       // RTP扩展头数据长度
+    unsigned int   VoiceId;         // 标识一次呼叫的业务面ID
+    unsigned int   Gps;             // GPS时间
+    unsigned char  CodecFlg;        // 数据编解码编解码标识
+    unsigned char  FrameFlg;        // 数据帧标识
+    unsigned char  PathNum;         // 语音通道号码，若不区分通道，则填全F
+    unsigned char  PackRate;        // 标识语音包速率
+    unsigned char  EncryptFlag;     // 标识是否加密
+    unsigned char  Reserve[3];
+    unsigned char  VoiceData[507];
+    unsigned char  ReserveData[5];
  }CENTER_VOICE_DATA_DL;
 /**
  * @struct   _CCL_STAT_INFO_HEAD
@@ -514,18 +509,18 @@ typedef  struct  _CENTER_VOICE_DATA_DL
  */
 typedef struct _CCL_STAT_INFO_HEAD
 {
-    unsigned  short     MsgHead ;           //标识AC接口信令头标志(0x13ec)
-    unsigned  short     MsgType ;           // 信令类型    标识AC接口PTT命令信令（0x000a）
-    unsigned  short     Datalength  ;       //有效数据长度  标识信令有效数据长度（100）
-    unsigned  short     SourceID ;          // 源单元号            标识AC接口发送单元ID值
-    unsigned  short     DestID   ;          //目的单元号     标识AC接口接收单元ID值
-    unsigned char       SourceType  ;       //源单元设备类型       标识发送单元设备类型（制式）
-    unsigned char       SigVersion  ;       //信令版本号       标识该信令适合版本号0x02(该信令与0x01版本不兼容)
-    unsigned char       PathNum ;           //通道号码         标识该信令属于该单元的通道号码，若不区分通道，则填全F
-    unsigned char       ChangeMode;         //主辅模式    0x00  主模式   0x01 从模式    0xff 无效
-    unsigned char       ConnectMode;        // 连接模式    0x00  自动模式    0x01手动模式
-    unsigned char       Exhead[9]   ;       //扩展头           扩展头中心无须关心参数
-    unsigned  int       CheckVal    ;       //  校验值      标识信令校验结果(01版本 与02版本 目前都填写全F，标示无校验方式)
+    unsigned short MsgHead;             //标识AC接口信令头标志(0x13ec)
+    unsigned short MsgType;             //信令类型    标识AC接口PTT命令信令（0x000a）
+    unsigned short Datalength;          //有效数据长度  标识信令有效数据长度（100）
+    unsigned short SourceID;            //源单元号            标识AC接口发送单元ID值
+    unsigned short DestID;              //目的单元号     标识AC接口接收单元ID值
+    unsigned char  SourceType;          //源单元设备类型       标识发送单元设备类型（制式）
+    unsigned char  SigVersion;          //信令版本号       标识该信令适合版本号0x02(该信令与0x01版本不兼容)
+    unsigned char  PathNum;             //通道号码         标识该信令属于该单元的通道号码，若不区分通道，则填全F
+    unsigned char  ChangeMode;          //主辅模式    0x00  主模式   0x01 从模式    0xff 无效
+    unsigned char  ConnectMode;         //连接模式    0x00  自动模式    0x01手动模式
+    unsigned char  Exhead[9];           //扩展头           扩展头中心无须关心参数
+    unsigned int   CheckVal;            // 校验值      标识信令校验结果(01版本 与02版本 目前都填写全F，标示无校验方式)
 
 }CCL_STAT_INFO_HEAD;
 /**
@@ -536,12 +531,12 @@ typedef struct _CCL_STAT_INFO_HEAD
 typedef  struct _CCL_STAT_INFO
 {
     CCL_STAT_INFO_HEAD  StatInfoHead;
-    unsigned int        CallId;                       //标识一次呼叫的控制面ID
-    unsigned int        VoiceId;                      //标识一次呼叫的业务面ID
-    unsigned char       SourceStat ;                  //标识发送单元设备状态（空闲、故障、忙等）
-    unsigned char       CallidSn;                     //标识发送单元正处理号码在映射表中序号
-    unsigned char       CallingId;                    //标识发送端单元主叫单元号
-    unsigned char       CalledId;                     //标识发送端单元被叫单元号
+    unsigned int  CallId;               //标识一次呼叫的控制面ID
+    unsigned int  VoiceId;              //标识一次呼叫的业务面ID
+    unsigned char SourceStat;           //标识发送单元设备状态（空闲、故障、忙等）
+    unsigned char CallidSn;             //标识发送单元正处理号码在映射表中序号
+    unsigned char CallingId;            //标识发送端单元主叫单元号
+    unsigned char CalledId;             //标识发送端单元被叫单元号
 }CCL_STAT_INFO;
 
 
@@ -554,10 +549,10 @@ typedef  struct _GPS_DC_INFO
 {
   unsigned char     TimeH[3];           //GPS 时间高三位
   unsigned char     TimeL[3];           //GPS 时间低三位
-  unsigned int      N_S:     1;        //方向
-  unsigned int      Latiude: 31;      //纬度
-  unsigned int      W_E:      1;       //方向
-  unsigned int      Longtiude:31;     //经度
+  unsigned int      N_S:1;              //方向
+  unsigned int      Latiude:31;         //纬度
+  unsigned int      W_E:1;              //方向
+  unsigned int      Longtiude:31;       //经度
   unsigned short    Speed;              //速度
   unsigned short    Direct;             //方向
 }GPS_DC_INFO;
@@ -655,48 +650,49 @@ typedef  struct _GPS__CC_INFO
 
 typedef union _SHARE_CC_DATA_D
 {
-    PTT_CMD  CC_PTT_CMD;                       ///中心手台命令
-    PTT_OFF_ACK CC_Ptt_Ack;                     //中心PTT命令响应
-    SMS_CENTER_CCL_DL CcSmsSig;               ///中心短消息命令
-
+    PTT_CMD  CC_PTT_CMD;        // 中心手台命令
+    PTT_OFF_ACK CC_Ptt_Ack;     // 中心PTT命令响应
+    SMS_CENTER_CCL_DL CcSmsSig; // 中心短消息命令
 } SHARE_CC_DATA_D;
+
+
 
 /******************************************************************************
  *   枚举声明
  *   *************************************************************************/
 /**
  * @enum    SMS_DATA_CALL_TYPE
- * @brief     数据消息呼叫类型
+ * @brief   数据消息呼叫类型, 如果更改其中任意一项，ccl_dl.c中的 table_sms_type_print 也需随之更改
  */
  typedef  enum  _SMS_DATA_CALL_TYPE
  {
     //短消息
-    MESSAGE_PRIVATE_CALL    =0x00,                     //单呼
-    MESSAGE_GROUP_CALL      =0x01,                     //组呼
-    STATUS_PRIVATE_CALL     =0x02,                     //状态单呼
-    STATUS_GROUP_CALL       =0x03,                     //状态组呼
+    MESSAGE_PRIVATE_CALL    =0x00,          //单呼
+    MESSAGE_GROUP_CALL      =0x01,          //组呼
+    STATUS_PRIVATE_CALL     =0x02,          //状态单呼
+    STATUS_GROUP_CALL       =0x03,          //状态组呼
 
    //命令
-    STUN_REQ_MS             =0x07,                     //遥晕MS
-    STUN_REQ_NAS            =0x08,                     //遥晕NAS
-    KILL_REQ_NAS            =0x09,                     //遥毙NAS
-    GPS_REPOTR_MS           =0x0a,                     //拉GPS
+    STUN_REQ_MS             =0x07,          //遥晕MS
+    STUN_REQ_NAS            =0x08,          //遥晕NAS
+    KILL_REQ_NAS            =0x09,          //遥毙NAS
+    GPS_REPOTR_MS           =0x0a,          //拉GPS
     GPS_REPORT_NAS          =0x0b,
     REVIVE_REQ_NAS          =0x0c,
     REVIVE_REQ_MS           =0x0d,
-    NEGHR_QUERY             =0x0e,                     //邻点查询
+    NEGHR_QUERY             =0x0e,          //邻点查询
 
     //响应
-    NEGHR_QUERY_ACK         =0x20,                     //邻点查询相应
-    GPS_REPROT_MS_ACK       =0x21,                     //相应拉MS  GPS
-    GPS_REPROT_NAS_ACK      =0x22,                     //相应拉NAS  GPS
+    NEGHR_QUERY_ACK         =0x20,          //邻点查询相应
+    GPS_REPROT_MS_ACK       =0x21,          //相应拉MS  GPS
+    GPS_REPROT_NAS_ACK      =0x22,          //相应拉NAS  GPS
     STUN_REQ_MS_ACK         =0x23,
     STUN_REQ_NAS_ACK        =0x24,
     KILL_REQ_NAS_ACK        =0X25,
-    REVIVE_REQ_NAS_ACK      =0x26,                     //激活NAS
-    REVIVE_REQ_MS_ACK       =0x27,                     //激活MS
-    NAS_NEAR_REPORT         =0x28,                     //增加邻点上报
-    VARIANCE_HRESHOLD       =0x29,                      //方差门限（场强值）
+    REVIVE_REQ_NAS_ACK      =0x26,          //激活NAS
+    REVIVE_REQ_MS_ACK       =0x27,          //激活MS
+    NAS_NEAR_REPORT         =0x28,          //增加邻点上报
+    VARIANCE_HRESHOLD       =0x29,          //方差门限（场强值）
 
     //报告
     STUN_NAS_REPORT         =0x30,
@@ -727,12 +723,12 @@ typedef union _SHARE_CC_DATA_D
  */
 typedef  enum  _INF_SIG_TYPE_EN
 {
-    SIG_STATUS_REPORT   =0x0001,                    //NAS状态上报
-    SIG_PTT_CMD         =0X000a,                    //PTT 命令 信令
-    SIG_PTT_ON_ACK      =0x000b,                    //PTT  ON 回复 信令
-    SIG_SMS_SEND        =0x000e,                    //短消息命令
-    SIG_SMS_ACK         =0x0014,                    //短消息回复信令
-    SIG_PTT_OFF_ACK     =0x0015                    //PTT  OFF回复 信令
+    SIG_STATUS_REPORT = 0x0001,  // NAS状态上报
+    SIG_PTT_CMD       = 0X000a,  // PTT 命令 信令
+    SIG_PTT_ON_ACK    = 0x000b,  // PTT ON 回复 信令
+    SIG_SMS_SEND      = 0x000e,  // 短消息命令
+    SIG_SMS_ACK       = 0x0014,  // 短消息回复信令
+    SIG_PTT_OFF_ACK   = 0x0015   // PTT OFF回复 信令
 }INF_SIG_TYPE_EN;
 
 /**
@@ -762,18 +758,18 @@ typedef  enum  _INF_CCL_STATE_EN
 typedef enum _NAS_WORK_STATE_E
 {
     NAS_STOP_REKAY              =1,
-    NAS_NORMAL_STATE            =5,                     ///< 正常态
-    NAS_STUNNED_STATE           =6,                     ///< 摇晕态
-    NAS_KILLED_STATE            =7,                     ///< 摇毙态
-    NAS_WAIT_STUN_ACK_STATE     =8,                     ///< 等待摇晕响应态
-    NAS_WAIT_KILL_ACK_STATE     =9,                     ///< 等待摇毙响应态
+    NAS_NORMAL_STATE            =5,         ///< 正常态
+    NAS_STUNNED_STATE           =6,         ///< 摇晕态
+    NAS_KILLED_STATE            =7,         ///< 摇毙态
+    NAS_WAIT_STUN_ACK_STATE     =8,         ///< 等待摇晕响应态
+    NAS_WAIT_KILL_ACK_STATE     =9,         ///< 等待摇毙响应态
 
 } NAS_WORK_STATE_E;
 
 typedef enum _NEAR_REPORT_TYPE_E
 {
-    NEAR_REPORT_ACTIVE            =0,                     ///<邻点主动上报
-    NEAR_REPORT_PASSIVE           =1,                     ///< 邻点查询上报
+    NEAR_REPORT_ACTIVE            =0,       ///<邻点主动上报
+    NEAR_REPORT_PASSIVE           =1,       ///< 邻点查询上报
 }NEAR_REPORT_TYPE_E;
 
 
