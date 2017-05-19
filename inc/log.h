@@ -67,30 +67,26 @@ typedef struct _WLU_LOG_MSG_T
 }__attribute__((packed,aligned(1)))WLU_LOG_MSG_T;
 
 #define LOG_Debug(x,...) do{\
-    LOG_MSG_T *tLogMsg;\
-    int *len;\
-    time_t *timep;\
-    struct timeval *tSndTime;\
+	LOG_MSG_T *tLogMsg=NULL;\
+    int len = 0;\
+    time_t timep;\
+    struct timeval tSndTime;\
     tLogMsg = (LOG_MSG_T *)malloc(sizeof(LOG_MSG_T));\
-    timep = (time_t *)malloc(sizeof(time_t));\
-    len = (int *)malloc(sizeof(int));\
-    tSndTime = (struct timeval *)malloc(sizeof(struct timeval));\
-    *len = 0;\
-    gettimeofday(tSndTime,NULL);\
-    time(timep);\
-    memset(tLogMsg,0x00,sizeof(LOG_MSG_T));\
-    (*len) += sprintf(tLogMsg->tmsgArray + (*len),"%.2d:%.2d:%.2d:%.3d>",(int)localtime(timep)->tm_hour, (int)localtime(timep)->tm_min, (int)localtime(timep)->tm_sec,(int)tSndTime->tv_usec/1000);\
-    (*len) += sprintf(tLogMsg->tmsgArray + (*len),__VA_ARGS__);\
-    (*len) += sprintf(tLogMsg->tmsgArray + (*len),"\n");\
-    tLogMsg->msgType = 1;\
-    if(0 == ptIPCShm->printf_select)\
-        msgsnd(x, tLogMsg, (*len)+4, 0);\
-    else\
-        printf("%s",tLogMsg->tmsgArray);\
-    free(tLogMsg);\
-    free(len);\
-    free(timep);\
-    free(tSndTime);\
+    if(NULL != tLogMsg)\
+    {\
+        gettimeofday(&tSndTime,NULL);\
+        time(&timep);\
+        memset(tLogMsg,0x00,sizeof(LOG_MSG_T));\
+        len += sprintf(tLogMsg->tmsgArray + len,"%.2d:%.2d:%.2d:%.3d>",(int)localtime(&timep)->tm_hour, (int)localtime(&timep)->tm_min, (int)localtime(&timep)->tm_sec,(int)tSndTime.tv_usec/1000);\
+        len += sprintf(tLogMsg->tmsgArray + len,__VA_ARGS__);\
+        len += sprintf(tLogMsg->tmsgArray + len,"\n");\
+        tLogMsg->msgType = 1;\
+        if(0 == ptIPCShm->printf_select)\
+        msgsnd(x, tLogMsg, len+4, IPC_NOWAIT);\
+	    else\
+	    printf("%s",tLogMsg->tmsgArray);\
+	    free(tLogMsg);\
+    }\
 }while(0)
 
 #define LOG_DEBUG(x,...) LOG_Debug(x,"[""DEBUG""]""["TASK_NAME"]"__VA_ARGS__)
@@ -116,55 +112,48 @@ typedef struct _WLU_LOG_MSG_T
 
 
 #define LOG_printmlocal(p,datalen) do{\
-	int *i,*j;\
-	 i = (int*)malloc(sizeof(int));\
-	  j= (int*)malloc(sizeof(int));\
-	  *i=*j=0;\
-	printf("MEM PRINT:len=%d  ",datalen);\
-	for((*i)= 0;(*i)<datalen;(*i)++){\
-		(*j)++;\
-		printf("%.2x ",p[*i]);\
-		if((*j)%16 == 0)\
-			printf("\n                   ");}\
-		printf("\n");\
-	 free(i);\
-	  free(j);\
+	int i=0,len=0;\
+	char *temp = NULL;\
+	temp = (char *)malloc(datalen*3);\
+	if(NULL != temp){\
+	printf("MEM PRINT:len=%d\n",datalen);\
+	for(i=0;i<datalen;i++){\
+	 	len +=sprintf(temp+len,"%.2x",*(p+i));\
+	 	if((i+1)%8==0)\
+			len += sprintf(temp+len,"   ");\
+		if((i+1)%64==0)\
+			len +=sprintf(temp+len,"\n");}\
+	printf("%s\n",temp);\
+	free(temp);}\
 }while(0)	
 
 #define LOG_printmlogview(x,p,datalen) do{\
-	LOG_MSG_T *tLogMsg;\
-	int *len;\
-	int *i;\
+	 LOG_MSG_T *tLogMsg= NULL;\
+	 int len = 0;\
+	 int i;\
     if(MAX_LOG_LEN > datalen)\
 	{\
-        time_t *timep;\
-        struct timeval *tSndTime;\
-        tSndTime = (struct timeval *)malloc(sizeof(struct timeval));\
-        timep = (time_t *)malloc(sizeof(time_t));\
-        len = (int*)malloc(sizeof(int));\
-        i = (int*)malloc(sizeof(int));\
-        *len = 0;\
-        gettimeofday(tSndTime,NULL);\
-        time(timep);\
+        time_t timep;\
+        struct timeval tSndTime;\
         tLogMsg = (LOG_MSG_T *)malloc(sizeof(LOG_MSG_T));\
+        if(NULL != tLogMsg){\
+        gettimeofday(&tSndTime,NULL);\
+        time(&timep);\
         memset(tLogMsg,0x00,sizeof(LOG_MSG_T));\
-        (*len) += sprintf(tLogMsg->tmsgArray + (*len),"%.2d:%.2d:%.2d:%.3d>[MEM]",(int)localtime(timep)->tm_hour, (int)localtime(timep)->tm_min, (int)localtime(timep)->tm_sec,(int)tSndTime->tv_usec/1000);\
-	    (*len )+= sprintf(tLogMsg->tmsgArray+(*len),"len=%d:\n",datalen);\
-	    for((*i)=0;(*i)<datalen;(*i)++)\
+        len += sprintf(tLogMsg->tmsgArray,"%.2d:%.2d:%.2d:%.3d>[MEM]",(int)localtime(&timep)->tm_hour, (int)localtime(&timep)->tm_min, (int)localtime(&timep)->tm_sec,(int)tSndTime.tv_usec/1000);\
+	    len+= sprintf(tLogMsg->tmsgArray+len,"len=%d:\n",datalen);\
+	    for(i=0;i<datalen;i++)\
 	 	{\
-	 	(*len) +=sprintf(tLogMsg->tmsgArray+(*len),"%.2x",*(p+(*i)));\
-	 	if(((*i)+1)%8==0)\
-			(*len) += sprintf(tLogMsg->tmsgArray+(*len),"   ");\
-		if(((*i)+1)%64==0)\
-			(*len) +=sprintf(tLogMsg->tmsgArray+(*len),"\n");}\
-	    (*len) += sprintf(tLogMsg->tmsgArray + (*len),"\n");\
+	 	    len +=sprintf(tLogMsg->tmsgArray+len,"%.2x",*(p+i));\
+	 	    if((i+1)%8==0)\
+			    len += sprintf(tLogMsg->tmsgArray+len,"   ");\
+		    if((i+1)%64==0)\
+			    len +=sprintf(tLogMsg->tmsgArray+len,"\n");\
+	    }\
+	    len += sprintf(tLogMsg->tmsgArray + len,"\n");\
         tLogMsg->msgType = 2;\
-        msgsnd(x, tLogMsg, (*len)+4, 0);\
-        free(tLogMsg);\
-        free(tSndTime);\
-        free(len);\
-        free(i);\
-        free(timep);\
+        msgsnd(x, tLogMsg, len+4, IPC_NOWAIT);\
+        free(tLogMsg);}\
     }\
     else\
     {\

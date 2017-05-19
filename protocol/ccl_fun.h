@@ -199,7 +199,6 @@ void LitToBigSmsData(unsigned char *ConvertedData,unsigned char *RawData,unsigne
 * @brief    获取系统时间 按字符串输出
 */
 int GetTime( char *pvtime);
-void PrintMsgDatalog(DLL_CCL_UL_T *ptDllData);
 
 #endif //CCLUL_H
 

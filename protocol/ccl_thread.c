@@ -37,6 +37,7 @@
 //#include"ccl.h"
 #include "ccl_fun.h"
 #include "dll.h"
+#include "print_debug.h"
 
 //#include "DLL.h"
 
@@ -1023,7 +1024,8 @@ void IDP_MsgDataHandle(unsigned char * pvDllData, unsigned char * CenterData)
     int u4Datalen;
     int u4sendlen;
     DLL_CCL_UL_T *ptDllData = (DLL_CCL_UL_T *)pvDllData;
-
+    IDP_PrintMsgDatalog(ptDllData); // by zhoudayuan
+    
     switch(ptDllData->DataType)
     {
         case CT_LC_HEADER:                                  //  LC 头
@@ -1153,58 +1155,64 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
         return;
     }
 
-    if (s_tRec_LC_FLG && 0 == s_tSend_PTTON_FLG) 
+    if (1 == s_tRec_LC_FLG)
     {
-        memset(CenterData, 0, sizeof(CenterData));
-        IDP_GenPttCmd(pvDllData, CenterData, CMD_PTT_ON, &u4Datalen);
-        sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
-
-        //s_tSend_PTTON_FLG=1;
-        if (1 == tcclPrint->CclUp)
+        if(0 == s_tSend_PTTON_FLG) 
         {
-            LOG_DEBUG(s_LogMsgId,"[CCL][%s] SEND CC PTTON, Rec_LC_FLG=%d Send_PTTON_FLG=%d", __FUNCTION__, s_tRec_LC_FLG, s_tSend_PTTON_FLG);
-        }
+            memset(CenterData, 0, sizeof(CenterData));
+            IDP_GenPttCmd(pvDllData, CenterData, CMD_PTT_ON, &u4Datalen);
+            sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
 
-        if (1 == s_tNas_STOP_RELAY)
+            //s_tSend_PTTON_FLG=1;
+            if (1 == tcclPrint->CclUp)
+            {
+                LOG_DEBUG(s_LogMsgId,"[CCL][%s] SEND CC PTTON, Rec_LC_FLG=%d Send_PTTON_FLG=%d", __FUNCTION__, s_tRec_LC_FLG, s_tSend_PTTON_FLG);
+            }
+
+            if (1 == s_tNas_STOP_RELAY)
+            {
+                memset(CenterData,0,sizeof(CenterData));
+                IDP_GenNasStatePack(s_tLast_Relay_Flg, CenterData, &u4Datalen);
+                sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));
+                if(1 == tcclPrint->CclUp)
+                {
+                    LOG_DEBUG(s_LogMsgId,"[CCL][%s] SEND CC STOP RELAY!! " , __FUNCTION__ );
+                }
+                s_tNas_STOP_RELAY=0;
+            }
+        }
+        else 
         {
             memset(CenterData,0,sizeof(CenterData));
-            IDP_GenNasStatePack(s_tLast_Relay_Flg, CenterData, &u4Datalen);
-            sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));
-            if(1 == tcclPrint->CclUp)
+            IDP_GenVoiceDataPaket(pvDllData,CenterData,&u4Datalen);   //全局计算方差平均值
+
+            u4sendlen=sendto(s_tCclVioceUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclVioceUlAddr, sizeof(s_tCclVioceUlAddr));  //(struct sockaddr *)&address
+            if (u4sendlen != u4Datalen)
             {
-                LOG_DEBUG(s_LogMsgId,"[CCL][%s] SEND CC STOP RELAY!! " , __FUNCTION__ );
+                LOG_ERROR(s_LogMsgId,"[CCL][%s] SEND UP VOICE ERROR  LEN=%d", __FUNCTION__,u4sendlen);
             }
-            s_tNas_STOP_RELAY=0;
+            if (FT_VOICE_F == ptDllData->FrmType)       // 发送超帧方差平均值
+            {
+                IDP_GenThrethHoldData(pvDllData, CenterData, &u4Datalen);
+                sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
+            }
+            if (1 == s_tNas_STOP_RELAY)                  // 发送转发标志
+            {
+                memset(CenterData,0,sizeof(CenterData));
+                IDP_GenNasStatePack(s_tLast_Relay_Flg,CenterData,&u4Datalen);
+                sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));
+                if(1 == tcclPrint->CclUp)
+                {
+                    LOG_DEBUG(s_LogMsgId,"[CCL][%s]SEND CC STOP RELAY!! " , __FUNCTION__ );
+                }
+                s_tNas_STOP_RELAY=0;
+            }
+
         }
     }
-
-    if (s_tRec_LC_FLG &&  1 == s_tSend_PTTON_FLG)
+    else
     {
-        memset(CenterData,0,sizeof(CenterData));
-        IDP_GenVoiceDataPaket(pvDllData,CenterData,&u4Datalen);   //全局计算方差平均值
-
-        u4sendlen=sendto(s_tCclVioceUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclVioceUlAddr, sizeof(s_tCclVioceUlAddr));  //(struct sockaddr *)&address
-        if (u4sendlen != u4Datalen)
-        {
-            LOG_ERROR(s_LogMsgId,"[CCL][%s] SEND UP VOICE ERROR  LEN=%d", __FUNCTION__,u4sendlen);
-        }
-        if (FT_VOICE_F == ptDllData->FrmType)       // 发送超帧方差平均值
-        {
-            IDP_GenThrethHoldData(pvDllData, CenterData, &u4Datalen);
-            sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
-        }
-        if (1 == s_tNas_STOP_RELAY)                  // 发送转发标志
-        {
-            memset(CenterData,0,sizeof(CenterData));
-            IDP_GenNasStatePack(s_tLast_Relay_Flg,CenterData,&u4Datalen);
-            sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));
-            if(1 == tcclPrint->CclUp)
-            {
-                LOG_DEBUG(s_LogMsgId,"[CCL][%s]SEND CC STOP RELAY!! " , __FUNCTION__ );
-            }
-            s_tNas_STOP_RELAY=0;
-        }
-
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s]call error s_tRec_LC_FLG = %d!! " , __FUNCTION__, s_tRec_LC_FLG);
     }
 }
 
@@ -1220,6 +1228,9 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
 {
     int u4Datalen;
     DLL_CCL_UL_T *ptDllData = (DLL_CCL_UL_T *)pvDllData;
+
+    IDP_PrintMsgDatalog(ptDllData); // by zhoudayuan
+    
     switch(ptDllData->DataType)
     {
         case CT_GPS_REPORT_ACK_NAS:

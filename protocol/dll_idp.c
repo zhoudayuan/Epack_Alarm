@@ -20,153 +20,12 @@
  *   引用头文件声明
  *   *************************************************************************/
 #include "dll_fun.h"
+#include "print_debug.h"
 
 
-TYPE_PRINT_T table_cmd_type_print[] = {
-#if 0
-    //网管空口命令
-    {CMD_CODE_DEV_FREQ                ,    "CMD_CODE_DEV_FREQ"},
-    {CMD_CODE_DEV_POWER               ,    "CMD_CODE_DEV_POWER"},
-    {CMD_CODE_START_NEIGHBOR          ,    "CMD_CODE_START_NEIGHBOR"},
-    {CMD_CODE_NEIGHBOR_PERIOD         ,    "CMD_CODE_NEIGHBOR_PERIOD"},
-    {CMD_CODE_COMBINED_DATA           ,    "CMD_CODE_COMBINED_DATA"},
-    {CMD_CODE_SCAN_MODE               ,    "CMD_CODE_SCAN_MODE"},          //以前命令字是0x0006，暂时没用后期开发注意修改
-
-    //告警模块命令字
-
-    {CMD_CODE_ALARM                  ,    "CMD_CODE_ALARM"},
-#endif
-    //业务模块命令字C0~FF
-    {CMD_CODE_GPS_REPORT              ,    "CMD_CODE_GPS_REPORT"},
-    {CMD_CODE_STUN                    ,    "CMD_CODE_STUN"},
-    {CMD_CODE_KILL                    ,    "CMD_CODE_KILL"},
-    {CMD_CODE_ENABLE                  ,    "CMD_CODE_ENABLE"},
-    {CMD_CODE_NER_QUERY               ,    "CMD_CODE_NER_QUERY"},
-    {CMO_CODE_NER_REPORT              ,    "CMO_CODE_NER_REPORT"},
-    {CMO_CODE_MS_GPS                  ,    "CMO_CODE_MS_GPS"},
-    {CMO_CODE_MS_DISABlE              ,    "CMO_CODE_MS_DISABlE"},
-    {CMO_CODE_MS_ENABLE               ,    "CMO_CODE_MS_ENABLE"},
-    {CMO_CODE_NAS_PRE                 ,    "CMO_CODE_NAS_PRE"},
-#if 0
-    //网管本地命令
-    {CMD_CODE_OPEN_CLOSE_LOOP         ,    "CMD_CODE_OPEN_CLOSE_LOOP"},
-    {CMD_CODE_LOCKING_TIME            ,    "CMD_CODE_LOCKING_TIME"},
-    {CMD_CODE_HALF_VARIANCE_THRESHOLD ,    "CMD_CODE_HALF_VARIANCE_THRESHOLD"},
-    {CMD_CODE_DEV_ID                  ,    "CMD_CODE_DEV_ID"},
-    {CMD_CODE_LOCAL_CC                ,    "CMD_CODE_LOCAL_CC"},
-    {CMD_CODE_VERSION                 ,    "CMD_CODE_VERSION"},
-    {CMD_CODE_FPGA_VERSION            ,    "CMD_CODE_FPGA_VERSION"},
-    {CMD_CODE_TERMINAL_CC             ,    "CMD_CODE_TERMINAL_CC"},
-    {CMD_CODE_PROTOCOL_MODE           ,    "CMD_CODE_PROTOCOL_MODE"},
-    {CMD_CODE_IS_CONNET_CC            ,    "CMD_CODE_IS_CONNET_CC"},
-    {CMD_CODE_AIR_SUBNET_ID           ,    "CMD_CODE_AIR_SUBNET_ID"},
-    {CMD_CODE_LOCAL_IP                ,    "CMD_CODE_LOCAL_IP"},
-    {CMD_CODE_LOCAL_MAC               ,    "CMD_CODE_LOCAL_MAC"},
-    {CMD_CODE_WORK_TIME_OUT           ,    "CMD_CODE_WORK_TIME_OUT"},
-    {CMD_CODE_GPS_TIME_OUT            ,    "CMD_CODE_GPS_TIME_OUT"},
-    {CMD_CODE_STUN_TIME_OUT           ,    "CMD_CODE_STUN_TIME_OUT"},
-    {CMD_CODE_START_TIME_OUT          ,    "CMD_CODE_START_TIME_OUT"},
-    {CMD_CODE_FPGA_EEPROM             ,    "CMD_CODE_FPGA_EEPROM"},
-    {CMD_CODE_REBOOT                  ,    "CMD_CODE_REBOOT"},
-    {CMD_CODE_ALARM_SWITCH            ,    "CMD_CODE_ALARM_SWITCH"},
-    {CMD_CODE_UPDATE_DTB              ,    "CMD_CODE_UPDATE_DTB"},
-    {CMD_CODE_UPDATE_LOADAPP          ,    "CMD_CODE_UPDATE_LOADAPP"},
-    {CMD_CODE_UPDATE_FILE_SYSTEM      ,    "CMD_CODE_UPDATE_FILE_SYSTEM"},
-    {CMD_CODE_UPDATE_UBOOT            ,    "CMD_CODE_UPDATE_UBOOT"},
-    {CMD_CODE_UPDATE_RBF              ,    "CMD_CODE_UPDATE_RBF"},
-    {CMD_CODE_UPDATE_ZIMAGE           ,    "CMD_CODE_UPDATE_ZIMAGE"},
-
-    //FPGA调测命令
-    {CMD_CODE_EMISSIVE_VCO_FREQ       ,    "CMD_CODE_EMISSIVE_VCO_FREQ"},
-    {CMD_CODE_RECEIVING_VCO_FREQ      ,    "CMD_CODE_RECEIVING_VCO_FREQ"},
-    {CMD_CODE_SECOND_LOCAL_OSCILLATOR ,    "CMD_CODE_SECOND_LOCAL_OSCILLATOR"},
-    {CMD_CODE_POWER_AMPLIFIER_SWITCH  ,    "CMD_CODE_POWER_AMPLIFIER_SWITCH"},
-    {CMD_CODE_FPGA_PARAM              ,    "CMD_CODE_FPGA_PARAM"},
-    {CMD_CODE_POWER                   ,    "CMD_CODE_POWER"},
-    {CMD_CODE_AFC                     ,    "CMD_CODE_AFC"},
-    {CMD_CODE_SAVE_AFC                ,    "CMD_CODE_SAVE_AFC"},
-    {CMD_CODE_IQS                     ,    "CMD_CODE_IQS"},
-    {CMD_CODE_SAVE_IQS                ,    "CMD_CODE_SAVE_IQS"},
-    {CMD_CODE_OFFSET                  ,    "CMD_CODE_OFFSET"},
-    {CMD_CODE_SAVE_OFFSET             ,    "CMD_CODE_SAVE_OFFSET"},
-    {CMD_CODE_PHASE                   ,    "CMD_CODE_PHASE"},
-    {CMD_CODE_SAVE_PHASE              ,    "CMD_CODE_SAVE_PHASE"},
-    {CMD_CODE_CALIBRATE_OFFSET        ,    "CMD_CODE_CALIBRATE_OFFSET"},
-    {CMD_CODE_CALIBRATE_PHASE         ,    "CMD_CODE_CALIBRATE_PHASE"},
-    {CMD_CODE_DEBUG_EMISSIVE_FREQ     ,    "CMD_CODE_DEBUG_EMISSIVE_FREQ"},
-    {CMD_CODE_SAVE_POWER              ,    "CMD_CODE_SAVE_POWER"},
-    {CMD_CODE_ERROR_RATE              ,    "CMD_CODE_ERROR_RATE"},
-    {CMD_CODE_START_DEBUG             ,    "CMD_CODE_START_DEBUG"},
-    {CMD_CODE_START_ERR_RATE          ,    "CMD_CODE_START_ERR_RATE"},
-    {CMD_CODE_SELECT_SIGNAL_SOURCE    ,    "CMD_CODE_SELECT_SIGNAL_SOURCE"},
-    {CMD_CODE_DEBUG_OPEN_CLOSE_LOOP   ,    "CMD_CODE_DEBUG_OPEN_CLOSE_LOOP"},
-    {CMD_CODE_DEBUG_POWER             ,    "CMD_CODE_DEBUG_POWER"},
-    {CMD_CODE_SLOT_CONTROL            ,    "CMD_CODE_SLOT_CONTROL"},
-    {CMD_CODE_VGS                     ,    "CMD_CODE_VGS"},
-    {CMD_CODE_SAVE_EEPROM             ,    "CMD_CODE_SAVE_EEPROM"},
-    {CMD_CODE_SET_981                 ,    "CMD_CODE_SET_981"},
-    {CMD_CODE_QUERY_981               ,    "CMD_CODE_QUERY_981"},
-    {CMD_CODE_SET_998                 ,    "CMD_CODE_SET_998"},
-    {CMD_CODE_QUERY_998               ,    "CMD_CODE_QUERY_998"},
-    {CMD_CODE_DEV_CALL_TIMEOUT        ,    "CMD_CODE_DEV_CALL_TIMEOUT"},
-    {CMD_CODE_ERROR_RATE_FREQ         ,    "CMD_CODE_ERROR_RATE_FREQ"},
-    {CMD_CODE_SAVE_IQ_DATA            ,    "CMD_CODE_SAVE_IQ_DATA"},
-    {CMD_CODE_CLOSE_TRAN_THRESHOLD    ,    "CMD_CODE_CLOSE_TRAN_THRESHOLD"},
-    {CMD_CODE_START_TEMP_ALARM        ,    "CMD_CODE_START_TEMP_ALARM"},
-    {CMD_CODE_CLOSE_TEMP_ALARM        ,    "CMD_CODE_CLOSE_TEMP_ALARM"},
-    {CMD_CODE_RESUME_TRAN_THRESHOLD   ,    "CMD_CODE_RESUME_TRAN_THRESHOLD"},
-
-    //手咪命令
-    {CMD_CODE_CENTER_MODULE           ,    "CMD_CODE_CENTER_MODULE"},
-    {CMD_CODE_GSM_MODULE1             ,    "CMD_CODE_GSM_MODULE1"},
-    {CMD_CODE_GSM_MODULE2             ,    "CMD_CODE_GSM_MODULE2"},
-    {CMD_CODE_RADIO_MODULE            ,    "CMD_CODE_RADIO_MODULE"},
-    {CMD_CODE_WIRELESS_MODULE         ,    "CMD_CODE_WIRELESS_MODULE"},
-    {CMD_CODE_DSP_MODULE              ,    "CMD_CODE_DSP_MODULE"},
-    {CMD_CODE_MICROPHONE_MODULE1      ,    "CMD_CODE_MICROPHONE_MODULE1"},
-    {CMD_CODE_MICROPHONE_MODULE2      ,    "CMD_CODE_MICROPHONE_MODULE2"},
-    {CMD_CODE_CONTROL_MODULE          ,    "CMD_CODE_CONTROL_MODULE"},
-    {CMD_CODE_CENTER_PRINT            ,    "CMD_CODE_CENTER_PRINT"},
-    {CMD_CODE_CENTER_INFO             ,    "CMD_CODE_CENTER_INFO"},
-    {CMD_CODE_CENTER_QUERY_ALARM      ,    "CMD_CODE_CENTER_QUERY_ALARM"}
-#endif
-};
-TYPE_PRINT_T *pTable_cmd = table_cmd_type_print;
-unsigned short pTable_cmd_len = sizeof(table_cmd_type_print)/sizeof(table_cmd_type_print[0]);
-
-TYPE_PRINT_T table_op_type_print[] = {
-    {OP_CODE_GET        ,  "OP_CODE_GET"},
-    {OP_CODE_GET_ACK    ,  "OP_CODE_GET_ACK"},
-    {OP_CODE_SET        ,  "OP_CODE_SET"},
-    {OP_CODE_SET_ACK    ,  "OP_CODE_SET_ACK"},
-    {OP_CODE_ALARM      ,  "OP_CODE_ALARM"},
-    {OP_CODE_E_ALARM    ,  "OP_CODE_E_ALARM"}
-};
-
-TYPE_PRINT_T *pTable_op = table_op_type_print;
-unsigned short pTable_op_len = sizeof(table_op_type_print)/sizeof(table_op_type_print[0]);
 
 
-/**
- * @enum 
- * @brief 
- */
-TYPE_PRINT_T table_inf_data_type_print[] = {
-    {DT_PI_HEADER        ,  "DT_PI_HEADER"},        ///<PI头帧标识
-    {DT_LC_HEADER        ,  "DT_LC_HEADER"},        ///<LC头帧标识
-    {DT_LC_TERMINATOR    ,  "DT_LC_TERMINATOR"},    ///<LC终结帧标识
-    {DT_CSBK             ,  "DT_CSBK"},
-    {DT_MBC_HEADER       ,  "DT_MBC_HEADER"},
-    {DT_MBC_CONTINUE     ,  "DT_MBC_CONTINUE"},
-    {DT_DATA_HEADER      ,  "DT_DATA_HEADER"},
-    {DT_R_1_2_DATA       ,  "DT_R_1_2_DATA"},
-    {DT_R_3_4_DATA       ,  "DT_R_3_4_DATA"},
-    {DT_IDLE             ,  "DT_IDLE"},
-    {DT_R_1_1_DATA       ,  "DT_R_1_1_DATA"}
-};
 
-TYPE_PRINT_T *pTable_inf_data = table_inf_data_type_print;
-unsigned short pTable_inf_data_len = sizeof(table_inf_data_type_print)/sizeof(table_inf_data_type_print[0]);
 
 
 
@@ -325,73 +184,7 @@ extern void set_alarm_discon_switch(int AlarmSwitch);
 extern int get_alarm_discon();
 
 
-/**
- * @brief  打印NAS cmd_code, op_code
- * @param [in] NAS_AI_PAYLOAD
- * @author  周大元
- * @since   trunk.00001
- * @bug
- */
-void PrintNasCmdOpLog(NAS_AI_PAYLOAD *pNasAiData)
-{
-    int i, j, i_index = -1, j_index = -1;
-    char LogBuff[200] = {0};
-    
-    for (i = 0; i < pTable_cmd_len; i++)
-    {
-        if (pNasAiData->cmd_code == pTable_cmd[i].Type)
-        {
-            i_index = i;
-            break;
-        }
-    }
 
-    for (j = 0; j < pTable_op_len; j++)
-    {
-
-        if (pNasAiData->op_code == pTable_op[i].Type)
-        {
-            j_index = j;
-            break;
-        }
-    }
-
-    if ((i_index != -1) && (j_index != -1))
-    {
-        snprintf(LogBuff, sizeof(LogBuff), "Nas CMD:[%#06x-%s], OP:[%#04x-%s]", pTable_cmd[i_index].Type, pTable_cmd[i_index].TypeStr, pTable_op[j_index].Type, pTable_op[j_index].TypeStr);
-        LOG_DEBUG(s_LogMsgId, "[DLL][%s] %s", _F_, LogBuff);
-    }
-}
-
-
-/**
- * @brief  打印接口层data信息
- * @param [in] NAS_AI_PAYLOAD
- * @author  周大元
- * @since   trunk.00001
- * @bug
- */
-void PrintInfDataLog(DATA_LINK_T *pDataLink)
-{
-    int i;
-    int i_index = -1;
-    char LogBuff[100] = {0};
-
-    for (i = 0; i < pTable_inf_data_len; i++)
-    {
-        if (pDataLink->DataType == pTable_inf_data[i].Type)
-        {
-            i_index = i;
-            break;
-        }
-    }
-    
-    if (i_index != -1)
-    {
-        snprintf(LogBuff, sizeof(LogBuff), "Inf DATA [%#x-%s]", pTable_inf_data[i_index].Type, pTable_inf_data[i_index].TypeStr);
-        LOG_DEBUG(s_LogMsgId, "[DLL][%s] %s", _F_, LogBuff);
-    }
-}
 
 
 
@@ -1216,9 +1009,9 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
 #endif
-        memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+//      memset(ptInfData, 0, sizeof(NAS_INF_DL_T));  // test-zhou
         CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
-        PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
+        ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
@@ -1435,6 +1228,8 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         return ERR;
     }
 
+    IDP_PrintCsbkoSSOLog(pSupsCsbk);  // by zhoudayuan
+
     if (PRE_CSBKO == pSupsCsbk->uCSBKO && SFID == pSupsCsbk->uFID)
     {
         if (0xff == uGpsFlag)
@@ -1522,9 +1317,9 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
 #endif
-                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+//                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
                 CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
-                PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
+                ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
                 // by zhoudayuan
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
@@ -1561,7 +1356,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 #endif
                 memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
                 CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
-                PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
+                ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
                 // by zhoudayuan
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
@@ -1868,6 +1663,8 @@ int IDP_DataHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 uGpsFlag = GPS_PRE;
                 IDP_CHeaderFun(puData);
                 IDP_RelayLinkData(pvInfData, RevFrqNo, S_C_HDR);
+                
+                DLL_SetTimer(CALL_DATA_D, 1000);        //定时1s
                 return NO_ERR;
             }
             else if (3 == puUPHdr->p_Pdp_CHdr.uBF && GPS_REQ == uGpsFlag)
@@ -2364,7 +2161,7 @@ int IDP_NasPreWaveFun(NAS_AI_PAYLOAD * pvNasData)
 {
     if ((OP_CODE_GET == pvNasData->op_code) && (g_DllGlobalCfg.auNodeId == pvNasData->dst_id))
     {
-        LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%d, op_code_%d, Seq_%d, dst_id_%d, src_id_%d",
+        LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%#x, op_code_%#x, Seq_%d, dst_id_%d, src_id_%d",
         _F_,
         pvNasData->cmd_code, pvNasData->op_code,
         pvNasData->data[0],
@@ -2418,11 +2215,10 @@ int IDP_NasGpsReportFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.dst_id = pvNasData->src_id;
         memcpy(NasAiData.data, &GpsNasData, GPS_LEN);
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
         WaitFollowEnable(3000);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+        ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_GPS_ACK);
         ODP_SendInfData(ptInfData, S_NAS_GPS_ACK);
@@ -2474,12 +2270,10 @@ int IDP_NasStunFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.src_id = g_DllGlobalCfg.auNodeId;
         NasAiData.dst_id = pvNasData->src_id;
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
         WaitFollowEnable(3000);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
-
+        ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // 返回4份 by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_STUN_ACK);  // 4
         ODP_SendInfData(ptInfData, S_NAS_STUN_ACK);  // 3
@@ -2534,12 +2328,10 @@ int IDP_NasKillFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.src_id = g_DllGlobalCfg.auNodeId;
         NasAiData.dst_id = pvNasData->src_id;
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
         WaitFollowEnable(3000);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
-
+        ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_KILL_ACK);
         ODP_SendInfData(ptInfData, S_KILL_ACK);
@@ -2594,9 +2386,7 @@ int IDP_NasEnableFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.src_id = g_DllGlobalCfg.auNodeId;
         NasAiData.dst_id = pvNasData->src_id;
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
         WaitFollowEnable(3000);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
         // by zhoudayuan
@@ -2645,11 +2435,10 @@ int IDP_NasNeighborFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.data[0] = g_DllGlobalCfg.auNodeId;
         memcpy(&NasAiData.data[1], (UINT8 *)&g_DllGlobalCfg.auNegrId2, NER_LEN);
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
         WaitFollowEnable(3000);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_NEGR_ACK);
         ODP_SendInfData(ptInfData, S_NAS_NEGR_ACK);
@@ -2908,6 +2697,7 @@ void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             {
                 ; // do nothing
             }
+
             auLastLcss = pDataLink->LCSS;
 
             if (FT_VOICE_E == pDataLink->FrmType)
@@ -2924,7 +2714,7 @@ void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                     if (0 == EmbData->uFLCO)     //lc数据
                     {
                         LcData = (NAS_PRE_LC_PDU *)Lc_Tmp;
-                        if (0 != strncmp((char *)g_DllGlobalCfg.auUploadLC, (char *)Lc_Tmp, FLC_LEN))
+                        if (0 != memcmp((char *)g_DllGlobalCfg.auUploadLC, (char *)Lc_Tmp, FLC_LEN))
                         {
                             memcpy(g_DllGlobalCfg.auUploadLC, Lc_Tmp, FLC_LEN);
                             LOG_WARNING(s_LogMsgId,"[DLL][%s] Lc change!!! Update Lc Info: ",_F_);
@@ -2957,6 +2747,13 @@ void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                         LongitudeToInt(&GpsDt, &tmp);
                         tmp = EmbData->uLatitude[0] <<16 | EmbData->uLatitude[1] <<8| EmbData->uLatitude[2];
                         LongitudeToInt(&GpsDt, &tmp);
+                    }
+                    else
+                    {
+                        if (1 == tDllPrint->AIUp)
+                        {
+                            LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lc uFLCO unknow: %d",_F_, EmbData->uFLCO);
+                        }
                     }
                 }
             }
@@ -3005,10 +2802,8 @@ void INFDataProcess(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo)
         return;
     }
 
-    if (tDllPrint->AIUp == 1)
-    {
-        PrintInfDataLog(pDataLink);  // by zhoudayuan
-    }
+
+    IDP_PrintInfDataLog(pDataLink);  // by zhoudayuan
     
     switch (pDataLink->DataType)
     {
@@ -3154,14 +2949,12 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
  */
 void INFNasDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 {
-    static int cnt = 0;
-//    int i, j, i_index = -1, j_index = -1;
-//    char LogBuff[200] = {0};
+//    static int cnt = 0;
     UINT8 CheckSum;
     DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
     NAS_AI_PAYLOAD *pNasAiData = (NAS_AI_PAYLOAD *)(pDataLink->PayLoad);
 
-    printf("cnt=%d\n", cnt++);
+//    LOG_DEBUG(s_LogMsgId, "cnt=%d", cnt++);
 
     if (pDataLink->DataLen > 27)
     {
@@ -3212,7 +3005,7 @@ void INFNasDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
     if (tDllPrint->AIUp == 1)
     {
-        PrintNasCmdOpLog(pNasAiData);
+        IDP_PrintNasCmdOpLog(pNasAiData);
     }
 
     switch (pNasAiData->cmd_code)

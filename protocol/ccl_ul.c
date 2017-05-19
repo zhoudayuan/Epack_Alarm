@@ -28,6 +28,7 @@
 #include "ccl.h"
 #include "dll.h"
 #include "ccl_fun.h"
+#include "print_debug.h"
 
 
 
@@ -55,12 +56,6 @@ extern DLL_GLB_CFG_T g_DllGlobalCfg;
  * @brief 调试打印信息
  */
 
-extern TYPE_PRINT_T *pTable_sms;
-extern unsigned short pTable_sms_len;
-extern TYPE_PRINT_T *pTable_msg;
-extern unsigned short pTable_msg_len;
-extern TYPE_PRINT_T *pTable_data;
-extern unsigned short pTable_data_len;
 
 
 
@@ -80,41 +75,6 @@ extern unsigned short pTable_data_len;
 /******************************************************************************
  *   内部函数实现
  *   *************************************************************************/
- /**
- * @brief  大端转小端，将源ID和目的ID以十进制打印出来，方便调试看
- * @author 周大元
- * @since
- * @bug
- */
-void PrintIDbyDec(unsigned char *src, unsigned char *dst)
-{
-    unsigned char src_tmp[4];
-    unsigned char dst_tmp[4];
-    unsigned int  src_val;
-    unsigned int  dst_val;
-
-    if ((src[1]==0 && src[2]==0) || (dst[1]== 0 && dst[2]== 0))
-    {
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s] snd=%d-->rcv=%d", __FUNCTION__, src[0], dst[0]);
-    }
-    else
-    {
-        // 转回小端模式
-        src_tmp[0] = src[2];
-        src_tmp[1] = src[1];
-        src_tmp[2] = src[0];
-        src_tmp[3] = '\0';
-        dst_tmp[0] = dst[2];
-        dst_tmp[1] = dst[1];
-        dst_tmp[2] = dst[0];
-        dst_tmp[3] = '\0';
-        memcpy(&src_val, src_tmp, sizeof(src_tmp));
-        memcpy(&dst_val, dst_tmp, sizeof(dst_tmp));
-        LOG_DEBUG(s_LogMsgId,"[CCL] snd=%d-->rcv=%d", src_val, dst_val);
-    }
-}
-
-
  /**
  * @brief   封装PTT-ON 命令回复数据包
  * @param [in] PttCmdResult   PTT回复状态
@@ -184,17 +144,17 @@ void  IDP_GenPttOffAckpacket(unsigned  char *pvCenterData, int *Len)
  * @since
  * @bug
  */
-void  IDP_GenNasStatePack(unsigned char pvrelayflg,unsigned char *pvCenterData,int *len)
+void IDP_GenNasStatePack(unsigned char pvrelayflg, unsigned char *pvCenterData, int *len)
 {
     CCL_STAT_INFO * ptCenterData=(CCL_STAT_INFO *) pvCenterData;
     ptCenterData->StatInfoHead.MsgHead=0xec13;
     ptCenterData->StatInfoHead.MsgType=SIG_STATUS_REPORT;
     ptCenterData->SourceStat=pvrelayflg;
     *len=sizeof( CCL_STAT_INFO);
-    ptCenterData->StatInfoHead.Datalength=*len-sizeof(CCL_STAT_INFO_HEAD);
+    ptCenterData->StatInfoHead.Datalength = *len - sizeof(CCL_STAT_INFO_HEAD);
     if(1 == tcclPrint->CclUp)
     {
-         LOG_DEBUG(s_LogMsgId,"[CCL][%s] SmsType=%d stat=%d" ,__FUNCTION__,ptCenterData->StatInfoHead.MsgType ,ptCenterData->SourceStat);
+         LOG_DEBUG(s_LogMsgId,"[CCL][%s] SmsType=%d stat=%d" , __FUNCTION__,ptCenterData->StatInfoHead.MsgType ,ptCenterData->SourceStat);
     }
 
 }
@@ -559,7 +519,7 @@ void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDlldata,unsigne
 
     if( CC_CCL_SMS_PAYLODDLEN <= ptCenterData->ValidLength)
     {
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s]near rpt len err LOADLEN=%d ",__FUNCTION__,ptDllData->DataLen);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s]near rpt len err LOADLEN=%d ", __FUNCTION__,ptDllData->DataLen);
         ptCenterData->ValidLength=CC_CCL_SMS_PAYLODDLEN;
     }
     if(NEAR_REPORT_PASSIVE ==neartyppe)  //主动上报 与邻点查询PALOAD  数据结构一致
@@ -577,7 +537,7 @@ void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDlldata,unsigne
     if(1 == tcclPrint->CclUp)
     {
         IDP_CclPrintSms((unsigned char *)ptCenterData);
-        LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,30);
+//        LOG_PrintM(s_LogMsgId,ptCenterData->SmsData,30);
     }
 }
 
@@ -612,7 +572,6 @@ void IDP_GenThrethHoldData( unsigned char * pvDlldata,unsigned char * pvCenterDa
     ptCenterData->ValidLength=2;
     ThredholdAvg=(ThredholdAvg>>8 &0x00ff) | (ThredholdAvg<<8 & 0xff00);
     memcpy(&ptCenterData->SmsData,(unsigned char *)&ThredholdAvg,2);
-
     *Len=sizeof(SMS_CENTER_CCL_DL);
     if(1 == tcclPrint->CclUp)
     {
@@ -707,8 +666,6 @@ void IDP_Ccl_PrintPttCmd(unsigned char *CenterData)
 }
 
 
-
-
 /**
 * @brief    打印ccl_cc 短消息数据
 * @param [in] pvCenterData  上行到中心的短消息数据
@@ -719,28 +676,14 @@ void IDP_Ccl_PrintPttCmd(unsigned char *CenterData)
 
 void IDP_CclPrintSms(unsigned char* CenterData)
 {
-    unsigned int i;
-    SMS_CENTER_CCL_DL* ptCenterData = (SMS_CENTER_CCL_DL* )CenterData;
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s] SigType=%#x SmsType=%#x Length=%d Cid=%d vid=%d snd[%#x %#x %#x] rcv[%#x %#x %#x]",
-    __FUNCTION__,
-    ptCenterData->SharedHead.SigType, ptCenterData->SmsType, ptCenterData->ValidLength,
-    ptCenterData->CallId, ptCenterData->VoiceId,
-    ptCenterData->SenderNum[0], ptCenterData->SenderNum[1], ptCenterData->SenderNum[2],
-    ptCenterData->ReceiverNum[0], ptCenterData->ReceiverNum[1], ptCenterData->ReceiverNum[2]);
-
-    // 打印Sms
-    for (i = 0; i < pTable_sms_len; i++)
-    {
-        if (ptCenterData->SmsType == pTable_sms[i].Type)
-        {
-            if (pTable_sms[i].TypeStr != NULL)
-            {
-                LOG_DEBUG(s_LogMsgId,"[CCL][%s] SMS:[%#x-%s]", __FUNCTION__, pTable_sms[i].Type, pTable_sms[i].TypeStr);
-                break;
-            }
-        }
-    }
-
+    SMS_CENTER_CCL_DL *ptCenterData = (SMS_CENTER_CCL_DL* )CenterData;
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] SigType=%#x SmsType=%#x Length=%d Cid=%d vid=%#x snd[%#x:%#x:%#x] rcv[%#x:%#x:%#x]",
+        __FUNCTION__,
+        ptCenterData->SharedHead.SigType, ptCenterData->SmsType, ptCenterData->ValidLength,
+        ptCenterData->CallId, ptCenterData->VoiceId,
+        ptCenterData->SenderNum[0], ptCenterData->SenderNum[1], ptCenterData->SenderNum[2],
+        ptCenterData->ReceiverNum[0], ptCenterData->ReceiverNum[1], ptCenterData->ReceiverNum[2]);
+    IDP_PrintSmsLog(ptCenterData);  // by zhoudayuan
     PrintIDbyDec(ptCenterData->SenderNum, ptCenterData->ReceiverNum);
 }
 
@@ -757,13 +700,11 @@ void IDP_CclPrintDllData(unsigned char *DllData)
     DLL_CCL_UL_T *ptDllData=(DLL_CCL_UL_T *)DllData;
     LOG_DEBUG(s_LogMsgId,"[CCL][%s] MsgType=%d FrmType=%d DataType=%#x ValidLen=%d Src[%#x:%#x:%#x] Dst[%#x:%#x:%#x]", 
         __FUNCTION__,
-        ptDllData->MsgType,
-        ptDllData->FrmType,
-        ptDllData->DataType,
+        ptDllData->MsgType, ptDllData->FrmType, ptDllData->DataType,
         ptDllData->DataLen,
         ptDllData->SrcId[0], ptDllData->SrcId[1], ptDllData->SrcId[2],
         ptDllData->DstId[0], ptDllData->DstId[1], ptDllData->DstId[2]);
-    PrintMsgDatalog(ptDllData);  // by zhoudayuan
+    
 }
 
 

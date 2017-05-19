@@ -16,6 +16,7 @@
   *   *************************************************************************/
 #include "dll_fun.h"
 #include "mgr_common.h"
+#include "print_debug.h"
 
 
 /******************************************************************************
@@ -771,6 +772,7 @@ void * DLL_NerBurstTask(void * p)
         }
 
 
+
         // 邻点突发
         if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn)
         {
@@ -814,7 +816,7 @@ void * DLL_NerBurstTask(void * p)
         BurstCnt++;
 
         // 邻点上报
-        if (BurstCnt % 2 == 0)
+        if ((BurstCnt % 2 == 0) && (ptCFGShm->neighbor_report_ai == 1))
         {
             if (LeftDelay < 5)  // 邻点突发和邻点上报消息保护间隔
             {
@@ -846,7 +848,7 @@ void * DLL_NerBurstTask(void * p)
                 ptInfData->tDataLink[F_1].DataType = DI_MSG_WLU;
                 ptInfData->tDataLink[F_1].DataLen  = CSBK_LEN+2;
                 memcpy(ptInfData->tDataLink[F_1].PayLoad, &NasAiData, (CSBK_LEN+2));
-                PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
+                ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
                 // 主动上报4份 by zhoudayuan
                 ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 4-邻点上报
                 ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 3-邻点上报

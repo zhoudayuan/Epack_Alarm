@@ -145,8 +145,7 @@ typedef enum {
     CMD_CODE_START_NEIGHBOR          = 0x0003,
     CMD_CODE_NEIGHBOR_PERIOD         = 0x0004,
     CMD_CODE_COMBINED_DATA           = 0x0005,
-    CMD_CODE_QUERY_ALARM             = 0x0006,
-    CMD_CODE_SCAN_MODE               = 0x0007,  //以前命令字是0x0006，暂时没用后期开发注意修改
+    CMD_CODE_SCAN_MODE               = 0x0006,  //以前命令字是0x0006，暂时没用后期开发注意修改
 
 	//告警模块命令字
 	 CMD_CODE_ALARM                  = 0x0060,
@@ -229,6 +228,8 @@ typedef enum {
 	CMD_CODE_START_TEMP_ALARM        = 0x0A24,
 	CMD_CODE_CLOSE_TEMP_ALARM        = 0x0A25,
 	CMD_CODE_RESUME_TRAN_THRESHOLD   = 0x0A26,
+	CMD_CODE_MOTO_SWITCH             = 0x0A27,
+	CMD_CODE_THRESHOLD_OPT_SWITCH    = 0x0A28,
 	//手咪命令
 	CMD_CODE_CENTER_MODULE           = 0x0B01,
 	CMD_CODE_GSM_MODULE1             = 0x0B02,
@@ -242,7 +243,6 @@ typedef enum {
     CMD_CODE_CENTER_PRINT            = 0x0B0A,
     CMD_CODE_CENTER_INFO             = 0x0B0B,
     CMD_CODE_CENTER_QUERY_ALARM      = 0x0B0C
-	
 }NM_CMD_CODE;
 
 
@@ -345,6 +345,7 @@ typedef struct {
 	SHM_CFG_UINT_ITEM start_neighbor;             //临点开关
 	SHM_CFG_UINT_ITEM half_variance_threshold;    //半帧方差门限
 	SHM_CFG_UINT_ITEM neighbor_period;            //临点周期
+	SHM_CFG_UINT_ITEM neighbor_report_ai;            //邻点上报开关
 	SHM_CFG_UINT_ITEM terminal_cc;                //终端色码
 	SHM_CFG_UINT_ITEM protocol_mode;              //工作模式
 	SHM_CFG_UINT_ITEM air_subnet_id;              //空口子网ID
@@ -365,6 +366,8 @@ typedef struct {
 	SHM_CFG_UINT_ITEM resume_transmit_threshold;              //恢复发射门限
 	SHM_CFG_UINT_ITEM tempratue_alarm_start_threshold;       //温度告警触发门限
 	SHM_CFG_UINT_ITEM tempratue_alarm_close_threshold;       //温度告警退出门限
+	SHM_CFG_UINT_ITEM moto_mode_switch;                     //摩托模式和正常模式切换开关
+	SHM_CFG_UINT_ITEM threshold_opt_switch;                //方差优化开关
 }__attribute__((packed,aligned(1)))SHM_CFG_STRU;  
 
 ///////////////////告警相关////////////////////

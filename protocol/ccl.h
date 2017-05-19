@@ -17,21 +17,22 @@
  *   引用头文件声明
  *   *************************************************************************/
 
-#include<signal.h>
+#include <signal.h>
 #include <fcntl.h>
 #include <sys/errno.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/wait.h>
-#include<sys/ioctl.h>
-#include<sys/select.h>
+#include <sys/ioctl.h>
+#include <sys/select.h>
 #include <sys/time.h>
 #include <unistd.h>
-#include<math.h>
+#include <math.h>
 #include <linux/unistd.h>
 #include <linux/kernel.h>
 #include "sap.h"
 #include "ccl_thread.h"
+
 
 
 /******************************************************************************
@@ -276,7 +277,7 @@ typedef struct _PTT_OFF_ACK
  * @struct SMS_CENTER_CCL_DL
  * @brief  中心发送短消息到CCL 接口
  */
-typedef struct SMS_CENTER_CCL_DL
+typedef struct _SMS_CENTER_CCL_DL
 {
     CENTER_CMD_SHARE_HEAD  SharedHead;
     unsigned int   CallId;          // 控制面ID 标识一次呼叫的控制面ID
@@ -664,7 +665,7 @@ typedef union _SHARE_CC_DATA_D
  * @enum    SMS_DATA_CALL_TYPE
  * @brief   数据消息呼叫类型, 如果更改其中任意一项，ccl_dl.c中的 table_sms_type_print 也需随之更改
  */
- typedef  enum  _SMS_DATA_CALL_TYPE
+ typedef enum _SMS_DATA_CALL_TYPE
  {
     //短消息
     MESSAGE_PRIVATE_CALL    =0x00,          //单呼
@@ -721,14 +722,14 @@ typedef union _SHARE_CC_DATA_D
  * @enum     _CENTER _SIG_TYPE_EN
  * @brief  接入单元与中心信令类型
  */
-typedef  enum  _INF_SIG_TYPE_EN
+typedef enum _INF_SIG_TYPE_EN
 {
-    SIG_STATUS_REPORT = 0x0001,  // NAS状态上报
+    SIG_STATUS_REPORT = 0x0001,  // NAS 状态上报
     SIG_PTT_CMD       = 0X000a,  // PTT 命令 信令
     SIG_PTT_ON_ACK    = 0x000b,  // PTT ON 回复 信令
     SIG_SMS_SEND      = 0x000e,  // 短消息命令
     SIG_SMS_ACK       = 0x0014,  // 短消息回复信令
-    SIG_PTT_OFF_ACK   = 0x0015   // PTT OFF回复 信令
+    SIG_PTT_OFF_ACK   = 0x0015   // PTT OFF 回复 信令
 }INF_SIG_TYPE_EN;
 
 /**

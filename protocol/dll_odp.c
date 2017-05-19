@@ -20,6 +20,7 @@
  *   引用头文件声明
  *   *************************************************************************/
 #include "dll_fun.h"
+#include "print_debug.h"
 
 
 
@@ -915,12 +916,11 @@ int ODP_GenNasPreCSBKFun(UINT8 cbf, UINT8* Dst, UINT8* Src, UINT8 GI)
     NasAiData.op_code = OP_CODE_GET;
     NasAiData.data[0] = cbf;
     NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-    LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%#04x, op_code_%#04x, Seq_[%d], dst_id_%d, src_id_%d",
-                    _F_,
-                    NasAiData.cmd_code, NasAiData.op_code,
-                    NasAiData.data[0],
-                    NasAiData.dst_id, NasAiData.src_id );
-
+    LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%#x, op_code_%#x, Seq_[%d], dst_id_%d, src_id_%d",
+        _F_,
+        NasAiData.cmd_code, NasAiData.op_code,
+        NasAiData.data[0],
+        NasAiData.dst_id, NasAiData.src_id );
     CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
     ODP_SendInfData(ptInfData, S_CSBK_PRE);
     return NO_ERR;
@@ -1466,7 +1466,6 @@ int ODP_MsDisableFun(CCL_DLL_DL_T * pvCclData)
     }
     tSupsCsbk.auCRC[0] = (UINT8)(u2CRC >> 8);
     tSupsCsbk.auCRC[1] = (UINT8)(u2CRC & 0xff);
-
     //发送多个预载波
     ODP_GenPreCSBKFun(6, pvCclData->DstId, pvCclData->SrcId, 0);
     ODP_GenPreCSBKFun(5, pvCclData->DstId, pvCclData->SrcId, 0);
@@ -1474,13 +1473,10 @@ int ODP_MsDisableFun(CCL_DLL_DL_T * pvCclData)
     ODP_GenPreCSBKFun(3, pvCclData->DstId, pvCclData->SrcId, 0);
     ODP_GenPreCSBKFun(2, pvCclData->DstId, pvCclData->SrcId, 0);
     ODP_GenPreCSBKFun(1, pvCclData->DstId, pvCclData->SrcId, 0);
-
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
     ptInfData->ResFrqSlot = tDllPrint->FrqSlt+0x11;         //预留时隙频点和指定频点差1
     CallingShootData(DI_MSG_DATA,FT_VOICE_NO,DT_CSBK,(CSBK_LEN+2),(UINT8 *)&tSupsCsbk);
-
     ODP_SendInfData(ptInfData, S_KILL_REQ);
-
     return NO_ERR;
 }
 
@@ -1729,9 +1725,9 @@ int ODP_NasGpsReportFun(CCL_DLL_DL_T * pvCclData)
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+        ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_GPS_REQ);
     }
 
@@ -1798,6 +1794,7 @@ int ODP_NasEnableFun(CCL_DLL_DL_T * pvCclData)
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+        ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_ENABLE_REQ);
     }
 
@@ -1866,9 +1863,9 @@ int ODP_NasStunFun(CCL_DLL_DL_T * pvCclData)
         ODP_GenNasPreCSBKFun(3, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
-
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU,(NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+        ODP_PrintNasCmdOpLog(&NasAiData);
         ODP_SendInfData(ptInfData, S_NAS_STUN_REQ);
     }
 
@@ -1939,6 +1936,7 @@ int ODP_NasKillFun(CCL_DLL_DL_T * pvCclData)
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
         CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_KILL_REQ);
     }
 
@@ -2003,8 +2001,8 @@ int ODP_NasNeighborFun(CCL_DLL_DL_T * pvCclData)
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
-
+        CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+        ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_NEGR_REQ);
     }
 
@@ -2020,7 +2018,7 @@ int ODP_NasNeighborFun(CCL_DLL_DL_T * pvCclData)
  * @since   trunk.00001
  * @bug
  */
-void CCLVoiceProcess(CCL_DLL_DL_T * pvCclData)
+void CCLVoiceProcess(CCL_DLL_DL_T *pvCclData)
 {
     UINT8 Frq = (tDllPrint->FrqSlt >> 4) & 0x0f;
 
@@ -2108,8 +2106,6 @@ void CCLVoiceProcess(CCL_DLL_DL_T * pvCclData)
  */
 void CCLDataProcess(CCL_DLL_DL_T * pvCclData)
 {
-
- 
 
     switch (pvCclData->DataType)
     {

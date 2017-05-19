@@ -154,10 +154,10 @@ typedef struct _DLL_PRINT_T
  */
 typedef struct _CCL_PRINT_T
 {
-    UINT8 CclUp;
-    UINT8 CcDown;
-    UINT8 DllUp;
-    UINT8 CclDown;
+    UINT8 CclUp;   // CCL TO CC
+    UINT8 CcDown;  // CC  TO CCL
+    UINT8 DllUp;   // DLL TO CCL 
+    UINT8 CclDown; // CCL TO DLL  
 } CCL_PRINT_T;
 
 /**
