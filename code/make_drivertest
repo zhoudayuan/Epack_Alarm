@@ -1,0 +1,16 @@
+#!/bin/sh
+
+#Result_Path=`pwd`/Result
+
+Applic_Path=`pwd`/test
+
+#±‡“ÎApplication
+#Applic_Path=/mnt/win7share/center_tset
+gcc_path=`pwd`/tools/arm-cortexa9-linux-gnueabihf/gcc-4.7.3-glibc-2.16.0-binutils-2.22-kernel-3.6-sanitized/bin
+
+cd $Applic_Path
+
+$gcc_path/arm-cortexa9-linux-gnueabihf-g++ -O2 -Wall -DLINUX -o drivetest  cc_ccl_dl.c   ccl_dl.c
+
+
+

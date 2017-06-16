@@ -1,0 +1,28 @@
+#!/bin/sh
+
+Result_Path=`pwd`/result
+
+Protocol_Path=`pwd`/protocol
+Adapter_Path=`pwd`/adapter
+
+gcc_path=`pwd`/tools/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin
+
+cd $Adapter_Path
+#Application
+$gcc_path/arm-linux-gnueabihf-g++ -O2 -Wall -DLINUX -o route route.c -I ../inc -lpthread
+
+if [ -e route ]
+then
+	cp route $Result_Path
+	rm route
+fi
+
+#cd $Adapter_Path
+#$gcc_path/arm-cortexa9-linux-gnueabihf-g++ -O2 -Wall -DLINUX -o nm nm.c common.c md5.c
+#if [ -e nm ]
+#then
+#    cp nm $Result_Path
+#    rm nm
+#fi
+
+

@@ -1,0 +1,22 @@
+#!/bin/sh
+
+Result_Path=`pwd`/result
+
+Cli_Path=`pwd`/cli
+
+
+gcc_path=/opt/arm-cortexa9-linux-gnueabihf/gcc-4.7.3-glibc-2.16.0-binutils-2.22-kernel-3.6-sanitized/bin
+
+
+cd $Cli_Path
+
+$gcc_path/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o cli cli.c -I ../inc -lpthread
+
+
+if [ -e cli ]
+then
+	cp cli $Result_Path
+	rm cli
+	echo "~~~cli~ok~~~~"
+fi
+
