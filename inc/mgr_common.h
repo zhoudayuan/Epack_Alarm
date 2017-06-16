@@ -146,6 +146,7 @@ typedef enum {
     CMD_CODE_NEIGHBOR_PERIOD         = 0x0004,
     CMD_CODE_COMBINED_DATA           = 0x0005,
     CMD_CODE_SCAN_MODE               = 0x0006,  //以前命令字是0x0006，暂时没用后期开发注意修改
+    CMD_CODE_CENTER_QUERY_ALARM      = 0x0007,
 
 	//告警模块命令字
 	 CMD_CODE_ALARM                  = 0x0060,
@@ -230,6 +231,7 @@ typedef enum {
 	CMD_CODE_RESUME_TRAN_THRESHOLD   = 0x0A26,
 	CMD_CODE_MOTO_SWITCH             = 0x0A27,
 	CMD_CODE_THRESHOLD_OPT_SWITCH    = 0x0A28,
+	CMD_CODE_NEIGHBOR_REPORT_SWITCH  = 0x0A29,
 	//手咪命令
 	CMD_CODE_CENTER_MODULE           = 0x0B01,
 	CMD_CODE_GSM_MODULE1             = 0x0B02,
@@ -241,8 +243,7 @@ typedef enum {
 	CMD_CODE_MICROPHONE_MODULE2      = 0x0B08,
 	CMD_CODE_CONTROL_MODULE          = 0x0B09,
     CMD_CODE_CENTER_PRINT            = 0x0B0A,
-    CMD_CODE_CENTER_INFO             = 0x0B0B,
-    CMD_CODE_CENTER_QUERY_ALARM      = 0x0B0C
+    CMD_CODE_CENTER_INFO             = 0x0B0B
 }NM_CMD_CODE;
 
 

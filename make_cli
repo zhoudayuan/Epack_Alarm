@@ -4,24 +4,19 @@ Result_Path=`pwd`/result
 
 Cli_Path=`pwd`/cli
 
-gcc_path=`pwd`/tools/gcc-linaro-arm-linux-gnueabihf-4.9-2014.09_linux/bin
+
+gcc_path=/opt/arm-cortexa9-linux-gnueabihf/gcc-4.7.3-glibc-2.16.0-binutils-2.22-kernel-3.6-sanitized/bin
+
 
 cd $Cli_Path
-#Application
-$gcc_path/arm-linux-gnueabihf-g++ -O2 -Wall -DLINUX -o cli cli.c -I ../inc -lpthread
+
+$gcc_path/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o cli cli.c -I ../inc -lpthread
+
 
 if [ -e cli ]
 then
 	cp cli $Result_Path
 	rm cli
+	echo "~~~cli~ok~~~~"
 fi
-
-#cd $Cli_Path
-#$gcc_path/arm-cortexa9-linux-gnueabihf-g++ -O2 -Wall -DLINUX -o nm nm.c common.c md5.c
-#if [ -e nm ]
-#then
-#    cp nm $Result_Path
-#    rm nm
-#fi
-
 

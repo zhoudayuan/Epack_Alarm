@@ -23,6 +23,7 @@
 #include "ccl.h"
 #include "dll_fun.h"
 #include "log.h"
+#include "_version.h"
 
 // 与打印时间相关
 #define MONTH_PER_YEAR   12   // 一年12月
@@ -84,6 +85,8 @@ int main(void)
     key_t msqKey;
 
     printf("\n");
+    // 打印svn版本号
+    GetSvnRevision();
     // 打印编译时间
     GetCompileTime();
     // log写文件
@@ -141,6 +144,23 @@ int main(void)
 
     return 0;
 }
+
+
+/**
+ * @brief   打印SVN版本号
+ *
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
+void GetSvnRevision()
+{
+#if __SVN_VERSION__
+    printf("SVN version:%d, Build time:%s\n", BUILD_SVN_VERSION, BUILD_TIMER);
+#endif
+   
+}
+
 
 
 /**

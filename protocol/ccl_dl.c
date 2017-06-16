@@ -213,16 +213,18 @@ void ODP_GenVoicepacket(unsigned char *pvCenterData, unsigned char *pvDllData, u
 * @since
 * @bug
 */
-
-void  ODP_GenSilentFrmpacket(unsigned  char *pvSilentData,unsigned  char *pvDllData,unsigned  char FrmType , int *Len)
+void ODP_GenSilentFrmpacket(unsigned char *pvSilentData, unsigned char *pvDllData, unsigned char FrmType ,int *Len)
 {
-    DLL_CCL_UL_T *ptDllData=(DLL_CCL_UL_T *)pvDllData;
-    ptDllData->MsgType=DI_MSG_VOICE;
-    ptDllData->FrmType =FrmType;
-    ptDllData->DataLen=CENTER_VOICE_DL_PAYLOADLEN;
-    *Len=SILENT_FRAME_DATA_LEN+DLL_CCL_MSG_HEADLEN;
-    memcpy(ptDllData->PayLoad,pvSilentData,CENTER_VOICE_DL_PAYLOADLEN);
+    DLL_CCL_UL_T *ptDllData = (DLL_CCL_UL_T *)pvDllData;
+    ptDllData->MsgType = DI_MSG_VOICE;
+    ptDllData->FrmType = FrmType;
+    ptDllData->DataType = CT_JUNK_DATA;
+    ptDllData->DataLen = CENTER_VOICE_DL_PAYLOADLEN;
+    *Len = SILENT_FRAME_DATA_LEN + DLL_CCL_MSG_HEADLEN;
+    memcpy(ptDllData->PayLoad, pvSilentData, CENTER_VOICE_DL_PAYLOADLEN);
 }
+
+
 /**
 * @brief  封装遥控命令数据包
 * @param [in] pvCenterData  接收中心数据
@@ -232,7 +234,6 @@ void  ODP_GenSilentFrmpacket(unsigned  char *pvSilentData,unsigned  char *pvDllD
 * @since
 * @bug
 */
-
 void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllData, int *Len)
 {
     unsigned char SigCtrlType;
@@ -314,16 +315,16 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
         case GPS_REPOTR_MS:   // 终端GPS上拉
         {
             CallId++;
-            ptDllData->MsgType=DI_MSG_DATA;
-            ptDllData->DataType=CT_GPS_REPORT_REQ_MS;
-            ptDllData->DataLen=ptCenterData->ValidLength+4;
-            memcpy(ptDllData->PayLoad,(unsigned char *)&CallId,4);
-            if(CC_CCL_MSGPSRPT_PAYLODDLEN <= ptCenterData->ValidLength)
+            ptDllData->MsgType = DI_MSG_DATA;
+            ptDllData->DataType = CT_GPS_REPORT_REQ_MS;
+            ptDllData->DataLen = ptCenterData->ValidLength + 4;
+            memcpy(ptDllData->PayLoad, (unsigned char *)&CallId, 4);
+            if (CC_CCL_MSGPSRPT_PAYLODDLEN <= ptCenterData->ValidLength)
             {
-                LOG_WARNING(s_LogMsgId,"[CCL][%s]CC_GPS_RPT_MS LOAD ERR   LEN=%d", __FUNCTION__,ptCenterData->ValidLength);
+                LOG_WARNING(s_LogMsgId, "[CCL][%s]CC_GPS_RPT_MS LOAD ERR LEN=%d", __FUNCTION__, ptCenterData->ValidLength);
                 ptCenterData->ValidLength=CC_CCL_MSGPSRPT_PAYLODDLEN;
             }
-            memcpy(&ptDllData->PayLoad[4],ptCenterData->SmsData,ptCenterData->ValidLength);
+            memcpy(&ptDllData->PayLoad[4], ptCenterData->SmsData, ptCenterData->ValidLength);
             //if(ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId && ptDllData->DstId[1] == 0 && ptDllData->DstId[2] == 0)
             //{
                 INF_CCL_STATE=Wait_Gps_Ms_Ack;

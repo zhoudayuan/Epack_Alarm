@@ -925,6 +925,7 @@ void IDP_GpsDevToNas(GPS_DEV_DATA_T *pvDevGps, GPS_NAS_DATA_T *pvNasGps)
  */
 void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu)
 {
+    UINT8 FrqSlt = 0;
     UINT8 SndFrq = uSndFrq[RevFrqNo];
     PDT_RE_HEAD_PDU_DT p_ReHdrPdu;
     DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
@@ -961,7 +962,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
             ODP_GenReponHeader(pTdLcPdu->auSADDR, pTdLcPdu->auTADDR, &p_ReHdrPdu);
 
             memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-            ptInfData->TimeStamp = 0xffffffff;
+            ptInfData->TimeStamp = pvInfData->TimeStamp+2;
             ptInfData->SlotNum = pvInfData->SlotNum;
             ptInfData->TxFreq1 = pvInfData->RxFreq1;
             ptInfData->TxFreq2 = pvInfData->RxFreq2;
@@ -973,6 +974,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
             ptInfData->tDataLink[RevFrqNo].DataLen = DATA_HEADER_LEN+2;
             memcpy(ptInfData->tDataLink[RevFrqNo].PayLoad, &p_ReHdrPdu, (DATA_HEADER_LEN+2));
             ODP_SendInfData(ptInfData, S_RE_HDR);         //send response header
+            ptInfData->TimeStamp = pvInfData->TimeStamp+4;
             ODP_SendInfData(ptInfData, S_RE_HDR);         //send response header
         }
 
@@ -999,7 +1001,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         memcpy(NasAiData.data, g_DllGlobalCfg.auMsGps, GPS_LEN);
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
 
-        WaitFollowEnable(3000);
+//        WaitFollowEnable(3000);
 #if 0
         // 预载波
         DstId = NasAiData.dst_id;
@@ -1009,13 +1011,25 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
         ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
 #endif
-//      memset(ptInfData, 0, sizeof(NAS_INF_DL_T));  // test-zhou
-        CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
+        
+        if (1 == pvInfData->RxFreq1)
+        {
+            FrqSlt = (0x00 << 4) | (pvInfData->SlotNum & 0x0f);
+        }
+        else
+        {
+            FrqSlt = (0x01 << 4) | (pvInfData->SlotNum & 0x0f);
+        }
+        
+        memset(ptInfData, 0, sizeof(NAS_INF_DL_T));  
+        CallingShootData((pvInfData->TimeStamp+18), FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
         ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
-        // by zhoudayuan
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
+        CallingShootData((pvInfData->TimeStamp+20), FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
+        CallingShootData((pvInfData->TimeStamp+22), FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
+        CallingShootData((pvInfData->TimeStamp+24), FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_GPS_ACK);             //send Ms Gps Ack
     }
     else
@@ -1234,10 +1248,6 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     {
         if (0xff == uGpsFlag)
         {
-            if (tDllPrint->AIUp == 1)
-            {
-                LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d] PRE CSBK relay", _F_, __LINE__);
-            }
             IDP_RelayLinkData(pvInfData, RevFrqNo, S_CSBK_PRE);
         }
         else
@@ -1308,7 +1318,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 memcpy(NasAiData.data, pSupsCsbk->auSADDR, 3);
                 memcpy(&NasAiData.data[3], pSupsCsbk->auTADDR, 3);
                 NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-                WaitFollowEnable(3000);
+//                WaitFollowEnable(3000);
 #if 0
                 DstId = NasAiData.dst_id;
                 SrcId = NasAiData.src_id;
@@ -1317,8 +1327,8 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
 #endif
-//                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-                CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+                CallingShootData((pvInfData->TimeStamp+18), tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
                 ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
                 // by zhoudayuan
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
@@ -1326,7 +1336,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
             }
-            else if (DIS_RADIO_SSO == pSupsCsbk->uSSO)
+            else if (DIS_RADIO_SSO == pSupsCsbk->uSSO)
             {
                 //遥晕激活应答上报本地中心
                 ptCclData->DataType = CT_DISABLE_ACK_MS;
@@ -1345,7 +1355,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 memcpy(&NasAiData.data[3], pSupsCsbk->auTADDR, 3);
                 NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
 
-                WaitFollowEnable(3000);
+//                WaitFollowEnable(3000);
 #if 0
                 DstId = NasAiData.dst_id;
                 SrcId = NasAiData.src_id;
@@ -1355,7 +1365,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
 #endif
                 memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-                CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+                CallingShootData((pvInfData->TimeStamp+18), tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
                 ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
                 // by zhoudayuan
                 ODP_SendInfData(ptInfData, S_CSBK_ACK);
@@ -1834,7 +1844,6 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
     if (GPS_REQ == uGpsFlag || GPS_PRE == uGpsFlag)
     {
-        IDP_RelayLinkData(pvInfData, RevFrqNo, S_DATA_3_4);
     }
     else if (GPS_ACK == uGpsFlag)
     {
@@ -1853,10 +1862,9 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
     if (tDllPrint->AIUp == 1)
     {
-        LOG_DEBUG(s_LogMsgId,"[DLL][%s] R34_C_DATA", _F_);
-
         if (tDllPrint->PrintLv == PRINT_MEMRY || tDllPrint->PrintLv == PRINT_ALL)
         {
+            LOG_DEBUG(s_LogMsgId,"[DLL][%s] R34_C_DATA", _F_);
             LOG_PrintM(s_LogMsgId, r34Data, 18);
         }
     }
@@ -1878,6 +1886,11 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         {
             memcpy(puUPData->tPdpR34CBlk.auData[pu34Data->tR34CData.uDBSN], pu34Data->tR34CData.auData, R34_C_DATA_DLEN-2);
             IDP_WriteFlag(g_PdpUBuf.auResData, pu34Data->tR34CData.uDBSN, 1);
+            if (GPS_PRE == uGpsFlag)
+            {
+                ODP_144to196bptc(r34Data, pvInfData->tDataLink[RevFrqNo].PayLoad);
+                IDP_RelayLinkData(pvInfData, RevFrqNo, S_DATA_3_4);
+            }
         }
         else
         {
@@ -2217,7 +2230,7 @@ int IDP_NasGpsReportFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
         WaitFollowEnable(3000);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+        CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
         ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_GPS_ACK);
@@ -2272,7 +2285,7 @@ int IDP_NasStunFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
         WaitFollowEnable(3000);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
         ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // 返回4份 by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_STUN_ACK);  // 4
@@ -2330,7 +2343,7 @@ int IDP_NasKillFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
         WaitFollowEnable(3000);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
         ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_KILL_ACK);
@@ -2388,13 +2401,13 @@ int IDP_NasEnableFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
         WaitFollowEnable(3000);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_ENABLE_ACK);
         ODP_SendInfData(ptInfData, S_NAS_ENABLE_ACK);
         ODP_SendInfData(ptInfData, S_NAS_ENABLE_ACK);
         ODP_SendInfData(ptInfData, S_NAS_ENABLE_ACK);
-        ODP_SendInfData(ptInfData, S_NAS_ENABLE_ACK);
+
 
     }
     else if (OP_CODE_SET_ACK == pvNasData->op_code && g_DllGlobalCfg.auNodeId == pvNasData->dst_id)
@@ -2437,7 +2450,7 @@ int IDP_NasNeighborFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
         WaitFollowEnable(3000);
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-        CallingShootData(DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
+        CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_WLU,FT_VOICE_NO,DI_MSG_WLU,(NM_DATA_LEN+1),(UINT8 *)&NasAiData);
         ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
         // by zhoudayuan
         ODP_SendInfData(ptInfData, S_NAS_NEGR_ACK);

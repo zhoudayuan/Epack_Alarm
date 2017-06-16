@@ -726,9 +726,10 @@ void set_alarm_discon_switch(int AlarmSwitch)
 void * DLL_NerBurstTask(void * p)
 {
     int ret;
+    int val;
     UINT16 u2CRC;
-    UINT16 LeftDelay = 0;
-    UINT16 BurstCyc = g_DllGlobalCfg.auNegrCyc*60;      //秒
+    UINT32 LeftDelay = 0;
+    UINT32 BurstCyc = 60000;         //毫秒
     UINT32 BurstCnt = 0;
 
     struct timeval tv;
@@ -743,14 +744,15 @@ void * DLL_NerBurstTask(void * p)
 
     while(1)
     {
-        BurstCyc = ptCFGShm->neighbor_period.val*60;
-        tv.tv_sec = rand() % BurstCyc;
-        tv.tv_usec = 0;
-        LeftDelay = BurstCyc - tv.tv_sec;
+        BurstCyc = ptCFGShm->neighbor_period.val*60*1000; //
+        val = rand() % BurstCyc;
+        tv.tv_sec = val / 1000;
+        tv.tv_usec = val % 1000 * 1000;
+        LeftDelay = BurstCyc / 1000 - tv.tv_sec;
 
         if (BurstCnt == 0)
         {
-            sleep(BurstCyc);
+            sleep(60);
         }
 
         ret = select(0, NULL, NULL, NULL, &tv);
@@ -770,8 +772,6 @@ void * DLL_NerBurstTask(void * p)
         {
             continue;
         }
-
-
 
         // 邻点突发
         if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn)
@@ -816,7 +816,7 @@ void * DLL_NerBurstTask(void * p)
         BurstCnt++;
 
         // 邻点上报
-        if ((BurstCnt % 2 == 0) && (ptCFGShm->neighbor_report_ai == 1))
+        if ((BurstCnt % 2 == 0) && (ptCFGShm->neighbor_report_ai.val == 1))
         {
             if (LeftDelay < 5)  // 邻点突发和邻点上报消息保护间隔
             {
@@ -854,7 +854,7 @@ void * DLL_NerBurstTask(void * p)
                 ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 3-邻点上报
                 ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 2-邻点上报
                 ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 1-邻点上报
-
+#if 0
                 //备份本地邻点信息
                 g_DllGlobalCfg.auNegrId2 = g_DllGlobalCfg.auNegrId1;
                 memcpy(g_DllGlobalCfg.auNerInfo2, g_DllGlobalCfg.auNerInfo1, sizeof(g_DllGlobalCfg.auNerInfo1));
@@ -867,7 +867,35 @@ void * DLL_NerBurstTask(void * p)
                 {
                     set_alarm_discon_switch(TURN_ON);  // 开启告警
                 }
+#endif
             }
+        }
+
+        if (BurstCnt % 2 == 0)
+        {
+#if 0
+            if (LeftDelay < 5)  // 邻点突发和邻点上报消息保护间隔
+            {
+                sleep(5);
+            }
+#endif
+            if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn && ptCFGShm->start_neighbor.val == 1)
+            {
+                //备份本地邻点信息
+                g_DllGlobalCfg.auNegrId2 = g_DllGlobalCfg.auNegrId1;
+                memcpy(g_DllGlobalCfg.auNerInfo2, g_DllGlobalCfg.auNerInfo1, sizeof(g_DllGlobalCfg.auNerInfo1));
+                //清除本地邻点信息
+                g_DllGlobalCfg.auNegrId1 = 0;
+                memset(g_DllGlobalCfg.auNerInfo1, 0, sizeof(g_DllGlobalCfg.auNerInfo1));
+                
+                // 检测邻点断链告警
+                if (check_discon_state() == DISCON_HAPPEN)
+                {
+                    set_alarm_discon_switch(TURN_ON);  // 开启告警
+                }
+
+            }
+
         }
         continue;
     }

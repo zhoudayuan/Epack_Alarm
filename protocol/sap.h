@@ -168,6 +168,6 @@ int _LocalCfgPrint();
 
 extern int sem_ipc_p(void);
 extern int sem_ipc_v(void);
-
+extern void GetSvnRevision();
 #endif
 
