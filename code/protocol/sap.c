@@ -23,6 +23,7 @@
 #include "ccl.h"
 #include "dll_fun.h"
 #include "log.h"
+#include "print_debug.h"
 #include "_version.h"
 
 // 与打印时间相关
@@ -85,10 +86,10 @@ int main(void)
     key_t msqKey;
 
     printf("\n");
-    // 打印svn版本号
-    GetSvnRevision();
-    // 打印编译时间
-    GetCompileTime();
+    GetSvnRevision();  // 打印svn版本号
+    GetCompileTime();  // 打印编译时间
+    setDebugInit();    // 打开误码率测试写入文件
+    
     // log写文件
     pLogFd = fopen("./LOG.txt", "r+");
     if(NULL == pLogFd)

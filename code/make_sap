@@ -2,7 +2,7 @@
 
 
 path_version=`pwd`/inc/_version.h
-Result_Path=`pwd`/result
+Result_Path=`pwd`/result/
 Protocol_Path=`pwd`/protocol
 Adapter_Path=`pwd`/adapter
 gcc_path=/opt/arm-cortexa9-linux-gnueabihf/gcc-4.7.3-glibc-2.16.0-binutils-2.22-kernel-3.6-sanitized/bin
@@ -29,6 +29,7 @@ echo "#endif" >> ${path_version}
 
 
 cd $Protocol_Path
+pwd
 $gcc_path/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o sap \
                                 sap.c \
                                 dll.c \
@@ -45,7 +46,7 @@ $gcc_path/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o sap \
 
 if [ -e sap ]
 then
-
+    
     cp sap $Result_Path
     rm sap
     echo "~~~sap~ok~~~~"

@@ -149,7 +149,8 @@ extern SHM_CFG_STRU *ptCFGShm;
 /******************************************************************************
   *   静态变量定义
   *   *************************************************************************/
-static UINT16 s_au2VoiceSource[3][6][27] =
+//UINT16 s_au2VoiceSource[3][6][27] =
+UINT8 s_au2VoiceSource[3][6][27] =
 {
     {
         // 1031信源测试信源
@@ -602,17 +603,35 @@ void ODP_GenGpsReqData(UINT8 *RequestID, UINT8 *RadioIP, UINT8 *GpsData, UINT8 *
     MsGpsReq->IpCmpsHdr.SPID = 116;
     MsGpsReq->IpCmpsHdr.LHCO = 0;
     MsGpsReq->IpCmpsHdr.DPID = 116;
-    MsGpsReq->MsgHdr = 0x08;
-    MsGpsReq->OpCode = htons(0xa001);
+    
+    MsGpsReq->MsgHdr = 0x08;  // 0x11-RRS, 0x08-LP:Location Protocol 
+    /*
+    ** 0xA0-Standard Location Immediate Service, 0x01-(Request), RequestID[4]+RadioIP[4]
+    */
+    MsGpsReq->OpCode = htons(0xa001); 
+    /*
+    ** Unique identifier of the request, usually,     
+    ** it’s the request sent counter in hexadecimal, 
+    ** this value will increase by 1 in each sent, the initial value is 1.
+    ** Example: 0x1, this request is first sent.
+    */
     MsGpsReq->ByteLen = htons(0x0008);
     MsGpsReq->RequestID[0] = RequestID[0];
     MsGpsReq->RequestID[1] = RequestID[1];
     MsGpsReq->RequestID[2] = RequestID[2];
     MsGpsReq->RequestID[3] = RequestID[3];
-    MsGpsReq->RadioIP[0] = RadioIP[0];
+    printf("RequestID[0-3]={%#x:%#x:%#x:%#x}\n", RequestID[0],RequestID[1], RequestID[2],RequestID[3]);
+    /*
+    ** A unique identity of the terminal radio in IPV4 format.
+    ** Example:
+    ** 0x0a000001, this value means the subnet is 10.0.0.0, the RadioID is 1 when fresh from factory.
+    ** 0x0a000050, the RadioIP is 10.0.0.80, indicating that the subnet is 10.x.x.x, and the Radio ID is 80.
+    */
+    MsGpsReq->RadioIP[0] = RadioIP[0];    
     MsGpsReq->RadioIP[1] = RadioIP[1];
     MsGpsReq->RadioIP[2] = RadioIP[2];
     MsGpsReq->RadioIP[3] = RadioIP[3];
+    printf("RadioIP[0-3]={%d:%d:%d:%d-(%#x:%#x:%#x:%#x)}\n", RadioIP[0],RadioIP[1], RadioIP[2],RadioIP[3], RadioIP[0],RadioIP[1], RadioIP[2],RadioIP[3]);
 
     Sum = (UINT8 *)&MsGpsReq->OpCode;
     for (UINT8 i = 0; i < 12; i++)
@@ -638,14 +657,14 @@ void ODP_GenGpsReqData(UINT8 *RequestID, UINT8 *RadioIP, UINT8 *GpsData, UINT8 *
 void ODP_GenReponHeader(UINT8 *DstId, UINT8 *SrcId, PDT_RE_HEAD_PDU_DT *p_ReHdrPdu)
 {
     UINT16 u2CRC = 0;
-    p_ReHdrPdu->uDPF = 1;
+    p_ReHdrPdu->uDPF = 1;  // Response
     p_ReHdrPdu->uRV1 = 0;
-    p_ReHdrPdu->uA = 0;
+    p_ReHdrPdu->uA = 0;  // No Response
     p_ReHdrPdu->uRV2 = 0;
     p_ReHdrPdu->uRV3 = 0;
-    p_ReHdrPdu->uSAP = 3;
-    p_ReHdrPdu->uBF = 0;
-    p_ReHdrPdu->uRV4 = 0;
+    p_ReHdrPdu->uSAP = 3; // UDP/IP header compression
+    p_ReHdrPdu->uBF = 0;  // 无
+    p_ReHdrPdu->uRV4 = 0; 
     p_ReHdrPdu->uCLAS = 0;
     p_ReHdrPdu->uTYPE = 1;
     p_ReHdrPdu->uSTAT = g_PdpUBuf.uBLOCKCnt;
@@ -763,7 +782,7 @@ void ODP_TerminDataLC(UINT8 *DstId, UINT8 *SrcId, UINT8 GI, UINT8 ResFrq, UINT8 
 
     if (tDllPrint->AIDown == 1)
     {
-        LOG_DEBUG(s_LogMsgId,"[DLL][%s] TD_LC ResFrq: %d ResSlot: %d", _F_, ResFrq, ResSlt);
+        LOG_DEBUG(s_LogMsgId,"[DLL][%s] TD_LC ResFrq: %d ResSlot: %d", _F_, ResFrq, ResSlt); // why
     }
     ODP_SendInfData(ptInfData, S_TD_LC);
     uNS++;
@@ -823,7 +842,7 @@ int ODP_LcHeaderFun(CCL_DLL_DL_T * pvCclData)
     memcpy(p_DllFpgaShm->EmbInfo, g_DllGlobalCfg.auEmbInfo, 16);
 
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-    CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_DATA,FT_VOICE_NO,DT_LC_HEADER,(FLC_LEN+3),g_DllGlobalCfg.auDownloadLC);
+    CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_DATA, FT_VOICE_NO, DT_LC_HEADER, (FLC_LEN+3), g_DllGlobalCfg.auDownloadLC);
 
     ODP_SendInfData(ptInfData, S_LC_HDR);
 
@@ -1414,7 +1433,7 @@ int ODP_MsGpsRequestFun(CCL_DLL_DL_T * pvCclData)
         }
         else
         {
-            usleep(60000);
+            usleep(60000);  // 60ms
         }
     }
     DLL_SetTimer(CALL_DATA_D, 4000);        //定时4s
@@ -1708,7 +1727,8 @@ int ODP_NasGpsReportFun(CCL_DLL_DL_T * pvCclData)
         NasAiData.cmd_code = CMD_CODE_GPS_REPORT;
         NasAiData.nm_type = NM_TYPE_CENTER;
         NasAiData.op_code = OP_CODE_GET;
-        NasAiData.src_id = g_DllGlobalCfg.auNodeId;
+//        NasAiData.src_id = g_DllGlobalCfg.auNodeId;
+        NasAiData.src_id = pvCclData->SrcId[0];       //test-zhou
         NasAiData.dst_id = pvCclData->DstId[0];
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
 
@@ -2038,6 +2058,8 @@ void CCLVoiceProcess(CCL_DLL_DL_T *pvCclData)
 
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
     CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_VOICE,pvCclData->FrmType,pvCclData->DataType,VOICE_LEN,pvCclData->PayLoad);
+//    print_voice_153(pvCclData->PayLoad, "DLL-ODP");
+
 
     switch (pvCclData->FrmType)
     {
@@ -2270,7 +2292,8 @@ void *CCLDownloadTask(void * p)
             pvCclData = (CCL_DLL_DL_T *)RecvBuf;
             if (tDllPrint->CCDown == 1)
             {
-                ODP_CclPrintf(pvCclData);            }
+                ODP_CclPrintf(pvCclData);
+            }
 
             if (g_DllGlobalCfg.auStunFlag == NAS_KILL_FLAG || g_DllGlobalCfg.auKillFlag == NAS_KILL_FLAG)
             {
@@ -2347,6 +2370,8 @@ void *CCLDownloadTask(void * p)
     delete(ptInfData);
     pthread_exit(NULL);
 }
+
+
 
 
 

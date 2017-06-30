@@ -253,11 +253,13 @@ void IDP_Getlcdata(unsigned char *pvDllData)
     LC_DATA.DesId[0]=ptDllData->DstId[0];
     LC_DATA.DesId[1]=ptDllData->DstId[1];
     LC_DATA.DesId[2]=ptDllData->DstId[2];
-    if(s_tLast_Relay_Flg != ptDllData->Prohibit )
+    
+    printf("[%s:%d]@@ ptDllData->Prohibit=%d\n", __FUNCTION__, __LINE__, ptDllData->Prohibit);
+    if(s_tLast_Relay_Flg != ptDllData->Prohibit)
     {
-        s_tLast_Relay_Flg=ptDllData->Prohibit;
-        s_tNas_STOP_RELAY=1;
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s]STOPRELAY  FLAG=%d", __FUNCTION__,s_tNas_STOP_RELAY);
+        s_tLast_Relay_Flg = ptDllData->Prohibit;
+        s_tNas_STOP_RELAY = 1;
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] LastRelay=%d StopRelay=%d", __FUNCTION__, s_tLast_Relay_Flg, s_tNas_STOP_RELAY);
     }
 }
 
@@ -384,11 +386,11 @@ void IDP_GenNasSigAckData(unsigned char pvsigtype, unsigned char *pvDlldata, uns
     {
         ptCenterData->SmsType = STUN_REQ_NAS_ACK;
     }
-    else if(CT_KILL_ACK_NAS == pvsigtype) //Ò£±Ð
+    else if(CT_KILL_ACK_NAS == pvsigtype) //Ò£±ÐNAS
     {
         ptCenterData->SmsType = KILL_REQ_NAS_ACK;
     }
-    else if(CT_ENABLE_ACK_NAS == pvsigtype)  //¼¤»î
+    else if(CT_ENABLE_ACK_NAS == pvsigtype)  //¼¤»îNAS
     {
         ptCenterData->SmsType = REVIVE_REQ_NAS_ACK;
     }
@@ -644,8 +646,10 @@ void IDP_GenVoiceDataPaket(unsigned char *pvDllData, unsigned char *pvCenterData
  */
 void IDP_CclPrintpttack(unsigned char *CenterData)
 {
+    char buf[100];
     PTT_ON_ACK *ptCenterData = (PTT_ON_ACK *)CenterData;
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s] SigType=%#x Ack=%#x(OK=0x04,Fail=0x05)", __FUNCTION__, ptCenterData->SharedHead.SigType, ptCenterData->Ack);
+    SetCCSig2Str(&ptCenterData->SharedHead, buf, sizeof(buf));
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] SigType=%#x %s Ack=%#x(OK=0x04,Fail=0x05)", __FUNCTION__, ptCenterData->SharedHead.SigType, buf, ptCenterData->Ack);
 }
 /**
  * @brief   ´òÓ¡PTT ÃüÁîº¯Êý
@@ -704,7 +708,6 @@ void IDP_CclPrintDllData(unsigned char *DllData)
         ptDllData->DataLen,
         ptDllData->SrcId[0], ptDllData->SrcId[1], ptDllData->SrcId[2],
         ptDllData->DstId[0], ptDllData->DstId[1], ptDllData->DstId[2]);
-    
 }
 
 

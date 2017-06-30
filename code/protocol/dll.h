@@ -228,6 +228,7 @@
 #define GPS_PRE                ((UINT8)0x03)    //GPS预占
 #define GPS_RLY                ((UINT8)0x04)    //GPS中转
 
+
 #define NODE_TYPE_D            ((UINT8)0x00)    //数据节点
 #define NODE_TYPE_V            ((UINT8)0x01)    //语音节点
 
@@ -522,11 +523,11 @@ typedef struct _DLL_GLB_CFG_T
  */
 typedef struct _NAS_PRE_LC_PDU
 {
-    UINT8 uFLCO :6;
+    UINT8 uFLCO :6;   // 完整链路控制命令码
     UINT8 uREV  :1;
-    UINT8 uPF   :1;
+    UINT8 uPF   :1;   // 保护标志，应设置为0
     UINT8 uFID;
-    UINT8 uSO;
+    UINT8 uSO;        // 业务选项
     UINT8 auTADDR[3];
     UINT8 auSADDR[3];
     UINT8 auCRC[3];
@@ -713,7 +714,7 @@ typedef struct _PDT_C_HEAD_PDU_DT
     UINT8 auTADDR[3];           // 目的用户的事件标签,LDS或PDI或MS空口地址
     UINT8 auSADDR[3];           // 源用户的事件标签，LDS或PDI或MS空口地址
     UINT8 uBF           :7;     // 本数据包中后面跟的帧的数据
-    UINT8 uFMF          :1;     // 0:重传数据包; 1:第一次传输完整包
+    UINT8 uFMF          :1;     // Full Message Flag 用于表示本次传输是否完整的数据或者重传的部分数据 0:重传数据包; 1:第一次传输完整包
     UINT8 uFSN          :4;     // 数据包的发送序号，发送者发送一个数据包(不包括重复的)，就加1；用于检测是否发重复了。
     UINT8 uNS           :3;     // 1:接收方同步数据包的发送序号
     UINT8 uS            :1;     // 数据分片序号（支持分片功能才使用）
@@ -734,11 +735,11 @@ typedef struct _PDT_C_HEAD_PDU_UT
     UINT8 uGI           :1;
     UINT8 uDEI          :2;
     UINT8 uRV2          :2;
-    UINT8 uSAP          :4;
+    UINT8 uSAP          :4;  // 0011-UDP/ip 压缩头
     UINT8 auTADDR[3];
     UINT8 auSADDR[3];
     UINT8 uBF           :7;
-    UINT8 uFMF          :1;
+    UINT8 uFMF          :1;  // Full Message Flag 用于表示本次传输是否完整的数据或者重传的部分数据 0:重传数据包; 1:第一次传输完整包
     UINT8 uFSN          :4;
     UINT8 uNS           :3;
     UINT8 uS            :1;
@@ -798,17 +799,17 @@ typedef struct _DMR_C_HEAD_PDU_UT
  */
 typedef struct _PDT_RE_HEAD_PDU_DT
 {
-    UINT8 uDPF          :4;
+    UINT8 uDPF          :4;  // 数据分组合适 0001-Response, 0010-unconfirmed, 0011-confirmed
     UINT8 uRV1          :2;
-    UINT8 uA            :1;
-    UINT8 uRV2          :1;
+    UINT8 uA            :1;  // 相应请求标识 0-No Response, 1-Response
+    UINT8 uRV2          :1;  
     UINT8 uRV3          :4;
-    UINT8 uSAP          :4;
+    UINT8 uSAP          :4;  // 服务接入点 0010-TCP/IP header compression, 0011-UDP/IP header compression
     UINT8 auTADDR[3];
     UINT8 auSADDR[3];
-    UINT8 uBF           :7;
+    UINT8 uBF           :7;  // 后续帧数
     UINT8 uRV4          :1;
-    UINT8 uSTAT         :3;
+    UINT8 uSTAT         :3;   
     UINT8 uTYPE         :3;
     UINT8 uCLAS         :2;
     UINT8 auCRC[2];
@@ -823,13 +824,13 @@ typedef struct _PDT_RE_HEAD_PDU_UT
 {
     UINT8 uDPF          :4;
     UINT8 uRV1          :2;
-    UINT8 uA            :1;
+    UINT8 uA            :1;  // 相应请求标识 0-No Response, 1-Response
     UINT8 uRV2          :1;
     UINT8 uRV3          :4;
-    UINT8 uSAP          :4;
+    UINT8 uSAP          :4;  // 10-TCP/IP压缩头, 11-UDP/IP压缩头
     UINT8 auTADDR[3];
     UINT8 auSADDR[3];
-    UINT8 uBF           :7;
+    UINT8 uBF           :7;  // 后续帧数
     UINT8 uRV4          :1;
     UINT8 uSTAT         :3;
     UINT8 uTYPE         :3;
@@ -1452,15 +1453,15 @@ typedef struct _TD_LC_PDU_T
 {
     UINT8 uFLCO                     :6;  // 完整链路控制码 TD_LC=0X30
     UINT8 uRV                       :1;
-    UINT8 uPF                       :1;
-    UINT8 uFID;
+    UINT8 uPF                       :1;  // 保护标识
+    UINT8 uFID;                          // 功能集
     UINT8 auTADDR[3];
     UINT8 auSADDR[3];
-    UINT8 uNS                       :3;
-    UINT8 uS                        :1;
-    UINT8 uRV1                      :1;
-    UINT8 uF                        :1;
-    UINT8 uA                        :1;   // Response Request 响应请求标识
+    UINT8 uNS                       :3;  // 发送序号 N(S) Send sequence Number
+    UINT8 uS                        :1;  // 重新同步标识 S(Re-Synchronize flag)
+    UINT8 uRV1                      :1;  // 保留
+    UINT8 uF                        :1;  // 消息完整标识 FMF(Full Message Flag)
+    UINT8 uA                        :1;  // Response Request 响应请求标识
     UINT8 uGI                       :1;
     UINT8 uCRC[3];
 

@@ -21,6 +21,21 @@ extern CCL_PRINT_T * tcclPrint;
  * @brief DLL打印开关
  */
 extern DLL_PRINT_T *tDllPrint;
+/**
+ * @var 
+ * @brief 语音信源数据
+ */
+extern UINT8 s_au2VoiceSource[3][6][27];
+/**
+ * @var 
+ * @brief 计算误码率
+ */
+extern UINT16 ones16(UINT16 u2Data);
+/**
+ * @var 
+ * @brief 计算误码率
+ */
+FILE *g_fp_err_test;
 
 
 
@@ -317,6 +332,44 @@ TYPE_PRINT_T *pTable_SSO = table_SSO_type_print;
 unsigned short pTable_SSO_len = sizeof(table_SSO_type_print)/sizeof(table_SSO_type_print[0]);
 
 
+// table-9  GPS
+TYPE_PRINT_T Table_Gps_Status[] = {
+    {GPS_REQ  ,  "GPS_REQ"},
+    {GPS_ACK  ,  "GPS_ACK"},
+    {GPS_OK   ,  "GPS_OK "},
+    {GPS_PRE  ,  "GPS_PRE"},
+    {GPS_RLY  ,  "GPS_RLY"},
+    {0xff     ,  "0xFF"   }
+};
+
+TYPE_PRINT_T *pTable_Gps_Status = Table_Gps_Status;
+unsigned short Table_Gps_Status_Len = sizeof(Table_Gps_Status)/sizeof(Table_Gps_Status[0]);
+
+
+#if 1
+char *PrintGPSFlag(int uGpsFlag)
+{
+    int i;
+    static char buff[100]={0};
+    for (i = 0; i < Table_Gps_Status_Len; i++)
+    {
+        if (uGpsFlag == pTable_Gps_Status[i].Type)
+        {
+//            LOG_DEBUG(s_LogMsgId, "uGpsFlag=[%#x-%s]", pTable_Gps_Status->Type, pTable_Gps_Status->TypeStr);
+//            LOG_DEBUG(s_LogMsgId, "uGpsFlag=[%#x-%s]", pTable_Gps_Status->Type, pTable_Gps_Status->TypeStr);
+            snprintf(buff, sizeof(buff), "uGpsFlag=[%#x-%s]", pTable_Gps_Status->Type, pTable_Gps_Status->TypeStr);
+            return buff;
+        }
+    }
+    return NULL;
+}
+#endif
+
+
+
+
+
+
 
 //------------------------函数------------------------
 
@@ -337,6 +390,29 @@ void PrintSigLog(CENTER_CMD_SHARE_HEAD *pSharedHead, const char *prompt)
         }
     }
 }
+
+char *SetCCSig2Str(CENTER_CMD_SHARE_HEAD *pSharedHead, char *BufGet, unsigned short BufLen)
+{
+    int i;
+    for (i = 0; i < pTable_sig_len; i++)
+    {
+        if (pSharedHead->SigType == pTable_sig[i].Type)
+        {
+            if (pTable_sig[i].TypeStr != NULL)
+            {
+                snprintf(BufGet, BufLen, "[%#x-%s]", pTable_sig[i].Type, pTable_sig[i].TypeStr);
+                return BufGet;
+            }
+        }
+    }
+    return strncpy(BufGet, "No The Sig", strlen("No The Sig")+1);
+}
+
+
+
+
+
+
 // 上行
 void IDP_PrintSigLog(CENTER_CMD_SHARE_HEAD *pSharedHead)
 {
@@ -738,4 +814,189 @@ void PrintIDbyDec(unsigned char *src, unsigned char *dst)
 }
 
 
+/**
+ * @brief  大端转小端，将源ID和目的ID以十进制打印出来，方便调试看
+ * @author 周大元
+ * @since
+ * @bug
+ */
+void SetIdDec2buf(unsigned char *src, unsigned char *dst, char *BufGet, unsigned int BufLen)
+{
+    unsigned char src_tmp[4];
+    unsigned char dst_tmp[4];
+    unsigned int  src_val;
+    unsigned int  dst_val;
+
+    if ((src[1]==0 && src[2]==0) || (dst[1]== 0 && dst[2]== 0))
+    {
+        snprintf(BufGet, BufLen, "snd=%d->rcv=%d", src[0], dst[0]);
+    }
+    else
+    {
+        // 转回小端模式
+        src_tmp[0] = src[2];
+        src_tmp[1] = src[1];
+        src_tmp[2] = src[0];
+        src_tmp[3] = '\0';
+        dst_tmp[0] = dst[2];
+        dst_tmp[1] = dst[1];
+        dst_tmp[2] = dst[0];
+        dst_tmp[3] = '\0';
+        memcpy(&src_val, src_tmp, sizeof(src_tmp));
+        memcpy(&dst_val, dst_tmp, sizeof(dst_tmp));
+        snprintf(BufGet, BufLen, "snd=%d->rcv=%d", src_val, dst_val);
+    }
+    return ;
+}
+
+
+void print_voice_153(UINT8 *pPayLoad, const char *prompt)
+{
+    int i;
+    printf("[%s]\n", prompt);
+    for (i = 0; i < 27; i++)
+    {
+        if (i%14 == 0)
+        {
+            printf("\n");
+        }
+
+        printf("%#6x", pPayLoad[i]);
+    }
+    printf("\n");
+}
+
+
+//char Errbuff[1024*10] = {0};
+
+
+typedef enum _FRAME_CNT_E
+{
+    FRM_A    = 0,                      ///< 语音A帧标识
+    FRM_B    = 1,                      ///< 语音B帧标识
+    FRM_C    = 2,                      ///< 语音C帧标识
+    FRM_D    = 3,                      ///< 语音D帧标识
+    FRM_E    = 4,                      ///< 语音E帧标识
+    FRM_F    = 5,                      ///< 语音F帧标识
+} FRAME_CNT_E;
+
+
+
+
+
+
+
+TABLE_ERR_FRM_T tErrFrm[FRM_F+1] = {
+    {FRM_A, "FRM_A", 0}, //0
+    {FRM_B, "FRM_B", 0}, //1
+    {FRM_C, "FRM_C", 0}, //2
+    {FRM_D, "FRM_D", 0}, //3
+    {FRM_E, "FRM_E", 0}, //4
+    {FRM_F, "FRM_F", 0}  //5
+};
+TABLE_ERR_FRM_T *pRcvErrFrm = tErrFrm;
+
+
+
+
+
+
+ERR_VOICE_T tErrVoice = {
+    0,  0, 0, tErrFrm};
+
+ERR_VOICE_T *pErrVoice = &tErrVoice;
+
+void test_err_voice_init()
+{
+    int i;
+    tErrVoice.FrmRcvCnt = 0;
+    tErrVoice.FrmErrBitTotal = 0;
+
+    for (i = 0; i < FRM_F + 1;i++)
+    {
+        tErrVoice.pRcvErrFrm[i].FrmErrBit = 0;
+    }
+}
+
+void test_err_voice_result()
+{
+    int i;
+    double r;
+    double a = (double)tErrVoice.FrmErrBitTotal;
+    double b = (double)tErrVoice.FrmRcvCnt*27*8;
+    r = a/b * 100;
+
+    // 每帧A-F 有多少误码
+    printf("\nResult:test voice\n\tRcv: Frm=%d,SuperFrm=%d,bytes=%d,bits=%d\n", 
+        tErrVoice.FrmRcvCnt, 
+        tErrVoice.FrmRcvCnt/6, tErrVoice.FrmRcvCnt*27, tErrVoice.FrmRcvCnt*27*8);
+    for (i = 0; i < FRM_F + 1;i++)
+    {
+        printf("\t%s ErrBits:%d\n", tErrVoice.pRcvErrFrm[i].FrmTypeStr, tErrVoice.pRcvErrFrm[i].FrmErrBit);
+    }
+    // 所有
+    printf("\t------------\n\tTotal ErrBits:%d, ErrRate:%.3f%%\n", tErrVoice.FrmErrBitTotal, r);
+
+    fclose(g_fp_err_test);
+
+}
+
+
+
+void test_err_voice_dll(DATA_LINK_T *pDataLink)
+{
+    int i;
+    int len;
+    char buf[100];
+    unsigned short result = 0;
+    
+    tErrVoice.FrmIndx = pDataLink->FrmType - 1; // 实际语音帧 - 1, 匹配语音数组索引
+    if (tErrVoice.FrmIndx >= FRM_F+1)  // 超过Frm:A~F 不在检测范围
+    {
+        printf("Err: tErrVoice.FrmIndx=%d, Frm:A~F(0~5)\n", tErrVoice.FrmIndx);
+        return;
+    }
+
+    for (i = 0; i < 27; i++) // 一帧数据27bytes
+    {
+        result = ones16(pDataLink->PayLoad[i]^s_au2VoiceSource[VOICE_SRC_153][tErrVoice.FrmIndx][i]);
+        if (result != 0)
+        {
+            tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmErrBit += result;  // 记录某一帧有多少错误
+            tErrVoice.FrmErrBitTotal += result;  // 记录所有的错误
+            // printf("FrmIndx=%d,(%d)th byte, ErrBit=%d, [%#x-%#x]\n", tErrVoice.FrmIndx, i, result, pDataLink->PayLoad[i], s_au2VoiceSource[VOICE_SRC_153][tErrVoice.FrmIndx][i]);
+            // 第多少帧, 哪帧(A~F), 错误的真实数据，当前多少个
+            
+            len = snprintf(buf, sizeof(buf), "RcvCnt=%d,Frm=%s,byte=%dth[%#x-%#x],ErrNum=%d\n", 
+                tErrVoice.FrmRcvCnt,
+                tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmTypeStr, 
+                i, 
+                pDataLink->PayLoad[i], 
+                s_au2VoiceSource[VOICE_SRC_153][tErrVoice.FrmIndx][i], 
+                result);
+            printf("%s", buf);
+            len = fwrite(buf, len, 1, g_fp_err_test);
+        }
+    }
+    tErrVoice.FrmRcvCnt ++;  // 当前是第几次测试(从0开始)，一次测试是一个语音帧(FRM: A~F) 检测27bytes
+#if 0
+    printf("Result: FrmType=%s, FrmRcvCnt=%d, FrmErrBit=%d, FrmErrBitTotal=%d\n",
+        tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmTypeStr, 
+        tErrVoice.FrmRcvCnt,
+        tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmErrBit,
+        tErrVoice.FrmErrBitTotal);
+#endif
+}
+
+
+void setDebugInit()
+{
+	g_fp_err_test = fopen("err_test.log","w+");   
+	if (g_fp_err_test == NULL)
+	{    	
+		printf("fopen err_test.log error\n");	
+		fclose(g_fp_err_test);
+        return;
+	} 
+}
 

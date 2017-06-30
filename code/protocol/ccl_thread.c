@@ -809,6 +809,7 @@ void *ODP_HandleCenterVioce(void *arg)
 
             packetnumber++;
             ODP_GenVoicepacket(uRecSigBuf, uSendBuf, s_tFramType, &u4Datalen);
+
             u4sendlen = sendto(s_tSendToDllSocket, uSendBuf, u4Datalen, 0, (struct sockaddr *)&s_tSendToDllAddr, sizeof(s_tSendToDllAddr));
             if (u4sendlen != u4Datalen)
             {
@@ -892,7 +893,7 @@ void *ODP_HandleCenterSig(void *arg)
         {
             continue;
         }
-        else if (u4Datalen < CENTER_SHARE_HEAD_LEN)                                                         //接收数据长度小于公共头长度
+        else if (u4Datalen < CENTER_SHARE_HEAD_LEN)     //接收数据长度小于公共头长度
         {
             LOG_ERROR(s_LogMsgId, "[CCL][%s]REC CC Sig len=%d", __FUNCTION__, u4Datalen);
             continue;
@@ -943,13 +944,13 @@ void *ODP_HandleCenterSig(void *arg)
                     {
                         PttCmdResult = true;
                         ODP_GenLcHeader(RecSigBuf, SendBuf, &u4Datalen);    // 封LC语音头
-                        sendto( s_tSendToDllSocket, SendBuf, u4Datalen, 0,(struct sockaddr *)&s_tSendToDllAddr,sizeof(s_tSendToDllAddr));
+                        sendto(s_tSendToDllSocket, SendBuf, u4Datalen, 0,(struct sockaddr *)&s_tSendToDllAddr,sizeof(s_tSendToDllAddr));
                         INF_CCL_STATE   = CENTER_VOICE_DL;
                     }
                     IDP_GenPttOnAckpacket(SendBuf,&u4Datalen,PttCmdResult);
                     sendto(s_tCclSigUlSockfd, SendBuf, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));   //(struct sockaddr *)&address
                 }
-                else if (CMD_PTT_OFF == CcCmd->CC_PTT_CMD.PttStat)                                                                       //释放手台命令
+                else if (CMD_PTT_OFF == CcCmd->CC_PTT_CMD.PttStat)    //释放手台命令
                 {
                     packetnumber = 0;
                     if (CENTER_VOICE_DL == INF_CCL_STATE )
@@ -1157,6 +1158,7 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
         return;
     }
 
+
     if (1 == s_tRec_LC_FLG)
     {
         if(0 == s_tSend_PTTON_FLG) 
@@ -1185,8 +1187,13 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
         }
         else 
         {
+            CENTER_VOICE_DATA * pCenterData;
+//            printf("[%s:%d]@@@@ \n", __FUNCTION__, __LINE__);
             memset(CenterData,0,sizeof(CenterData));
             IDP_GenVoiceDataPaket(pvDllData,CenterData,&u4Datalen);   //全局计算方差平均值
+            pCenterData = (CENTER_VOICE_DATA *)CenterData;
+//            print_voice_153(pCenterData->Payload, "CCL-idp");
+
 
             u4sendlen=sendto(s_tCclVioceUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclVioceUlAddr, sizeof(s_tCclVioceUlAddr));  //(struct sockaddr *)&address
             if (u4sendlen != u4Datalen)
@@ -1219,6 +1226,19 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
 }
 
 
+
+
+static int IDP_IsLocalNasAck(DLL_CCL_UL_T *ptDllData)
+{
+    // 是否为本地Nas-ACK, 即自己使能自己
+    int status = (((ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId) && (ptDllData->SrcId[1] == 0) && (ptDllData->SrcId[2] == 0))) 
+        && (memcmp(ptDllData->SrcId, ptDllData->DstId, sizeof(ptDllData->SrcId)) == 0);
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] %s" , __FUNCTION__, (status==1? "Local Nas ACK": "Err: NOT local, check Nas ID"));
+    return status;
+}
+
+
+
 /**
 * @brief CCL 处理DLL  链路数据类型消息
 * @param [in] pvDllData  接收DLL数据
@@ -1235,9 +1255,10 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
     
     switch(ptDllData->DataType)
     {
-        case CT_GPS_REPORT_ACK_NAS:
+        case CT_GPS_REPORT_ACK_NAS:     // 链路机GPS
         {
-            if( (Wait_Gps_Nas_Ack == INF_CCL_STATE) || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+//            if( (Wait_Gps_Nas_Ack == INF_CCL_STATE) || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+            if( (Wait_Gps_Nas_Ack == INF_CCL_STATE) || IDP_IsLocalNasAck(ptDllData))
             {
                 IDP_GenGpsData(CT_GPS_REPORT_ACK_NAS,pvDllData,CenterData,&u4Datalen,s_aCCcvNetId);
                 INF_CCL_STATE=INF_CCL_IDLE;
@@ -1251,7 +1272,8 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
         }
         case CT_STUN_ACK_NAS:
         {
-            if( (Wait_Stun_Nas_Ack == INF_CCL_STATE) || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0 ))
+//            if( (Wait_Stun_Nas_Ack == INF_CCL_STATE) || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0 ))
+            if( (Wait_Stun_Nas_Ack == INF_CCL_STATE) || IDP_IsLocalNasAck(ptDllData))
             {
                 IDP_GenNasSigAckData(CT_STUN_ACK_NAS, pvDllData, CenterData, &u4Datalen);
                 LOG_DEBUG(s_LogMsgId, "[CCL][%s] Stun_Nas_Ack INF_CCL_STATE=%d", __FUNCTION__, INF_CCL_STATE);
@@ -1266,7 +1288,8 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
         }
         case CT_KILL_ACK_NAS:
         {
-            if( (Wait_Kill_Nas_Ack == INF_CCL_STATE) || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+//            if( (Wait_Kill_Nas_Ack == INF_CCL_STATE) || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+            if( (Wait_Kill_Nas_Ack == INF_CCL_STATE) || IDP_IsLocalNasAck(ptDllData))
             {
                 IDP_GenNasSigAckData(CT_KILL_ACK_NAS,pvDllData,CenterData,&u4Datalen);
                 INF_CCL_STATE=INF_CCL_IDLE;
@@ -1280,7 +1303,8 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
         }
         case CT_ENABLE_ACK_NAS:
         {
-            if( (Wait_Reviv_NAS_Ack == INF_CCL_STATE)  || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+//            if( (Wait_Reviv_NAS_Ack == INF_CCL_STATE)  || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+            if( (Wait_Reviv_NAS_Ack == INF_CCL_STATE)  || IDP_IsLocalNasAck(ptDllData))
             {
                 IDP_GenNasSigAckData(CT_ENABLE_ACK_NAS,pvDllData,CenterData,&u4Datalen);
                 LOG_DEBUG(s_LogMsgId,"[CCL][%s]  Reviv_NAS_Ack INF_CCL_STATE =%d ", __FUNCTION__,INF_CCL_STATE);
@@ -1295,7 +1319,8 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
         }
         case CT_NEGHR_QUERY_ACK:
         {
-            if(( Wait_NEGHR_Nas_Ack == INF_CCL_STATE)  || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+//            if(( Wait_NEGHR_Nas_Ack == INF_CCL_STATE)  || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
+            if(( Wait_NEGHR_Nas_Ack == INF_CCL_STATE)  || IDP_IsLocalNasAck(ptDllData))
             {
                 IDP_GenNearData(NEAR_REPORT_PASSIVE,pvDllData,CenterData,&u4Datalen,s_aCCcvNetId);
                 sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
