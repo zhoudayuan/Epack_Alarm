@@ -116,6 +116,20 @@
  */
 #define CLI_MAX_SIZE (CLI_ARC_MAX * CLI_ARG_MAX)
 #endif
+
+#define ERR_ANABLE   1  // 误码率测试使能
+#define ERR_DISABLE  0  // 误码率测试不使能
+
+typedef enum _ERR_RATE_TEST_E
+{
+    ERR_INDX_VOICE,  // 误码率-语音测试
+    ERR_INDX_21,     // 误码率-1/2数据业务
+    ERR_INDX_43,     // 误码率-3/4数据业务
+    ERR_INDX_ALL     // 所有开关都打开
+} ERR_RATE_TEST_E;
+
+
+
 /**
  * @struct CLI_CMD_NODE_T
  * @brief 命令行接口节点内部结构
@@ -130,6 +144,18 @@ typedef struct _CLI_CMD_NODE_T
     struct _CLI_CMD_NODE_T*   ptChild;                       ///< 下级节点指针地址
     struct _CLI_CMD_NODE_T*   ptFather;                      ///< 上级节点指针地址
 } CLI_CMD_NODE_T;
+
+
+/**
+ * @struct ERR_MARK_T
+ * @brief 误码率结构标识
+ */
+typedef struct _ERR_MARK_T{
+    const char *Name;
+    unsigned char *Flag;
+    const char *str[2];
+} ERR_MARK_T;
+
 /******************************************************************************
  *   全局变量定义
  *   *************************************************************************/
@@ -169,11 +195,14 @@ INT32 s_i4CLIMsgId;
 /******************************************************************************
  *   局部变量定义
  *   *************************************************************************/
- static SHM_IPC_STRU *ptIPCShm = NULL;
+static SHM_IPC_STRU *ptIPCShm = NULL;
 static ROUTE_PRINTF *ptIPCRoutePrintf = NULL;
 static DLL_PRINT_T *ptDllPrint = NULL;
 static SHM_CFG_STRU *ptCFGShm = 	NULL;
 static CCL_PRINT_T *ptCCLPrint = NULL;
+static ERR_PRINT_T *ptERRPrint = NULL;
+static ERR_MARK_T *pERR_MARK = NULL;  // 误码率测试项结构标识
+static unsigned short s_len_ERR_MARK;  // 误码率测试项结构的长度
  /**
  * @var s_auCliRoute
  * @brief Route模块打印
@@ -910,6 +939,7 @@ static int  pfMGRSet(UINT32 u4Arc, CHAR* pcArg[])
 	 	
     return 0;
 }
+
 /**
  * @var s_CliCCLCmd
  * @brief CLI命令表
@@ -919,6 +949,105 @@ static CLI_CMD_T s_CliMGRCmd[2] =
     {"mgr", "get",    "get  [Type \"get\"  for help!]       - Get current values", pfMGRGet},
     {"mgr", "set",    "set  [Type \"set\"  for help!]       - Set current values", pfMGRSet},
 };
+
+
+static int pfErrGet(UINT32 u4Arc, CHAR* pcArg[])
+{
+    int i;
+    unsigned short TableErrLen = s_len_ERR_MARK;
+    unsigned short IndxALL = TableErrLen - 1;
+
+    for (i = 0; i < TableErrLen; i++)
+    {
+        CLI_Printf("%s\t- %s", pERR_MARK[i].Name, pERR_MARK[i].str[*pERR_MARK[i].Flag]);
+    }
+    return 0;
+}
+
+
+static int pfErrSet(UINT32 u4Arc, CHAR* pcArg[])
+{
+    int i;
+    unsigned short TableErrLen = s_len_ERR_MARK;
+    unsigned short IndxALL = TableErrLen - 1;
+
+    if (0 == u4Arc)  // 不带参数
+    {
+        CLI_Printf("set  %s     [a+/a-]    - voice err test,        enable(a+) or disable(a-).\n", pERR_MARK[ERR_INDX_VOICE].Name);
+        CLI_Printf("set  %s  [a+/a-]    - data 1/2 err test,     enable(a+) or disable(a-).\n", pERR_MARK[ERR_INDX_21].Name   );
+        CLI_Printf("set  %s  [a+/a-]    - data 3/4 err test,     enable(a+) or disable(a-).\n", pERR_MARK[ERR_INDX_43].Name   );
+        CLI_Printf("set  %s   [a+/a-]    - voice & data all test, enable(a+) or disable(a-).\n", pERR_MARK[ERR_INDX_ALL].Name  );
+    }
+    else if (2 == u4Arc)  // 带两个参数
+    {
+        if (0 == strcmp(pcArg[0], pERR_MARK[IndxALL].Name)) // 如果等于ALL，所有调试使能
+        {
+            if (0 == strcmp(pcArg[1], "a+"))
+            {
+                for (i = 0; i < TableErrLen; i++)
+                {
+                    *pERR_MARK[i].Flag = ERR_ANABLE;
+                }
+                CLI_Printf(pERR_MARK[IndxALL].str[*pERR_MARK[IndxALL].Flag]);
+            }
+            else if (0 == strcmp(pcArg[1], "a-"))
+            {
+                for (i = 0; i < TableErrLen; i++)
+                {
+                    *pERR_MARK[i].Flag = ERR_DISABLE;
+                }
+                CLI_Printf(pERR_MARK[IndxALL].str[*pERR_MARK[IndxALL].Flag]);
+            }
+            else
+            {
+                CLI_Printf("Bad command input! type \"set\" for help!\n");
+            }
+        }
+        else  // 传进来的参数不是 ALL, 则独立设置打印调试
+        {
+            for (i = 0; i < TableErrLen; i++)
+            {
+                if (0 == strcmp(pcArg[0], pERR_MARK[i].Name))
+                {
+                    if (0 == strcmp(pcArg[1], "a+"))
+                    {
+                        *pERR_MARK[i].Flag = ERR_ANABLE;
+                        CLI_Printf(pERR_MARK[i].str[*pERR_MARK[i].Flag]);
+                        break;
+                    }
+                    else if (0 == strcmp(pcArg[1], "a-"))
+                    {
+                        *pERR_MARK[i].Flag = ERR_DISABLE;
+                        CLI_Printf(pERR_MARK[i].str[*pERR_MARK[i].Flag]);
+                        break;
+                    }
+                    else
+                    {
+                        CLI_Printf("Bad command input! type \"set\" for help!\n");
+                    }
+                }
+            }
+        }
+    }   
+    else  // 操作错误
+    {
+        CLI_Printf("Bad command input! type \"set\" for help!\n");
+    }
+
+    return 0;
+}
+
+/**
+ * @var s_CliCCLCmd
+ * @brief CLI命令表
+ */
+static CLI_CMD_T s_CliErrCmd[2] =
+{
+    {"err", "get",    "get  [Type \"get\"  for help!]       - Get current values", pfErrGet},
+    {"err", "set",    "set  [Type \"set\"  for help!]       - Set current values", pfErrSet},
+};
+
+
 /******************************************************************************
  *   内部函数实现
  *   *************************************************************************/
@@ -1322,6 +1451,30 @@ static UINT32 CLI_GetCmd(CHAR* pcBuff, CHAR* argv[])
     return u4Argc;
 }
 
+
+/**
+ * @brief   初始化误码率结构标识
+ *
+ * @param [in]  
+ * @param [in]  
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
+static void ErrRate_Global_Init(void)
+{
+    static ERR_MARK_T tERR_MARK[] = {
+        {"v"    ,  &ptERRPrint->Voice ,   {"voice err test [disable]\n"        ,  "voice err test [enable]\n"        } },
+        {"d_21" ,  &ptERRPrint->D_1_2 ,   {"data 1/2 err test [disable]\n"     ,  "data 1/2 err test [enable]\n"     } },
+        {"d_43" ,  &ptERRPrint->D_3_4 ,   {"data 3/4 err test [disable]\n"     ,  "data 3/4 err test [enable]\n"     } },
+        {"all"  ,  &ptERRPrint->All   ,   {"voice & data all test [disable]\n" ,  "voice & data all test [enable]\n" } },
+    };
+    pERR_MARK = tERR_MARK;
+    s_len_ERR_MARK = sizeof(tERR_MARK)/sizeof(tERR_MARK[0]);
+}
+
+
+
 /**
  * @brief   命令行接口输入处理任务主函数
  *
@@ -1360,6 +1513,7 @@ static void *CliInputTask(void* pvArg)
 	}
 	u4TmpArc = 0;
 
+    ErrRate_Global_Init();  // 误码率测试全局变量初始化
 
 open_fifo:
 
@@ -1770,6 +1924,9 @@ void CLI_Init(void)
     CHAR* pcName3 = "mgr";
     CHAR* pcDesc3 = "here is the top level of Mgr";
 
+
+    CHAR* pcName4 = "err";
+    CHAR* pcDesc4 = "here is the top level of err";
     
 
     memset(s_tCliCmdList.acClass, 0x0, sizeof(s_tCliCmdList.acClass));
@@ -1781,37 +1938,44 @@ void CLI_Init(void)
     s_tCliCmdList.ptFather = NULL;
 
 
+    strcpy(tCliCmd.pcClass, CLI_ROOT_NAME);
+    strcpy(tCliCmd.pcName, pcName0);
+    strcpy(tCliCmd.pcDescription, pcDesc0);
+    tCliCmd.pfcallback = NULL;
+    CLI_RegisterCommand(&tCliCmd);
+
+
+    strcpy(tCliCmd.pcClass, CLI_ROOT_NAME);
+    strcpy(tCliCmd.pcName, pcName1);
+    strcpy(tCliCmd.pcDescription, pcDesc1);	
+    tCliCmd.pfcallback = NULL;
+    CLI_RegisterCommand(&tCliCmd);
+
     strcpy(tCliCmd.pcClass,CLI_ROOT_NAME);
-    strcpy(tCliCmd.pcName,pcName0);
-    strcpy(tCliCmd.pcDescription,pcDesc0);
+    strcpy(tCliCmd.pcName,pcName2);
+    strcpy(tCliCmd.pcDescription,pcDesc2);
     tCliCmd.pfcallback = NULL;
     CLI_RegisterCommand(&tCliCmd);
 
-
-    strcpy(tCliCmd.pcClass,CLI_ROOT_NAME);
-     strcpy(tCliCmd.pcName,pcName1);
-     strcpy(tCliCmd.pcDescription,pcDesc1);	
+    memcpy(tCliCmd.pcClass, CLI_ROOT_NAME,sizeof(CLI_ROOT_NAME));
+    memcpy(tCliCmd.pcName, pcName3, sizeof(pcName3));
+    memcpy(tCliCmd.pcDescription, pcDesc3, sizeof(pcDesc3));
     tCliCmd.pfcallback = NULL;
     CLI_RegisterCommand(&tCliCmd);
 
-   strcpy(tCliCmd.pcClass,CLI_ROOT_NAME);
-   strcpy(tCliCmd.pcName,pcName2);
-   strcpy(tCliCmd.pcDescription,pcDesc2);
+    strcpy(tCliCmd.pcClass, CLI_ROOT_NAME);
+    strcpy(tCliCmd.pcName, pcName4);
+    strcpy(tCliCmd.pcDescription, pcDesc4);
     tCliCmd.pfcallback = NULL;
     CLI_RegisterCommand(&tCliCmd);
-
-    memcpy(tCliCmd.pcClass,CLI_ROOT_NAME,sizeof(CLI_ROOT_NAME));
-    memcpy(tCliCmd.pcName,pcName3,sizeof(pcName3));
-   memcpy(tCliCmd.pcDescription,pcDesc3,sizeof(pcDesc3));
-    tCliCmd.pfcallback = NULL;
-    CLI_RegisterCommand(&tCliCmd);
-
+		
     for(i = 0;i<2;i++)
     {
 		CLI_RegisterCommand(&s_CliRouteCmd[i]);
 		CLI_RegisterCommand(&s_CliDllCmd[i]);
 		CLI_RegisterCommand(&s_CliCCLCmd[i]);
 		CLI_RegisterCommand(&s_CliMGRCmd[i]);
+        CLI_RegisterCommand(&s_CliErrCmd[i]);
     }
 	
     CLI_UpdateCurCmd(&s_tCliCmdList);
@@ -1904,9 +2068,16 @@ void CLI_IPC_Init()
 		exit(1);
 	}
 	ptCCLPrint = (CCL_PRINT_T *)ptIPCShm->ccl_printf;
-	if(NULL == ptDllPrint)
+	if(NULL == ptCCLPrint)
 	{
 		LOG_ERROR(s_i4LogMsgId,"[CLI_IPC_Init]ptCCLPrintf error!!!\n");
+		exit(1);
+	}
+
+	ptERRPrint = (ERR_PRINT_T *)ptIPCShm->Err_printf;
+	if(NULL == ptERRPrint)
+	{
+		LOG_ERROR(s_i4LogMsgId,"[CLI_IPC_Init]ptERRPrint error!!!\n");
 		exit(1);
 	}
 

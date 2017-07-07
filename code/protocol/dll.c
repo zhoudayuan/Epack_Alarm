@@ -304,6 +304,7 @@ int DLL_FpgaConfig(void)
     if (p_DllFpgaShm < 0)
     {
         printf("[DLL] FpgaConfig  map fpga shm addr error!");
+        close(fd_mem);
         return -1;
     }
     close(fd_mem);
@@ -491,7 +492,7 @@ void DLL_SyncGpsTime(void)
     GPS_DEV_DATA_T *GpsDevData;
     GpsDevData = (GPS_DEV_DATA_T *)(p_DllFpgaShm->GpsData);
 
-    if (p_DllFpgaShm->LockFlag == 1)
+    if ((p_DllFpgaShm->GpsFlag & 0x01) == 1)
     {
         _tm.tm_sec = GpsDevData->SEC;
         _tm.tm_min = GpsDevData->MIN;
@@ -869,6 +870,7 @@ void * DLL_NerBurstTask(void * p)
                 }
 #endif
             }
+
         }
 
         if (BurstCnt % 2 == 0)

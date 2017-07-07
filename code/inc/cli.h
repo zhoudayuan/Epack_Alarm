@@ -80,12 +80,12 @@
  */
 typedef enum _CLI_PRINT_TYPE_E
 {
-    CLI_PRINT_TYPE_ROUTE              = 0,                      ///
-    CLI_PRINT_TYPE_DLL        = 1,                      ///
-    CLI_PRINT_TYPE_CCL       = 2,                      ///
-    CLI_PRINT_TYPE_MGR                  = 3  ,                  ///
-    CLI_PRINT_TYPE_LOG                  = 4 ,                  ///
-    CLI_PRINT_TYPE_CLI                  = 5,                  ///
+    CLI_PRINT_TYPE_ROUTE                = 0,    ///
+    CLI_PRINT_TYPE_DLL                  = 1,    ///
+    CLI_PRINT_TYPE_CCL                  = 2,    ///
+    CLI_PRINT_TYPE_MGR                  = 3,    ///
+    CLI_PRINT_TYPE_LOG                  = 4,    ///
+    CLI_PRINT_TYPE_CLI                  = 5,    ///
 } CLI_PRINT_TYPE_E;
 
 /**

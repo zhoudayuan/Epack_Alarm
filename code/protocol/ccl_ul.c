@@ -253,13 +253,11 @@ void IDP_Getlcdata(unsigned char *pvDllData)
     LC_DATA.DesId[0]=ptDllData->DstId[0];
     LC_DATA.DesId[1]=ptDllData->DstId[1];
     LC_DATA.DesId[2]=ptDllData->DstId[2];
-    
-    printf("[%s:%d]@@ ptDllData->Prohibit=%d\n", __FUNCTION__, __LINE__, ptDllData->Prohibit);
-    if(s_tLast_Relay_Flg != ptDllData->Prohibit)
+    if(s_tLast_Relay_Flg != ptDllData->Prohibit )
     {
         s_tLast_Relay_Flg = ptDllData->Prohibit;
         s_tNas_STOP_RELAY = 1;
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s] LastRelay=%d StopRelay=%d", __FUNCTION__, s_tLast_Relay_Flg, s_tNas_STOP_RELAY);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s]STOPRELAY  FLAG=%d", __FUNCTION__,s_tNas_STOP_RELAY);
     }
 }
 
@@ -271,22 +269,24 @@ void IDP_Getlcdata(unsigned char *pvDllData)
 * @bug
 */
 
-void  IDP_PttonAckhandle(unsigned char *pvCenterData)
+void IDP_PttonAckhandle(unsigned char *pvCenterData)
 {
-    PTT_ON_ACK *ptCenterData =(  PTT_ON_ACK *) pvCenterData;
-    if(ACK_OK==ptCenterData->Ack)
+    PTT_ON_ACK *ptCenterData =(PTT_ON_ACK *)pvCenterData;
+    if (ACK_OK == ptCenterData->Ack)
     {
-        s_tSend_PTTON_FLG=1;
+        s_tSend_PTTON_FLG = 1;
     }
     else
     {
-        s_tSend_PTTON_FLG=0;
+        s_tSend_PTTON_FLG = 0;
     }
-    if(1 == tcclPrint->CclUp)
+
+    if (1 == tcclPrint->CclUp)
     {
-      LOG_DEBUG(s_LogMsgId,"[CCL][%s]ttonAckhandle PTTON_FLG=%d", __FUNCTION__,s_tSend_PTTON_FLG);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s]ttonAckhandle PTTON_FLG=%d", __FUNCTION__, s_tSend_PTTON_FLG);
     }
 }
+
 /**
 * @brief    封装告警、清除信息
 * @param [out] pvCenterData  中心上行数据

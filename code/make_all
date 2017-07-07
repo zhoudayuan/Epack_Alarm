@@ -48,6 +48,7 @@ then
 fi
 
 
+
 cd $ROUTE_PATH
 $GCC_PATH/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o route route.c -I ../inc -lpthread
 if [ -e route ]

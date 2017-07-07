@@ -66,7 +66,11 @@ SHM_IPC_STRU *ptIPCShm = NULL;
 SHM_CFG_STRU *ptCFGShm = NULL;
 
 
+ERR_PRINT_T *ptErrPrint = NULL;
+
+
 static void GetCompileTime(void);
+
 
 
 /******************************************************************************
@@ -88,7 +92,7 @@ int main(void)
     printf("\n");
     GetSvnRevision();  // 打印svn版本号
     GetCompileTime();  // 打印编译时间
-    setDebugInit();    // 打开误码率测试写入文件
+
     
     // log写文件
     pLogFd = fopen("./LOG.txt", "r+");
@@ -128,6 +132,8 @@ int main(void)
         exit(1);
     }
     printf("[SAP] local cfg print ok!\n");
+
+    setDebugInit();    // 误码率测试初始化
 
     DLL_Init();
     printf("[SAP] dll init\n");

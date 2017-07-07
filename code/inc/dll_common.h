@@ -161,6 +161,19 @@ typedef struct _CCL_PRINT_T
 } CCL_PRINT_T;
 
 /**
+ * @struct ERR_PRINT_T
+ * @brief  链表节点数据结构
+ */
+typedef struct _ERR_PRINT_T
+{
+    UINT8 Voice;    // 误码率调试语音开关
+    UINT8 D_3_4;    // 误码率调试3/4数据开关
+    UINT8 D_1_2;    // 误码率调试1/2数据开关
+    UINT8 All;
+} ERR_PRINT_T;
+
+
+/**
  * @struct DLL_FPGA_SHM_T
  * @brief DLL和FPGA共享内存数据
  */
@@ -172,7 +185,7 @@ typedef struct _DLL_FPGA_SHM_T
     UINT8   MSCC;                      ///< 终端CC
     UINT8   WLUCC;                     ///< 链路机CC
     UINT8   GpsData[20];               ///< 设备GPS数据
-    UINT8   LockFlag;                  ///< GPS锁定标示
+    UINT8   GpsFlag;                   ///< GPS标示 GPS_exist(bit1)+LockFlag(bit0)
     UINT8   StunFlag[4];               ///< 设备遥晕标示
     UINT8   WorkOver;                  ///< 业务结束标记
     UINT8   uRev0[9];                  ///< 预留0

@@ -1176,7 +1176,12 @@ int IDP_LcTerminatorFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         memcpy(ptCclData->DstId, &pDataLink->PayLoad[3], 3);
         memcpy(ptCclData->SrcId, &pDataLink->PayLoad[6], 3);
         memcpy(ptCclData->PayLoad, pDataLink->PayLoad, FLC_LEN);
-        test_err_voice_result();
+        
+        if (ptErrPrint->Voice == 1)
+        {
+            test_err_voice_result();
+        }
+        
         IDP_SendCclData(ptCclData);
         
     }
@@ -1675,7 +1680,6 @@ int IDP_DataHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         }
         case DPF_CONFIRM_PACKET:  // confirm
         {
-
             printf("[%s:%d] uBF=%d\n", __FUNCTION__, __LINE__, puUPHdr->p_Pdp_CHdr.uBF);
             printf("[%s:%d] %s\n", __FUNCTION__, __LINE__, PrintGPSFlag(uGpsFlag));
 
@@ -1851,9 +1855,9 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     UINT32 u4CRCB = 0;
     UINT8 r34Data[18];
 
-    PDP_DATA_BLOCK_UU* puUPData = (PDP_DATA_BLOCK_UU*)g_PdpUBuf.auData;
+    PDP_DATA_BLOCK_UU *puUPData = (PDP_DATA_BLOCK_UU *)g_PdpUBuf.auData;
     DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
-    R34_UU *pu34Data;
+    R34_UU *pu34Data = NULL;
 
     if (GPS_REQ == uGpsFlag || GPS_PRE == uGpsFlag)
     {
@@ -1882,7 +1886,7 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         }
     }
 
-    if (DPF_CONFIRM_PACKET == g_PdpUBuf.uDPF)
+    if (DPF_CONFIRM_PACKET == g_PdpUBuf.uDPF)  // 有确认数据分组
     {
         u2CRCA = ALG_Crc9(r34Data, R34_C_DATA_DLEN);
         u2CRCB = (UINT16)((pu34Data->tR34CData.uCRC9H << 8) | pu34Data->tR34CData.uCRC9L);
@@ -1895,6 +1899,7 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         {
             u2CRCA = u2CRCA ^ DMR_CRC_MASK_R34;
         }
+
         if (u2CRCB == u2CRCA)
         {
             memcpy(puUPData->tPdpR34CBlk.auData[pu34Data->tR34CData.uDBSN], pu34Data->tR34CData.auData, R34_C_DATA_DLEN-2);
@@ -2664,7 +2669,6 @@ void IDP_RelayLinkData(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo, UINT8 SapType)
  */
 void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 {
-    char buf[50];
     UINT16 ReStatus;
     UINT8 Lc_Tmp[12];
     UINT32 tmp;
@@ -2683,12 +2687,13 @@ void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         LOG_WARNING(s_LogMsgId,"[DLL][%s] voice CC: %d error",_F_, pDataLink->CC);
         return;
     }
-    
-//    snprintf(buf, sizeof(buf),"Rcv:%d-%s", , pRcvErrFrm[(pDataLink->FrmType-1)%6].FrmTypeStr);
-//    snprintf(buf, sizeof(buf),"Rcv:%d-%s", , pRcvErrFrm[(pDataLink->FrmType-1)%6].FrmTypeStr);
-    printf("Rcv:%d-%s\n", pErrVoice->FrmRcvCnt, pRcvErrFrm[(pDataLink->FrmType-1)%6].FrmTypeStr);
-//    print_voice_153(pDataLink->PayLoad, buf);
-    test_err_voice_dll(pDataLink);
+
+    if (ptErrPrint->Voice == 1)
+    {
+        // 打印接收[帧的次数:名称]
+        LOG_DEBUG(s_LogMsgId,"Rcv:%d-%s", ptErrVoice->FrmCnt, ptErrVoice->pErrFrm[(pDataLink->FrmType-1)%(FRM_F+1)].FrmNameStr);
+        test_err_voice_dll(pDataLink);
+    }
 
     switch (pDataLink->FrmType)
     {
@@ -2834,10 +2839,7 @@ void INFDataProcess(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo)
         LOG_WARNING(s_LogMsgId,"[DLL][%s] data CC: %d error",_F_, pDataLink->CC);
         return;
     }
-
-
 //    IDP_PrintInfDataLog(pDataLink);  // by zhoudayuan
-    
     switch (pDataLink->DataType)
     {
         case DT_PI_HEADER:
@@ -2846,7 +2848,10 @@ void INFDataProcess(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo)
         }
         case DT_LC_HEADER:
         {
-            test_err_voice_init();
+            if (ptErrPrint->Voice == 1)
+            {
+                test_err_voice_init();
+            }
             IDP_LcHeaderFun(pvInfData, RevFrqNo);
             break;
         }

@@ -85,14 +85,14 @@
 #define PDT_CRC_MASK_R11         ((UINT16)0x018E)
 
 // 短数据类型
-#define DPF_UDT_PACKET           ((UINT8)0)    ///< Unified Data Transport (UDT)
-#define DPF_RESPONSE_PACKET      ((UINT8)1)    ///< Response packet
-#define DPF_UNCONFIRM_PACKET     ((UINT8)2)    ///< Data packet with unconfirmed delivery
-#define DPF_CONFIRM_PACKET       ((UINT8)3)    ///< Data packet with confirmed delivery
-#define DPF_DEFINED_SD_PACKET    ((UINT8)13)   ///< Short Data: Defined
-#define DPF_RAW_SD_PACKET        ((UINT8)14)   ///< Short Data: Raw or Status/Precoded
-#define DPF_PROP_DATA_PACKET     ((UINT8)15)   ///< Proprietary Data Packet
-#define DPF_PDT_E2E_ENCRYPT      ((UINT8)4)    ///< PDT end-to-end encrypt
+#define DPF_UDT_PACKET           ((UINT8)0)    ///< Unified Data Transport (UDT), UDP数据
+#define DPF_RESPONSE_PACKET      ((UINT8)1)    ///< Response packet, 相应分组(PDT常规使用)
+#define DPF_UNCONFIRM_PACKET     ((UINT8)2)    ///< Data packet with unconfirmed delivery  无确认数据分组
+#define DPF_CONFIRM_PACKET       ((UINT8)3)    ///< Data packet with confirmed delivery   有确认数据分组
+#define DPF_DEFINED_SD_PACKET    ((UINT8)13)   ///< Short Data: Defined  预定义短数据
+#define DPF_RAW_SD_PACKET        ((UINT8)14)   ///< Short Data: Raw or Status/Precoded  原始数据或预定义状态数据
+#define DPF_PROP_DATA_PACKET     ((UINT8)15)   ///< Proprietary Data Packet  专有数据分组
+#define DPF_PDT_E2E_ENCRYPT      ((UINT8)4)    ///< PDT end-to-end encrypt  端到端加密数据头
 
 // FID类型
 #define SFID                     ((UINT8)0x00)  //standard
@@ -227,7 +227,6 @@
 #define GPS_OK                 ((UINT8)0x02)    //GPS完成
 #define GPS_PRE                ((UINT8)0x03)    //GPS预占
 #define GPS_RLY                ((UINT8)0x04)    //GPS中转
-
 
 #define NODE_TYPE_D            ((UINT8)0x00)    //数据节点
 #define NODE_TYPE_V            ((UINT8)0x01)    //语音节点
@@ -1302,7 +1301,7 @@ typedef struct _R34_C_DATA_DT
 typedef struct _R34_C_DATA_UT
 {
     UINT8 uCRC9H                    :1;
-    UINT8 uDBSN                     :7;
+    UINT8 uDBSN                     :7;  // Data Block Serial Number
     UINT8 uCRC9L;
     UINT8 auData[R34_C_DATA_ULEN-2];
 
@@ -1378,7 +1377,7 @@ typedef struct _R11_NC_LDATA_UT
 typedef struct _R11_C_DATA_DT
 {
     UINT8 uCRC9H                    :1;
-    UINT8 uDBSN                     :7;
+    UINT8 uDBSN                     :7;  // 数据帧序号, 用于给分组内的数据帧编号,0~M-1逐次递增，M为分组数据头帧中的BF值
     UINT8 uCRC9L;
     UINT8 auData[R11_C_DATA_DLEN-2];
 
@@ -1472,10 +1471,10 @@ typedef struct _TD_LC_PDU_T
  */
 typedef struct _PDP_UT
 {
-    UINT8  uDPF;
-    UINT8  uBF;
-    UINT8  uSAP;
-    UINT8  uPOC;
+    UINT8  uDPF; // Data Packet Format, 用来识别数据包, 0-UDT,1-Response,2-unconfirmed,3-confirmed ... ...
+    UINT8  uBF;  // Blocks to Follow, Number of blocks to follow
+    UINT8  uSAP; // Service Access Point
+    UINT8  uPOC; //
     UINT8  uDEI;
     UINT8  uNS;
     UINT8  uDataType;
@@ -1521,35 +1520,35 @@ typedef struct _PDP_UT
  */
 typedef struct _PDP_DT
 {
-    UINT8  uDPF;                ///< DPF类型
-    UINT8  uState;              ///< 当前分组数据发送状态  @note 空闲/第一次发送/重传
-    UINT8  uSAP;                ///< SAP类型
+    UINT8  uDPF;           ///< DPF(Data Packet Format)类型
+    UINT8  uState;         ///< 当前分组数据发送状态  @note 空闲/第一次发送/重传
+    UINT8  uSAP;           ///< SAP类型，服务接入点 UDT(统一数据传输)/TCP IP/UDP IP/IP分组数据/地址解析协议ARP/...
     UINT8  uPOC;
-    UINT8  uDEI;
+    UINT8  uDEI;           ///< 数据结束标识
     UINT8  uNS;
-    UINT8  uDataType;           ///< 数据类型
+    UINT8  uDataType;      ///< 数据类型
 
-    UINT8  uHdrNum;             ///< 下行分组数据头的总个数
-    UINT8  uBLOCKNum;           ///< 下行分组数据数据包个数 @note 不包含P_HEAD和E_HEAD
+    UINT8  uHdrNum;        ///< 下行分组数据头的总个数
+    UINT8  uBLOCKNum;      ///< 下行分组数据数据包个数 @note 不包含P_HEAD和E_HEAD
 
-    UINT8  uPHeadNum;           ///< 下行分组数据中P_Head个数
-    UINT8  uEHeadNum;           ///< 下行分组数据中E_Head个数
+    UINT8  uPHeadNum;      ///< 下行分组数据中P_Head个数
+    UINT8  uEHeadNum;      ///< 下行分组数据中E_Head个数
 
-    UINT8  s_uDBSNIndex;        ///< 下行分组数据数据包索引     @不包含P_HEAD和E_HEAD
+    UINT8  s_uDBSNIndex;   ///< 下行分组数据数据包索引     @不包含P_HEAD和E_HEAD
 
-    UINT8  BF;                  ///< 除头帧之外的下行分组数据帧个数
+    UINT8  BF;             ///< 除头帧之外的下行分组数据帧个数, 后续帧数(BF),规定了后续还有多少个数据帧
     UINT8  uTdLcNum;
     UINT8  uTdLcCnt;
 
     UINT8  uSrcId[3];
     UINT8  uDstId[3];
 
-    UINT8  auResHead[12];       ///< 下行分组数据回复确认帧头帧
-    UINT8  auResData[16];       ///< 下行分组数据发送结果图样         @每1bit代表一个帧，1为发送成功，0为发送失败
+    UINT8  auResHead[12];  ///< 下行分组数据回复确认帧头帧
+    UINT8  auResData[16];  ///< 下行分组数据发送结果图样         @每1bit代表一个帧，1为发送成功，0为发送失败
 
-    UINT8  auHead[3][12];       ///< 下行分组数据头           @包括C_HEAD、P_HEAD、E_HEAD
-    UINT8  auData[1000];        ///< TSC-CHU 下行分组数据SDU，@包括HEAD和payload
-    UINT8  auTdLc[12];          ///<
+    UINT8  auHead[3][12];  ///< 下行分组数据头           @包括C_HEAD、P_HEAD、E_HEAD
+    UINT8  auData[1000];   ///< TSC-CHU 下行分组数据SDU，@包括HEAD和payload
+    UINT8  auTdLc[12];     ///<
 
 } PDP_DT;
 
@@ -1653,10 +1652,10 @@ typedef union _R34_DU
  */
 typedef union _R34_UU
 {
-    R34_NC_DATA_UT  tR34NcData;
-    R34_NC_LDATA_UT tR34NcLData;
-    R34_C_DATA_UT   tR34CData;
-    R34_C_LDATA_UT  tR34CLData;
+    R34_NC_DATA_UT  tR34NcData;   // 上行无确认R34帧数据
+    R34_NC_LDATA_UT tR34NcLData;  // 上行无确认R34尾帧数据
+    R34_C_DATA_UT   tR34CData;    // 上行有确认R34帧数据
+    R34_C_LDATA_UT  tR34CLData;   // 上行有确认R34尾帧数据
 
 } R34_UU;
 

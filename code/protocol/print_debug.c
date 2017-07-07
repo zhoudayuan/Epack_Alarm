@@ -346,6 +346,28 @@ TYPE_PRINT_T *pTable_Gps_Status = Table_Gps_Status;
 unsigned short Table_Gps_Status_Len = sizeof(Table_Gps_Status)/sizeof(Table_Gps_Status[0]);
 
 
+
+// 误码率语音测试
+ERR_FRM_T tErrFrm[FRM_F+1] = {
+    {FRM_A, "FRM_A", 0}, //0
+    {FRM_B, "FRM_B", 0}, //1
+    {FRM_C, "FRM_C", 0}, //2
+    {FRM_D, "FRM_D", 0}, //3
+    {FRM_E, "FRM_E", 0}, //4
+    {FRM_F, "FRM_F", 0}  //5
+};
+
+ERR_FRM_T *ptErrFrm = tErrFrm;
+
+
+ERR_VOICE_T tErrVoice = {
+    0, 0, 0, tErrFrm
+};
+
+ERR_VOICE_T *ptErrVoice = &tErrVoice;
+
+
+
 #if 1
 char *PrintGPSFlag(int uGpsFlag)
 {
@@ -462,6 +484,8 @@ void IDP_PrintSmsLog(SMS_CENTER_CCL_DL *ptCenterData)
     }
 }
 
+
+
 // 下行
 void ODP_PrintSmsLog(SMS_CENTER_CCL_DL *ptCenterData)
 {
@@ -471,6 +495,25 @@ void ODP_PrintSmsLog(SMS_CENTER_CCL_DL *ptCenterData)
         PrintSmsLog(ptCenterData, prompt);
     }
 }
+
+void ODP_PrintSms(SMS_CENTER_CCL_DL *ptCenterData, char *buf, int len)
+{
+    int i;
+    for (i = 0; i < pTable_sms_len; i++)
+    {
+        if (ptCenterData->SmsType == pTable_sms[i].Type)
+        {
+            if (pTable_sms[i].TypeStr != NULL)
+            {
+                snprintf(buf , len, "[%#x-%s]", pTable_sms[i].Type, pTable_sms[i].TypeStr);
+                return;
+            }
+        }
+    }
+    snprintf(buf, len, "no this Smstype");
+}
+
+
 
 
 // Msg & Data  ccl类型字符串打印
@@ -559,7 +602,59 @@ void IDP_PrintMsgDatalog(DLL_CCL_UL_T  *ptDllData)
 
 
 
-// 下行  CCL TO DLL                
+// 下行  CCL TO DLL
+void ODP_PrintMsgDatalog(CCL_DLL_DL_T *ptDllData, char *buf, int len)
+{
+ 
+    unsigned short i, j;
+    int i_index = -1, j_index = -1;
+    
+    if (1 == tcclPrint->CclDown)
+    {
+        
+        // 打印Msg
+        for (i = 0; i < pTable_msg_len; i++)
+        {
+            if (ptDllData->MsgType == pTable_msg[i].Type)
+            {
+                if (pTable_msg[i].TypeStr != NULL)
+                {
+                    i_index = i;
+                    break;
+                }
+            }
+        }
+        
+        // 打印data
+        for (j = 0; j < pTable_data_len; j++)
+        {
+            if (ptDllData->DataType == pTable_data[j].Type)
+            {
+                if (pTable_data[j].TypeStr != NULL)
+                {
+                    j_index = j;
+                    break;
+                }
+            }
+        }
+
+        if ((i_index != -1) && (j_index != -1))
+        {
+            snprintf(buf, len, "MsgType=[%#x-%s], DataType=[%#x-%s]", pTable_msg[i_index].Type, pTable_msg[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
+            return;
+        }
+        else
+        {
+            snprintf(buf, len, "MsgType=[no msg], DataType=[no data]");
+            return;
+        }
+    }
+}
+
+
+
+
+#if 0
 void ODP_PrintMsgDatalog(CCL_DLL_DL_T *ptDllData)
 {
     const char *prompt = "CclDown";
@@ -603,6 +698,7 @@ void ODP_PrintMsgDatalog(CCL_DLL_DL_T *ptDllData)
         }
     }
 }
+#endif
 
 
 
@@ -867,77 +963,46 @@ void print_voice_153(UINT8 *pPayLoad, const char *prompt)
 }
 
 
-//char Errbuff[1024*10] = {0};
-
-
-typedef enum _FRAME_CNT_E
-{
-    FRM_A    = 0,                      ///< 语音A帧标识
-    FRM_B    = 1,                      ///< 语音B帧标识
-    FRM_C    = 2,                      ///< 语音C帧标识
-    FRM_D    = 3,                      ///< 语音D帧标识
-    FRM_E    = 4,                      ///< 语音E帧标识
-    FRM_F    = 5,                      ///< 语音F帧标识
-} FRAME_CNT_E;
-
-
-
-
-
-
-
-TABLE_ERR_FRM_T tErrFrm[FRM_F+1] = {
-    {FRM_A, "FRM_A", 0}, //0
-    {FRM_B, "FRM_B", 0}, //1
-    {FRM_C, "FRM_C", 0}, //2
-    {FRM_D, "FRM_D", 0}, //3
-    {FRM_E, "FRM_E", 0}, //4
-    {FRM_F, "FRM_F", 0}  //5
-};
-TABLE_ERR_FRM_T *pRcvErrFrm = tErrFrm;
-
-
-
-
-
-
-ERR_VOICE_T tErrVoice = {
-    0,  0, 0, tErrFrm};
-
-ERR_VOICE_T *pErrVoice = &tErrVoice;
 
 void test_err_voice_init()
 {
     int i;
-    tErrVoice.FrmRcvCnt = 0;
-    tErrVoice.FrmErrBitTotal = 0;
+    ptErrVoice->FrmCnt = 0;
+    ptErrVoice->ErrTotal = 0;
 
     for (i = 0; i < FRM_F + 1;i++)
     {
-        tErrVoice.pRcvErrFrm[i].FrmErrBit = 0;
+        ptErrVoice->pErrFrm[i].FrmErrBit = 0;
     }
 }
 
 void test_err_voice_result()
 {
     int i;
-    double r;
-    double a = (double)tErrVoice.FrmErrBitTotal;
-    double b = (double)tErrVoice.FrmRcvCnt*27*8;
+    float  r;
+    float  a = (float)(ptErrVoice->ErrTotal);  // 不相等的 bits
+    float  b = (float)(ptErrVoice->FrmCnt*27*8);  // 一共接收到的bits
     r = a/b * 100;
 
-    // 每帧A-F 有多少误码
-    printf("\nResult:test voice\n\tRcv: Frm=%d,SuperFrm=%d,bytes=%d,bits=%d\n", 
-        tErrVoice.FrmRcvCnt, 
-        tErrVoice.FrmRcvCnt/6, tErrVoice.FrmRcvCnt*27, tErrVoice.FrmRcvCnt*27*8);
+    // 接收情况
+    LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] Result:Frm=%d,SuperFrm=%d,bytes=%d,bits=%d", _F_, 
+        ptErrVoice->FrmCnt, ptErrVoice->FrmCnt/6, ptErrVoice->FrmCnt*27, ptErrVoice->FrmCnt*27*8);
+
+    // 每帧A-F 有多少误码    
     for (i = 0; i < FRM_F + 1;i++)
     {
-        printf("\t%s ErrBits:%d\n", tErrVoice.pRcvErrFrm[i].FrmTypeStr, tErrVoice.pRcvErrFrm[i].FrmErrBit);
+        LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] %s ErrBits:%d", _F_, ptErrVoice->pErrFrm[i].FrmNameStr, ptErrVoice->pErrFrm[i].FrmErrBit);
     }
     // 所有
-    printf("\t------------\n\tTotal ErrBits:%d, ErrRate:%.3f%%\n", tErrVoice.FrmErrBitTotal, r);
+    LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] Total ErrBits:%d, ErrRate:%.3f%%\n", _F_, ptErrVoice->ErrTotal, r);
 
-    fclose(g_fp_err_test);
+#if ERR_VOICE_DEBUG
+    if (g_fp_err_test != NULL)
+    {
+        fclose(g_fp_err_test);
+        g_fp_err_test = NULL;
+    }
+#endif
 
 }
 
@@ -946,57 +1011,64 @@ void test_err_voice_result()
 void test_err_voice_dll(DATA_LINK_T *pDataLink)
 {
     int i;
+
+#if ERR_VOICE_DEBUG
     int len;
-    char buf[100];
+    char buf[200];
+#endif
     unsigned short result = 0;
-    
-    tErrVoice.FrmIndx = pDataLink->FrmType - 1; // 实际语音帧 - 1, 匹配语音数组索引
-    if (tErrVoice.FrmIndx >= FRM_F+1)  // 超过Frm:A~F 不在检测范围
+    ptErrVoice->FrmIndx = pDataLink->FrmType - 1; // 实际语音帧 - 1, 匹配语音数组索引
+    if (ptErrVoice->FrmIndx > FRM_F)  // 超过Frm:A~F 不在检测范围
     {
-        printf("Err: tErrVoice.FrmIndx=%d, Frm:A~F(0~5)\n", tErrVoice.FrmIndx);
+        LOG_DEBUG(s_LogMsgId,"[ERR][V][%s] Err: Frm=%d, Frm:A~F(0~5)", _F_, ptErrVoice->FrmIndx);
         return;
     }
 
     for (i = 0; i < 27; i++) // 一帧数据27bytes
     {
-        result = ones16(pDataLink->PayLoad[i]^s_au2VoiceSource[VOICE_SRC_153][tErrVoice.FrmIndx][i]);
+        result = ones16(pDataLink->PayLoad[i]^s_au2VoiceSource[VOICE_SRC_153][ptErrVoice->FrmIndx][i]);  // 计算误码
         if (result != 0)
         {
-            tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmErrBit += result;  // 记录某一帧有多少错误
-            tErrVoice.FrmErrBitTotal += result;  // 记录所有的错误
-            // printf("FrmIndx=%d,(%d)th byte, ErrBit=%d, [%#x-%#x]\n", tErrVoice.FrmIndx, i, result, pDataLink->PayLoad[i], s_au2VoiceSource[VOICE_SRC_153][tErrVoice.FrmIndx][i]);
+            ptErrVoice->pErrFrm[ptErrVoice->FrmIndx].FrmErrBit += result;  // 记录某一帧有多少错误
+            ptErrVoice->ErrTotal += result;  // 记录所有的错误
+#if ERR_VOICE_DEBUG
             // 第多少帧, 哪帧(A~F), 错误的真实数据，当前多少个
-            
-            len = snprintf(buf, sizeof(buf), "RcvCnt=%d,Frm=%s,byte=%dth[%#x-%#x],ErrNum=%d\n", 
-                tErrVoice.FrmRcvCnt,
-                tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmTypeStr, 
+            len = snprintf(buf, sizeof(buf), "voice: RcvCnt=%d,Frm=%s,byte=%dth[%#x-%#x],ErrNum=%d", 
+                ptErrVoice->FrmCnt,
+                ptErrVoice->pErrFrm[ptErrVoice->FrmIndx].FrmNameStr, 
                 i, 
                 pDataLink->PayLoad[i], 
-                s_au2VoiceSource[VOICE_SRC_153][tErrVoice.FrmIndx][i], 
+                s_au2VoiceSource[VOICE_SRC_153][ptErrVoice->FrmIndx][i], 
                 result);
-            printf("%s", buf);
+
+            LOG_DEBUG(s_LogMsgId,"[ERR][%s] %s", _F_, buf);
             len = fwrite(buf, len, 1, g_fp_err_test);
+#endif
         }
     }
-    tErrVoice.FrmRcvCnt ++;  // 当前是第几次测试(从0开始)，一次测试是一个语音帧(FRM: A~F) 检测27bytes
-#if 0
-    printf("Result: FrmType=%s, FrmRcvCnt=%d, FrmErrBit=%d, FrmErrBitTotal=%d\n",
-        tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmTypeStr, 
-        tErrVoice.FrmRcvCnt,
-        tErrVoice.pRcvErrFrm[tErrVoice.FrmIndx].FrmErrBit,
-        tErrVoice.FrmErrBitTotal);
-#endif
+    ptErrVoice->FrmCnt ++;  // 当前是第几次测试(从0开始)，一次测试是一个语音帧(FRM: A~F) 检测27bytes
 }
+
+
+
+
 
 
 void setDebugInit()
 {
+    ptErrPrint = (ERR_PRINT_T *)ptIPCShm->Err_printf;
+    memset(ptErrPrint, 0x00, sizeof(ERR_PRINT_T));
+
+#if ERR_VOICE_DEBUG
+    // 打开写入文件
 	g_fp_err_test = fopen("err_test.log","w+");   
 	if (g_fp_err_test == NULL)
 	{    	
 		printf("fopen err_test.log error\n");	
 		fclose(g_fp_err_test);
         return;
-	} 
+	}
+#endif 
+
 }
 

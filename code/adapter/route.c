@@ -78,10 +78,10 @@ static ROUTE_DBC_NODE_T s_atNode[DB_NODE_MAX];
  */
 static ROUTE_DBC_NODE_T s_tListUnused;
 /**
- * @var s_u4Sem
+ * @var s_i4Sem
  * @brief 要下行数据信号量	
  */
-static UINT32 s_u4Sem;//
+static INT32 s_i4Sem;//
 /**
  * @var s_u4AIFd
  * @brief 空口设备句柄
@@ -639,7 +639,7 @@ ROUTE_AI_RECV_TYPE_E Route_Get_AI_F1F2_Type(DATA_LINK_T *ptData,int i4ValidNum)
 			default:
 				break;				
 		} 
-		ptData = ptData + sizeof(DATA_LINK_T);
+		ptData++;//ptData = ptData + sizeof(DATA_LINK_T);
 	}
 	
 	i4Result = i4PortType[0] | i4PortType[1];
@@ -852,7 +852,7 @@ void Route_AI_Send(UINT32 socketfd,UINT8 *pInData,UINT32 u4RouteLen,ROUTE_AI_REC
  */
 static void *Route_AI_Recv_Process(void *pvArg)
 {
-	UINT32 u4SocketFd;
+	INT32 i4SocketFd;
 	UINT8 auRouteBuff[ROUTE_DATA_LEN_MAX];
 	UINT32 u4RouteLen; 
 	ROUTE_AI_RECV_TYPE_E u4RouteType;
@@ -860,8 +860,8 @@ static void *Route_AI_Recv_Process(void *pvArg)
 	ROUTE_MSGBUF tMsgBuf;
 #endif
 
-	u4SocketFd = socket(PF_INET, SOCK_DGRAM, 0);
-	if(0 > u4SocketFd)
+	i4SocketFd = socket(PF_INET, SOCK_DGRAM, 0);
+	if(0 > i4SocketFd)
 	{
 		LOG_ERROR(s_i4LogMsgId,"[Route_AI_Recv_Process][socketfd error,exit!!!]");
 		exit(1);
@@ -876,14 +876,14 @@ static void *Route_AI_Recv_Process(void *pvArg)
 		ptRoutePrintf->uUpBusy = 1;
 		LOG_DEBUG(s_i4LogMsgId,"[Route_AI_Recv_Process][LOOP BACK]");
 		u4RouteType = Route_AI_Recv_Parse(tMsgBuf.mtext,u4RouteLen - 4);
-		Route_AI_Send(u4SocketFd,tMsgBuf.mtext,u4RouteLen - 4,u4RouteType);
+		Route_AI_Send(i4SocketFd,tMsgBuf.mtext,u4RouteLen - 4,u4RouteType);
 #else
 		ptRoutePrintf->uUpBusy = 0;
 		u4RouteLen = read(s_u4AIFd,auRouteBuff,ROUTE_DATA_LEN_MAX);//阻塞方式
 		ptRoutePrintf->uUpBusy = 1;
 		
 		u4RouteType = Route_AI_Recv_Parse(auRouteBuff,u4RouteLen);
-		Route_AI_Send(u4SocketFd,auRouteBuff,u4RouteLen,u4RouteType);
+		Route_AI_Send(i4SocketFd,auRouteBuff,u4RouteLen,u4RouteType);
 #endif	
 	}
 	close(s_u4AIFd);
@@ -902,7 +902,7 @@ static void *Route_AI_Recv_Process(void *pvArg)
  */
 static void *Route_NM_Recv_Process(void *pvArg)
 {
-	UINT32 u4SocketFd;
+	INT32 i4SocketFd;
 	ssize_t u4RecvLen;
 	socklen_t size;
 	struct sockaddr_in tServAddr;
@@ -910,8 +910,8 @@ static void *Route_NM_Recv_Process(void *pvArg)
 	ROUTE_DBC_NODE_T *ptTemp = NULL;
 	UINT32 u4IsAlarmEmergecy;
 	
-	u4SocketFd = socket(PF_INET, SOCK_DGRAM, 0);
-	if(0 > u4SocketFd)
+	i4SocketFd = socket(PF_INET, SOCK_DGRAM, 0);
+	if(0 > i4SocketFd)
 	{
 		LOG_ERROR(s_i4LogMsgId,"[Route_NM_Recv_Process][socketfd error!!!]");
 		exit(1);
@@ -923,7 +923,7 @@ static void *Route_NM_Recv_Process(void *pvArg)
 	tServAddr.sin_port = htons(SOCK_PORT_MGR_ADP);
 	size = sizeof(tServAddr);
 
-	if (bind(u4SocketFd, (struct sockaddr *)&tServAddr, sizeof(tServAddr)) < 0)
+	if (bind(i4SocketFd, (struct sockaddr *)&tServAddr, sizeof(tServAddr)) < 0)
 	{
 		LOG_ERROR(s_i4LogMsgId,"[Route_NM_Recv_Process][bind error,exit!!!]");
 		exit(1);
@@ -931,7 +931,7 @@ static void *Route_NM_Recv_Process(void *pvArg)
 	LOG_DEBUG(s_i4LogMsgId,"Route_NM_Recv_Process start ...");
 	while(1)
 	{
-		u4RecvLen = recvfrom(u4SocketFd, auRouteBuff, ROUTE_DATA_LEN_MAX, 0, (struct sockaddr *)&tServAddr, &size);
+		u4RecvLen = recvfrom(i4SocketFd, auRouteBuff, ROUTE_DATA_LEN_MAX, 0, (struct sockaddr *)&tServAddr, &size);
 		if(ptRoutePrintf->uDown)
 		{
 			LOG_DEBUG(s_i4LogMsgId,"[Route_NM_Recv_Process][u4RecvLen=%d]",u4RecvLen);
@@ -1000,15 +1000,16 @@ static void *Route_NM_Recv_Process(void *pvArg)
  */
 static void *Route_Server_Recv_Process(void *pvArg)
 {
-	UINT32 u4SocketFd,u4RecvLen;
+	UINT32 u4RecvLen;
+	INT32 i4SocketFd;
 	socklen_t size;
 	struct sockaddr_in tServAddr;
 	
 	UINT8 auRouteServerData[ROUTE_DATA_LEN_MAX];
 	ROUTE_DBC_NODE_T *ptTemp = NULL;
 	
-	u4SocketFd = socket(PF_INET, SOCK_DGRAM, 0);
-	if(0 > u4SocketFd)
+	i4SocketFd = socket(PF_INET, SOCK_DGRAM, 0);
+	if(0 > i4SocketFd)
 	{
 		LOG_ERROR(s_i4LogMsgId,"[Route_Server_Recv_Process][socket error,exit!!!]");
 		exit(1);
@@ -1020,7 +1021,7 @@ static void *Route_Server_Recv_Process(void *pvArg)
 	tServAddr.sin_port = htons(SOCK_PORT_DLL_ADP);
 	size = sizeof(tServAddr);
 
-	if (bind(u4SocketFd, (struct sockaddr *)&tServAddr, sizeof(tServAddr)) < 0)
+	if (bind(i4SocketFd, (struct sockaddr *)&tServAddr, sizeof(tServAddr)) < 0)
 	{
 		LOG_ERROR(s_i4LogMsgId,"[Route_Server_Recv_Process][bind error,exit!!!]");
 		exit(1);
@@ -1028,7 +1029,7 @@ static void *Route_Server_Recv_Process(void *pvArg)
 	LOG_DEBUG(s_i4LogMsgId,"[Route_Server_Recv_Process start...]");
 	while(1)
 	{
-		u4RecvLen = recvfrom(u4SocketFd, auRouteServerData, ROUTE_DATA_LEN_MAX, 0, (struct sockaddr *)&tServAddr, &size);
+		u4RecvLen = recvfrom(i4SocketFd, auRouteServerData, ROUTE_DATA_LEN_MAX, 0, (struct sockaddr *)&tServAddr, &size);
 		
 		if(ptRoutePrintf->uDown)
 		{
@@ -1120,7 +1121,7 @@ static void *Route_Send_Process(void *pvArg)
 	while(1)
 	{
 #ifndef TEST
-		Route_Lock_Semaphore(s_u4Sem);
+		Route_Lock_Semaphore(s_i4Sem);
 #endif			
 		pthread_mutex_lock(&s_tDBCListMutex);
 		
@@ -1230,13 +1231,13 @@ void Route_Init()
 	DBC_Init();
 
 	//进程间通信获取资源
-	s_u4Sem = Route_Get_Semaphore(ROUTE_SEM_ID);
-	if(0 > s_u4Sem)
+	s_i4Sem = Route_Get_Semaphore(ROUTE_SEM_ID);
+	if(0 > s_i4Sem)
 	{
 		LOG_ERROR(s_i4LogMsgId,"Route_Get_Semaphore error,exit!!!");
 		exit(1);
 	}
-	Route_Set_Sem_Value(s_u4Sem,0);
+	Route_Set_Sem_Value(s_i4Sem,0);
 
 	ptIPCShm = (SHM_IPC_STRU *)Route_Get_Shm(FTOK_ID_SHM_IPC,sizeof(SHM_IPC_STRU));
 	if(NULL == ptIPCShm)
@@ -1278,7 +1279,7 @@ void Route_Interrupt_Handle(int signum)
 	{
 		LOG_DEBUG(s_i4LogMsgId,"Drive Interupt come");
 	}
-	Route_Unlock_Semaphore(s_u4Sem);
+	Route_Unlock_Semaphore(s_i4Sem);
 }
 /**
  * @brief   Route_Hang_Interrupt

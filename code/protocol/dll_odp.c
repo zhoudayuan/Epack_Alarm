@@ -580,10 +580,10 @@ void ODP_144to196bptc(UINT8 *pData, UINT8 *pAiData)
 /**
  * @brief   下行GPS下拉请求组包
  *
- * @param [in]  RequestID       GPS上拉请求ID
- * @param [in]  RadioIP           GPS上拉终端IP
- * @param [out]  GpsData      生成数据
- * @param [out]  Length         生成数据长度
+ * @param [in]  RequestID    GPS上拉请求ID
+ * @param [in]  RadioIP      GPS上拉终端IP
+ * @param [out] GpsData      生成数据
+ * @param [out] Length       生成数据长度
  *
  * @author  陈禹良
  * @since   trunk.00001
@@ -928,11 +928,15 @@ int ODP_GenNasPreCSBKFun(UINT8 cbf, UINT8* Dst, UINT8* Src, UINT8 GI)
     NasAiData.op_code = OP_CODE_GET;
     NasAiData.data[0] = cbf;
     NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-    LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%#x, op_code_%#x, Seq_[%d], dst_id_%d, src_id_%d",
-        _F_,
-        NasAiData.cmd_code, NasAiData.op_code,
-        NasAiData.data[0],
-        NasAiData.dst_id, NasAiData.src_id );
+
+    if (tDllPrint->AIDown == 1)
+    {
+        LOG_DEBUG(s_LogMsgId, "[DLL][%s] cmd_code_%#x, op_code_%#x, Seq_[%d], dst_id_%d, src_id_%d", _F_, 
+            NasAiData.cmd_code, NasAiData.op_code,
+            NasAiData.data[0], NasAiData.dst_id, NasAiData.src_id );
+    }
+
+
     CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
     ODP_SendInfData(ptInfData, S_CSBK_PRE);
     return NO_ERR;
@@ -1007,7 +1011,6 @@ int ODP_R34CPacketDataFun(UINT8 DataLen, PDP_HEAD_DU *puDPHdr)
     g_PdpDBuf.s_uDBSNIndex = 0;
     g_PdpDBuf.uDataType    = DT_R_3_4_DATA;
     g_PdpDBuf.uHdrNum      = 1;
-    g_PdpDBuf.s_uDBSNIndex = 0;
 
     if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
     {
@@ -1034,7 +1037,7 @@ int ODP_R34CPacketDataFun(UINT8 DataLen, PDP_HEAD_DU *puDPHdr)
         {
             BlkNum = DataLen/16;
             Bf = BlkNum+1;
-            Dei = 2;
+            Dei = 2;  // 倒数第二帧数据全满，且数据在倒数第二帧结束，最后帧填充全0
 
             //设置特征图样
             memset(g_PdpDBuf.auData, 0, (Bf*R34_C_DATA_DLEN));
@@ -1043,22 +1046,22 @@ int ODP_R34CPacketDataFun(UINT8 DataLen, PDP_HEAD_DU *puDPHdr)
         {
             BlkNum = DataLen/16;
             Bf = BlkNum+2;
-            Dei = 0;
+            Dei = 0;  // 最后帧数据全空， 倒数第二帧以特征图样结束
 
             //设置特征图样
             memset(g_PdpDBuf.auData, 0xff, (Bf*R34_C_DATA_DLEN));
             *(g_PdpDBuf.auData+DataLen) = 0x7f;
         }
-        puDPHdr->p_Pdp_CHdr.uDPF = 3;
+        puDPHdr->p_Pdp_CHdr.uDPF = 3;  // 数据分组格式: 0-UDT数据/1-相应分/2-无确认的数据分组/3-有确认的数据分组/....
         puDPHdr->p_Pdp_CHdr.uRV1 = 0;
-        puDPHdr->p_Pdp_CHdr.uHC = 0;
-        puDPHdr->p_Pdp_CHdr.uA = 1;
-        puDPHdr->p_Pdp_CHdr.uGI = 0;
-        puDPHdr->p_Pdp_CHdr.uDEI = Dei;
+        puDPHdr->p_Pdp_CHdr.uHC = 0;  // 压缩头标识， 0-使用完整TCP/IP或UDP/IP头, 1-使用压缩TCP/IP或UDP/IP头
+        puDPHdr->p_Pdp_CHdr.uA = 1;  //  相应请求 0-不需求应当相应，1-需求应答相应
+        puDPHdr->p_Pdp_CHdr.uGI = 0;  // 0-目的为单呼地址，1-目的为组呼地址
+        puDPHdr->p_Pdp_CHdr.uDEI = Dei; 
         puDPHdr->p_Pdp_CHdr.uRV2 = 0;
         puDPHdr->p_Pdp_CHdr.uSAP = 3;
         puDPHdr->p_Pdp_CHdr.uBF = Bf;
-        puDPHdr->p_Pdp_CHdr.uFMF = 1;
+        puDPHdr->p_Pdp_CHdr.uFMF = 1;  // 消息完整标识 FMF,  0-后续重传，1-第一次发送
         puDPHdr->p_Pdp_CHdr.uFSN = 8;
         puDPHdr->p_Pdp_CHdr.uNS = uNS%8;
         puDPHdr->p_Pdp_CHdr.uS = 0;
@@ -1341,7 +1344,8 @@ int ODP_MsGpsRequestFun(CCL_DLL_DL_T * pvCclData)
     memcpy(g_PdpDBuf.uDstId, pvCclData->DstId, 3);
     memcpy(g_PdpDBuf.uSrcId, pvCclData->SrcId, 3);
 
-    Bf = g_PdpDBuf.BF;
+    Bf = g_PdpDBuf.BF;  // blocks to follow 后续的帧数量
+    printf("[%s:%d] g_PdpDBuf.BF=%d\n", __FUNCTION__, __LINE__, g_PdpDBuf.BF);
     memcpy(g_PdpDBuf.auHead[0], &puHdr, DATA_HEADER_LEN);
     u2CRC = ALG_Crc16(g_PdpDBuf.auHead[0], DATA_HEADER_LEN);
 
@@ -1406,8 +1410,6 @@ int ODP_MsGpsRequestFun(CCL_DLL_DL_T * pvCclData)
 
         if (tDllPrint->AIDown == 1)
         {
-            
-
             if (tDllPrint->PrintLv == PRINT_MEMRY || tDllPrint->PrintLv == PRINT_ALL)
             {
                 LOG_DEBUG(s_LogMsgId,"[DLL][%s] R34_C_DATA", _F_);
@@ -2058,8 +2060,6 @@ void CCLVoiceProcess(CCL_DLL_DL_T *pvCclData)
 
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
     CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_VOICE,pvCclData->FrmType,pvCclData->DataType,VOICE_LEN,pvCclData->PayLoad);
-//    print_voice_153(pvCclData->PayLoad, "DLL-ODP");
-
 
     switch (pvCclData->FrmType)
     {
@@ -2370,8 +2370,6 @@ void *CCLDownloadTask(void * p)
     delete(ptInfData);
     pthread_exit(NULL);
 }
-
-
 
 
 

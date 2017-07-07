@@ -129,8 +129,8 @@ typedef enum {
 	SOCK_PORT_MGRA_MGRH  = 10042,
 	SOCK_PORT_MGRH_MGRA  = 10043,
     SOCK_PORT_ADP_MGRH   = 10044,
-    SOCK_PORT_CLI_INPUT =  10050,
-    SOCK_PORT_LOG_PRINT =  10051
+    SOCK_PORT_CLI_INPUT  =  10050,
+    SOCK_PORT_LOG_PRINT  =  10051
 }SOCK_PORT;   
 
 
@@ -485,6 +485,7 @@ typedef struct {
 	ALARM_ITEM alarm_struct[MGR_ALARM_MAX];//
 	unsigned char ccl_printf[8];
     unsigned char dll_printf[16];
+    unsigned char Err_printf[4];
     unsigned char route_printf[7];	
     unsigned char printf_select;//默认0为工具输出，1为本地输出
     unsigned char mgr_printf[8];
