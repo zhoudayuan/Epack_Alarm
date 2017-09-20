@@ -23,7 +23,9 @@
  *  Include
  * ***************************************************************************/
 #include "dll_interleave.h"
-
+#include "string.h"
+#include "sap.h"
+#include "dll.h"
 
 /******************************************************************************
  * Statical Variable Declaration
@@ -1131,9 +1133,9 @@ void bptc_144_196_enc(UINT16* pu2Data, UINT16* pu2AiData)
 //´ó¶ËÄ£Ê½
 void bptc_144_196_dec(UINT16* pu2AiData, UINT16* pu2Data)
 {
-    UINT16 u2CntA       = 0;
-    UINT16 u2CntB       = 0;
-    UINT16 u2FsmState   = 0;
+    //UINT16 u2CntA       = 0;
+    //UINT16 u2CntB       = 0;
+    //UINT16 u2FsmState   = 0;
     UINT16 u2Tribit[49] = {0};
 
     u2Tribit[0]  = pu2AiData[0] >> 12;
@@ -1186,6 +1188,7 @@ void bptc_144_196_dec(UINT16* pu2AiData, UINT16* pu2Data)
     u2Tribit[43] = pu2AiData[16] >> 12;
     u2Tribit[47] = pu2AiData[16] >> 8;
 
+#if 0
     for (u2CntA=48; u2CntA>0; u2CntA--)
     {
         u2Tribit[u2CntA] = u2Tribit[u2CntA] & 0x0f;
@@ -1219,6 +1222,9 @@ void bptc_144_196_dec(UINT16* pu2AiData, UINT16* pu2Data)
                   (u2Tribit[41] << 5) | (u2Tribit[42] << 2) | (u2Tribit[43] >> 1);
     pu2Data[8]  = (u2Tribit[43] << 15) | (u2Tribit[44] << 12) | (u2Tribit[45] << 9) |
                   (u2Tribit[46] << 6) | (u2Tribit[47] << 3) | u2Tribit[48];
+#endif
+	memset(pu2Data,0,9*sizeof(UINT16));	
+    Virterbi(u2Tribit, pu2Data);
 }
 
 void bptc_192_196_enc(UINT16* pu2Data, UINT16* pu2AiData)

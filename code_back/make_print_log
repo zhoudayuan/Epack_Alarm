@@ -1,0 +1,45 @@
+#!/bin/sh
+
+GCC_PATH=/opt/arm-cortexa9-linux-gnueabihf/gcc-4.7.3-glibc-2.16.0-binutils-2.22-kernel-3.6-sanitized/bin
+
+RESULT_PATH=`pwd`/result
+PROTOCOL_PATH=`pwd`/protocol
+CLI_PATH=`pwd`/cli
+Adapter_Path=`pwd`/adapter
+
+
+
+
+cd $PROTOCOL_PATH
+$GCC_PATH/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o sap \
+                                sap.c \
+                                dll.c \
+                                dll_algrthm.c \
+                                dll_idp.c \
+                                dll_odp.c \
+                                dll_interleave.c \
+                                ccl_dl.c \
+                                ccl_ul.c \
+                                ccl_thread.c \
+                                ccl_fun.c \
+                                -I ../inc -lpthread
+
+if [ -e sap ]
+then
+
+    cp sap $RESULT_PATH
+    rm sap
+    echo "~~~sap~ok~~~~"
+fi
+
+
+cd $CLI_PATH
+$GCC_PATH/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o logmain logmain.c -I ../inc -lpthread
+
+if [ -e logmain ]
+then
+	cp logmain $RESULT_PATH
+	rm logmain
+	echo "~~~~logmain~~ok~~"
+fi
+

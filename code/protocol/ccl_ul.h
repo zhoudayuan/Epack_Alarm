@@ -13,8 +13,8 @@
  */
 /*
  *   函数列表
- *   1.   IDP_GenPttOnAckpacket          封装PTT-ON 命令回复数据包
- *   2.   IDP_GenPttOffAckpacket          封装PTT-OFF 命令回复数据包
+ *   1.   IDP_GenPttOnAck          封装PTT-ON 命令回复数据包
+ *   2.   IDP_GenPttOffAck          封装PTT-OFF 命令回复数据包
  *   3.   IDP_GenPttOnCmd                  封装PTT-ON命令包
  *   4.   IDP_GenVoiceDataPaket           封装上行语音包
  *   5.
@@ -65,12 +65,12 @@
 /**
  * @brief   封装PTT-ON 命令回复数据包
  */
-void  IDP_GenPttOnAckpacket(unsigned  char *pvCenterData, int *Len,unsigned  char PttCmdResult);
+void  IDP_GenPttOnAck(unsigned  char *pvCenterData, int *Len,unsigned  char PttCmdResult);
 
 /**
  * @brief   封装PTT-OFF 命令回复数据包
  */
-void  IDP_GenPttOffAckpacket(unsigned  char *pvCenterData, int *Len);
+void  IDP_GenPttOffAck(unsigned  char *pvCenterData, int *Len);
 
 /**
  * @brief   封装PTT 命令包
@@ -95,38 +95,38 @@ void IDP_GenSmsPacket(unsigned char *pvDllData,unsigned char *pvCenterData,int *
 /**
 * @brief    处理中心响应PTTON 命令函数
  */
-void  IDP_PttonAckhandle(unsigned char *pvCenterData);
+void  IDP_PttOnAckHandle(unsigned char *pvCenterData);
 /**
 * @brief    保存LC 数据
 * @bug
 */
 
-void IDP_Getlcdata(unsigned char *pvDllData);
+void IDP_GetLcData(unsigned char *pvDllData);
 /**
 * @brief    打印PTT 命令响应函数
 */
-void IDP_CclPrintpttack(unsigned char *CenterData);
+void IDP_PrintPttAck(unsigned char *CenterData);
 
 /**
  * @brief   打印PTT 命令函数
  */
-void IDP_Ccl_PrintPttCmd(unsigned char *CenterData);
+void IDP_CcPttCmdPrint(unsigned char *CenterData);
 
 
 /**
 * @brief    打印 dll_ccl 数据
 */
-void  IDP_CclPrintDllData(unsigned char * ptDllData);
+void IDP_DllDataPrint(unsigned char * ptDllData);
 
 /**
 * @brief    打印 上行短消息
 */
 
-void IDP_CclPrintSms(unsigned char* CenterData);
+void IDP_CclSmsPrint(unsigned char* CenterData);
 /**
 * @brief    封装上行至中心GPS 数据包
 */
-void  IDP_GenGpsData(unsigned char pvAcktype ,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len,unsigned char *callidnet);
+void  IDP_GenGpsData(unsigned char pvAcktype ,unsigned char * pvDllData,unsigned char * pvCenterData,int *Len,unsigned char *CallIdNet);
 /**
 * @brief    打印GPS数据包
 */
@@ -134,23 +134,23 @@ void    IDP_CclPrintGpsData(unsigned char *pvGpsData);
 /**
 * @brief    封装上行至中心邻点数据包
 */
-void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len,unsigned char *callidnet);
+void  IDP_GenNearData(unsigned char neartyppe, unsigned char * pvDllData,unsigned char * pvCenterData,int *Len,unsigned char *CallIdNet);
 
 /**
 * @brief    封装NAS 遥晕、遥毙、激活响应数据包
 */
 
-void  IDP_GenNasSigAckData(unsigned char pvAcktype,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len);
+void  IDP_GenNasSigAckData(unsigned char pvAcktype,unsigned char * pvDllData,unsigned char * pvCenterData,int *Len);
 
 /**
 * @brief    封装遥晕响应数据包
 */
 
-void  IDP_GenMsAckData(unsigned char datatype,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len,unsigned char *pvCccvnetId);
+void  IDP_GenMsAckData(unsigned char datatype,unsigned char * pvDllData,unsigned char * pvCenterData,int *Len,unsigned char *pvCccvnetId);
 /**
 * @brief    封装上行至中心场强数据包
 */
-void  IDP_GenThrethHoldData( unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len);
+void  IDP_GenThrethHoldData( unsigned char * pvDllData,unsigned char * pvCenterData,int *Len);
 /**
  * @brief   封装NAS状态上报数据包
  */
@@ -159,7 +159,7 @@ void  IDP_GenNasStatePack(unsigned char pvrelayflg,unsigned char *pvCenterData,i
 * @brief    ?????????
 */
 
-void IDP_GenAlarm_ClearData(unsigned char type,unsigned char * pvDlldata,unsigned char * pvCenterData,int *Len);
+void IDP_GenAlarm_ClearData(unsigned char type,unsigned char * pvDllData,unsigned char * pvCenterData,int *Len);
 
 #endif //CCLUL_H
 

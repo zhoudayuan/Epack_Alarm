@@ -9,8 +9,8 @@
 
 /*
  *   函数列表
- *   1. ODP_GenSilentFrmpacket         封装CCL下行静音帧数据包
- *   2. ODP_GenVoicepacket             封装CCL下行语音包
+ *   1. ODP_GenSilentFrm         封装CCL下行静音帧数据包
+ *   2. ODP_GenVoicePacket             封装CCL下行语音包
  *   3. ODP_GenSmsDataPacket           封装CCL层下行短信帧
  *   4. ODP_GenLcHeader                封装语音LC头
  *   5. ODP_GenRemoteCtrlDataPacket    封装下行控制命令数据包
@@ -62,7 +62,7 @@ extern FILE *pLogFd;
 SMS_CCL_DLL_EN *SMS_CCL_DLL=NULL;
 extern SHM_IPC_STRU *ptIPCShm;
 extern  unsigned  char   CCL_DL_PRINT;
-extern unsigned  char INF_CCL_STATE;
+extern unsigned char g_CclState;
 //extern unsigned char s_aCCcvNet[5];
 unsigned  int CallId;
 
@@ -111,23 +111,33 @@ void ODP_GenSmsDataPacket(unsigned  char * pvCenterData, unsigned  char*pvDllDat
 * @since
 * @bug
 */
-
 void ODP_GenLcHeader(unsigned char * pvCenterData, unsigned  char *pvDllData, int* Len)
 {
     DLL_CCL_UL_T * ptDllData = (DLL_CCL_UL_T *)( pvDllData);
-    DT_VOICE_LC_HEADER * ptDllPayLoad =(DT_VOICE_LC_HEADER *)ptDllData->PayLoad;
+    DT_VOICE_LC_HEADER * ptDllPayLoad = (DT_VOICE_LC_HEADER *)ptDllData->PayLoad;
     PTT_CMD *ptCenterData=(PTT_CMD *)pvCenterData;
+
 
     ptDllData->MsgType  = DI_MSG_DATA;
     ptDllData->DataType = CT_LC_HEADER;
     ptDllData->FrmType  = FT_VOICE_NO;
-    ptDllData->DataLen  = LC_HEADER_LEN;            //负载长度=语音头LC 长度
+    ptDllData->DataLen  = LC_HEADER_LEN;  // 负载长度=语音头LC 长度
     *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
+    // PayLoad-Full Link Control
     ptDllPayLoad->Reserved = 0;
     ptDllPayLoad->ProtectFlg = 0;
-    ptDllPayLoad->CtrOpcode = 0x00;
+    ptDllPayLoad->CtrOpcode = 0x00;  // FLCO: 0X00代表起始帧OR结束帧
     ptDllPayLoad->FeatureId = 0x00;
-    ptDllPayLoad->ServiceOpt = 0x00;
+    ptDllPayLoad->ServiceOpt = 0x00;  
+ 
+
+
+     
+
+
+
+
+
     ptDllPayLoad->GroupAddr[0] = ptCenterData->CalledNum[0];
     ptDllPayLoad->GroupAddr[1] = ptCenterData->CalledNum[1];
     ptDllPayLoad->GroupAddr[2] = ptCenterData->CalledNum[2];
@@ -143,7 +153,7 @@ void ODP_GenLcHeader(unsigned char * pvCenterData, unsigned  char *pvDllData, in
 
     if (1 == tcclPrint->CclDown)
     {
-        ODP_CclprintLc((unsigned char *)ptDllData);
+        ODP_PrintLc((unsigned char *)ptDllData);
     }
 }
 
@@ -157,11 +167,9 @@ void ODP_GenLcHeader(unsigned char * pvCenterData, unsigned  char *pvDllData, in
 * @since
 * @bug
 */
-
-void ODP_GenVoicepacket(unsigned char *pvCenterData, unsigned char *pvDllData, unsigned char FrmType, int *Len)
+void ODP_GenVoicePacket(unsigned char *pvCenterData, unsigned char *pvDllData, unsigned char FrmType, int *Len)
 {
-    CENTER_VOICE_DATA*ptCenterData=(CENTER_VOICE_DATA*)pvCenterData;
-  //CENTER_VOICE_DATA_DL*ptCenterData=( CENTER_VOICE_DATA_DL*)pvCenterData;
+    CENTER_VOICE_DATA *ptCenterData = (CENTER_VOICE_DATA *)pvCenterData;
     CCL_DLL_DL_T *ptDllData = (CCL_DLL_DL_T *)pvDllData;
     ptDllData->MsgType = DI_MSG_VOICE;
     ptDllData->FrmType = FrmType;
@@ -169,11 +177,11 @@ void ODP_GenVoicepacket(unsigned char *pvCenterData, unsigned char *pvDllData, u
 
     if (1 == tcclPrint->CclDown)
     {
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s]dl voice FrmType=%d", __FUNCTION__,FrmType);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] Frm=%d", __FUNCTION__, FrmType);
     }
     ptDllData->DataLen = CENTER_VOICE_DL_PAYLOADLEN;
     memcpy(ptDllData->PayLoad, ptCenterData->Payload, CENTER_VOICE_DL_PAYLOADLEN);
-    *Len = CENTER_VOICE_DL_PAYLOADLEN+DLL_CCL_MSG_HEADLEN;
+    *Len = CENTER_VOICE_DL_PAYLOADLEN + DLL_CCL_MSG_HEADLEN;
 }
 
 
@@ -213,7 +221,7 @@ void ODP_GenVoicepacket(unsigned char *pvCenterData, unsigned char *pvDllData, u
 * @since
 * @bug
 */
-void ODP_GenSilentFrmpacket(unsigned char *pvSilentData, unsigned char *pvDllData, unsigned char FrmType ,int *Len)
+void ODP_GenSilentFrm(unsigned char *pvSilentData, unsigned char *pvDllData, unsigned char FrmType ,int *Len)
 {
     DLL_CCL_UL_T *ptDllData = (DLL_CCL_UL_T *)pvDllData;
     ptDllData->MsgType = DI_MSG_VOICE;
@@ -236,10 +244,8 @@ void ODP_GenSilentFrmpacket(unsigned char *pvSilentData, unsigned char *pvDllDat
 */
 void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllData, int *Len)
 {
-    unsigned char SigCtrlType;
     CCL_DLL_DL_T *ptDllData = (CCL_DLL_DL_T *)pvDllData;
     SMS_CENTER_CCL_DL *ptCenterData = (SMS_CENTER_CCL_DL *)pvCenterData;
-    SigCtrlType = ptCenterData->SmsType;
     memset(ptDllData, 0, sizeof(CCL_DLL_DL_T));
     ptDllData->SrcId[0] = ptCenterData->SenderNum[0];
     ptDllData->SrcId[1] = ptCenterData->SenderNum[1];
@@ -247,9 +253,8 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
     ptDllData->DstId[0] = ptCenterData->ReceiverNum[0];
     ptDllData->DstId[1] = ptCenterData->ReceiverNum[1];
     ptDllData->DstId[2] = ptCenterData->ReceiverNum[2];
-    //SavCcIDNetData(ptCenterData,);
 
-    switch (SigCtrlType)
+    switch (ptCenterData->SmsType)
     {
         case STUN_REQ_NAS:  // 遥晕信道机
         {
@@ -258,77 +263,62 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
             *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
             if ((ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId) && (ptDllData->DstId[1] == 0) && (ptDllData->DstId[2] == 0))
             {
-                INF_CCL_STATE = Wait_Stun_Nas_Ack;  // 查看本地节点 如是本地节点则不敢变呼叫控制层状态
+                g_CclState = Wait_Stun_Nas_Ack;  // 如是本地节点则不改变呼叫控制层状态
             }
             break;
         }
-
         case KILL_REQ_NAS:  // 遥毙信道机
         {
-            ptDllData->MsgType=DI_MSG_WLU;
-            ptDllData->DataType=CT_KILL_REQ_NAS ;
-            *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
-            if(ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId && ptDllData->DstId[1] == 0 && ptDllData->DstId[2] == 0)
+            ptDllData->MsgType = DI_MSG_WLU;
+            ptDllData->DataType = CT_KILL_REQ_NAS ;
+            *Len=ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
+            if ((ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId) && (ptDllData->DstId[1] == 0) && (ptDllData->DstId[2] == 0))
             {
-                INF_CCL_STATE=Wait_Kill_Nas_Ack;
+                g_CclState = Wait_Kill_Nas_Ack;
             }
             break;
         }
-
-        case REVIVE_REQ_NAS:
+        case REVIVE_REQ_NAS:  // 激活链路机
         {
-            ptDllData->MsgType=DI_MSG_WLU;
-            ptDllData->DataType=CT_ENABLE_REQ_NAS;
-            *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
-            if(ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId && ptDllData->DstId[1] == 0 && ptDllData->DstId[2] == 0)
+            ptDllData->MsgType = DI_MSG_WLU;
+            ptDllData->DataType = CT_ENABLE_REQ_NAS;
+            *Len=ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
+            if ((ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId) && (ptDllData->DstId[1] == 0) && (ptDllData->DstId[2] == 0))
             {
-                INF_CCL_STATE=Wait_Reviv_NAS_Ack;
+                g_CclState = Wait_Reviv_NAS_Ack;
             }
             break;
         }
-
-        case REVIVE_REQ_MS:
+        case REVIVE_REQ_MS:  // 激活MS
         {
-            ptDllData->MsgType=DI_MSG_DATA;
-            ptDllData->DataType=CT_ENABLE_REQ_MS;
-            *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
-            // if(ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId && ptDllData->DstId[1] == 0 && ptDllData->DstId[2] == 0)
-            // {
-                INF_CCL_STATE=Wait_Reviv_MS_Ack;
-            //}
+            ptDllData->MsgType = DI_MSG_DATA;
+            ptDllData->DataType = CT_ENABLE_REQ_MS;
+            *Len=ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
+            g_CclState=Wait_Reviv_MS_Ack;
             break;
         }
-
-        case STUN_REQ_MS:
+        case STUN_REQ_MS:  // 遥晕MS
         {
-            ptDllData->MsgType=DI_MSG_DATA;
-            ptDllData->DataType= CT_DISABLE_REQ_MS;                 //遥晕终端  信道机业务正常
-            *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
-            // if(ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId && ptDllData->DstId[1] == 0 && ptDllData->DstId[2] == 0)
-            // {
-            INF_CCL_STATE=Wait_Stun_Ms_Ack;
-            // }
-            //INF_CCL_STATE=Wait_Stun_Ms_Ack;
+            ptDllData->MsgType = DI_MSG_DATA;
+            ptDllData->DataType = CT_DISABLE_REQ_MS;    // 遥晕终端  信道机业务正常
+            *Len = ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
+            g_CclState = Wait_Stun_Ms_Ack;
             break;
         }
-
         case GPS_REPOTR_MS:   // 终端GPS上拉
         {
-
             CallId++;
-            CallId = 1;
-
             ptDllData->MsgType = DI_MSG_DATA;
             ptDllData->DataType = CT_GPS_REPORT_REQ_MS;
-            ptDllData->DataLen = ptCenterData->ValidLength + 4;
             memcpy(ptDllData->PayLoad, (unsigned char *)&CallId, 4);
-            if (CC_CCL_MSGPSRPT_PAYLODDLEN <= ptCenterData->ValidLength)
+            if (CC_CCL_MSGPSRPT_PAYLODDLEN < ptCenterData->ValidLength)
             {
                 LOG_WARNING(s_LogMsgId, "[CCL][%s]CC_GPS_RPT_MS LOAD ERR LEN=%d", __FUNCTION__, ptCenterData->ValidLength);
                 ptCenterData->ValidLength = CC_CCL_MSGPSRPT_PAYLODDLEN;
             }
+            ptDllData->DataLen = ptCenterData->ValidLength + 4;
             memcpy(&ptDllData->PayLoad[4], ptCenterData->SmsData, ptCenterData->ValidLength);
-            INF_CCL_STATE = Wait_Gps_Ms_Ack;
+            g_CclState = Wait_Gps_Ms_Ack;
             *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
             break;
         }
@@ -338,33 +328,25 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
             ptDllData->DataType = CT_NEGHR_QUERY;
             if(ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId && ptDllData->DstId[1] == 0 && ptDllData->DstId[2] == 0)
             {
-                INF_CCL_STATE = Wait_NEGHR_Nas_Ack;
+                g_CclState = Wait_NEGHR_Nas_Ack;
             }
-            //INF_CCL_STATE=Wait_NEGHR_Nas_Ack;
+            //g_CclState=Wait_NEGHR_Nas_Ack;
             *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
             break;
         }
-
-        case GPS_REPORT_NAS:   // 链路机GPS 
+        case GPS_REPORT_NAS:   // 链路机GPS
         {
             ptDllData->MsgType=DI_MSG_WLU;
             ptDllData->DataType=CT_GPS_REPORT_REQ_NAS;
-//          ptDllData->SrcId[0]=g_DllGlobalCfg.auNodeId;
-//          ptDllData->SrcId[1]=0;
-//          ptDllData->SrcId[2]=0;
             ptDllData->DataLen=8;
             memset(ptDllData->PayLoad,0,sizeof(ptDllData->PayLoad));
             if(ptDllData->DstId[0] != g_DllGlobalCfg.auNodeId && ptDllData->DstId[1] == 0 && ptDllData->DstId[2] == 0)
             {
-                INF_CCL_STATE=Wait_Gps_Nas_Ack;
+                g_CclState=Wait_Gps_Nas_Ack;
             }
-
-            //INF_CCL_STATE=Wait_Gps_Nas_Ack;
-
             *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
             break;
         }
-
         case MESSAGE_GROUP_CALL:
         {
             ptDllData->MsgType=DI_MSG_DATA;
@@ -382,12 +364,11 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
                 ptCenterData->ValidLength=DLL_CCL_SMS_PAYLOADLEN;
             }
             LitToBigSmsData(SMS_CCL_DLL->SmsPayLoad,ptCenterData->SmsData,ptCenterData->ValidLength);
-            //memcpy(SMS_CCL_DLL->SmsPayLoad,ptCenterData->SmsData,ptCenterData->ValidLength);
             ptDllData->DataLen=ptCenterData->ValidLength +5;
             *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
             break;
         }
-        case MS_ALARM:   //现行告警
+        case MS_ALARM:   // 现行告警
         {
             ptDllData->MsgType  = DI_MSG_DATA;
             ptDllData->DataType = CT_ALARM_REQ_MS;
@@ -395,19 +376,18 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
             *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
             break;
         }
-
-        case MS_ALARM_CLEAR:   //告警清除
+        case MS_ALARM_CLEAR:  // 告警清除
         {
             ptDllData->MsgType  = DI_MSG_DATA;
             ptDllData->DataType = CT_ALARM_ACK_MS;
             ptDllData->DataLen  = 0;
-            *Len = ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
+            *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
             break;
         }
         default:
         {
             *Len=0;
-            LOG_DEBUG(s_LogMsgId,"[CCL][%s] ERROR SigCtrlsmsType=%d!", __FUNCTION__,SigCtrlType);
+            LOG_DEBUG(s_LogMsgId,"[CCL][%s] ERROR SigCtrlsmsType=%d!", __FUNCTION__, ptCenterData->SmsType);
             break;
         }
     }
@@ -418,39 +398,42 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
     }
 }
 
+
+
+
+
 void ODP_GenTerminatorPacket(unsigned char * pvCenterData, unsigned  char *pvDllData, int* Len)
 {
     DLL_CCL_UL_T * ptDllData = (DLL_CCL_UL_T *)( pvDllData);
     DT_VOICE_LC_HEADER * ptDllPayLoad =(DT_VOICE_LC_HEADER *)ptDllData->PayLoad;
     PTT_CMD *ptCenterData=(PTT_CMD *)pvCenterData;
-    ptDllData->MsgType=DI_MSG_DATA;
-    ptDllData->DataType=CT_LC_TERMINATOR  ;
-    ptDllData->FrmType =FT_VOICE_NO;
-    ptDllData->DataLen=LC_HEADER_LEN;            //负载长度=语音头LC 长度
-    * Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
-    ptDllPayLoad->Reserved=0;
-    ptDllPayLoad->ProtectFlg=0;
-    ptDllPayLoad->CtrOpcode=0x00;
-    ptDllPayLoad->FeatureId=0x00;
-    ptDllPayLoad->ServiceOpt=0x00;
-    ptDllPayLoad->GroupAddr[0]=ptCenterData->CalledNum[0];
-    ptDllPayLoad->GroupAddr[1]=ptCenterData->CalledNum[1];
-    ptDllPayLoad->GroupAddr[2]=ptCenterData->CalledNum[2];
-    ptDllPayLoad->SourceAddr[0]=ptCenterData->CallingNum[0];
-    ptDllPayLoad->SourceAddr[1]=ptCenterData->CallingNum[1];
-    ptDllPayLoad->SourceAddr[2]=ptCenterData->CallingNum[2];
+    ptDllData->MsgType = DI_MSG_DATA;
+    ptDllData->DataType = CT_LC_TERMINATOR  ;
+    ptDllData->FrmType = FT_VOICE_NO;
+    ptDllData->DataLen = LC_HEADER_LEN;    // 负载长度=语音头LC 长度
+    * Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
+    ptDllPayLoad->Reserved = 0;
+    ptDllPayLoad->ProtectFlg = 0;
+    ptDllPayLoad->CtrOpcode = 0x00;
+    ptDllPayLoad->FeatureId = 0x00;
+    ptDllPayLoad->ServiceOpt = 0x00;
+    ptDllPayLoad->GroupAddr[0] = ptCenterData->CalledNum[0];
+    ptDllPayLoad->GroupAddr[1] = ptCenterData->CalledNum[1];
+    ptDllPayLoad->GroupAddr[2] = ptCenterData->CalledNum[2];
+    ptDllPayLoad->SourceAddr[0] = ptCenterData->CallingNum[0];
+    ptDllPayLoad->SourceAddr[1] = ptCenterData->CallingNum[1];
+    ptDllPayLoad->SourceAddr[2] = ptCenterData->CallingNum[2];
 
-    ptDllData->SrcId[0]=ptCenterData->CallingNum[0];
-    ptDllData->SrcId[1]=ptCenterData->CallingNum[1];
-    ptDllData->SrcId[2]=ptCenterData->CallingNum[2];
-    ptDllData->DstId[0]=ptCenterData->CalledNum[0];
-    ptDllData->DstId[1]=ptCenterData->CalledNum[1];
-    ptDllData->DstId[2]=ptCenterData->CalledNum[2];
-     if(1 == tcclPrint->CclDown)
+    ptDllData->SrcId[0] = ptCenterData->CallingNum[0];
+    ptDllData->SrcId[1] = ptCenterData->CallingNum[1];
+    ptDllData->SrcId[2] = ptCenterData->CallingNum[2];
+    ptDllData->DstId[0] = ptCenterData->CalledNum[0];
+    ptDllData->DstId[1] = ptCenterData->CalledNum[1];
+    ptDllData->DstId[2] = ptCenterData->CalledNum[2];
+    if(1 == tcclPrint->CclDown)
     {
-      ODP_CclprintLc((unsigned char *)ptDllData);
+        ODP_PrintLc((unsigned char *)ptDllData);
     }
-
 }
 
 
@@ -461,27 +444,23 @@ void ODP_GenTerminatorPacket(unsigned char * pvCenterData, unsigned  char *pvDll
 * @since
 * @bug
 */
-
-
-void SavCcIDNetData(unsigned char *pvcenterdata, unsigned char *CCcvNetid)
+void SavCcIDNetData(unsigned char *pvCenterData, unsigned char *CCcvNetid)
 {
-    SMS_CENTER_CCL_DL *ptcenterdata = (SMS_CENTER_CCL_DL *)pvcenterdata;
-    //SMS_CENTER_CCL_DL *ptcenterdata=(SMS_CENTER_CCL_DL *)centerdata;
-    CC_CVID_SUBNET_DATA * ptCVNetid = (CC_CVID_SUBNET_DATA *)CCcvNetid;
-    ptCVNetid->CallId  = ptcenterdata->CallId;
-    ptCVNetid->VoiceId = ptcenterdata->VoiceId;
-    ptCVNetid->SubNet  = ptcenterdata->SmsData[0];
-    ptCVNetid->srcid[0]  = ptcenterdata->SenderNum[0];
-    ptCVNetid->srcid[1]  = ptcenterdata->SenderNum[1];
-    ptCVNetid->srcid[2]  = ptcenterdata->SenderNum[2];
-    ptCVNetid->destid[0] = ptcenterdata->ReceiverNum[0];
-    ptCVNetid->destid[1] = ptcenterdata->ReceiverNum[1];
-    ptCVNetid->destid[2] = ptcenterdata->ReceiverNum[2];
+    SMS_CENTER_CCL_DL *ptCenterData = (SMS_CENTER_CCL_DL *)pvCenterData;
+    CC_CVID_SUBNET_DATA *ptCVNetid = (CC_CVID_SUBNET_DATA *)CCcvNetid;
+    ptCVNetid->CallId  = ptCenterData->CallId;
+    ptCVNetid->VoiceId = ptCenterData->VoiceId;
+    ptCVNetid->SubNet  = ptCenterData->SmsData[0];
+    ptCVNetid->srcid[0]  = ptCenterData->SenderNum[0];
+    ptCVNetid->srcid[1]  = ptCenterData->SenderNum[1];
+    ptCVNetid->srcid[2]  = ptCenterData->SenderNum[2];
+    ptCVNetid->destid[0] = ptCenterData->ReceiverNum[0];
+    ptCVNetid->destid[1] = ptCenterData->ReceiverNum[1];
+    ptCVNetid->destid[2] = ptCenterData->ReceiverNum[2];
 
     if (1 == tcclPrint->CclDown)
     {
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s] CallId=%#x VoiceId=%#x SubNet=%#x",
-            __FUNCTION__, ptCVNetid->CallId, ptCVNetid->VoiceId, ptCVNetid->SubNet);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] CallId=%d VoiceId=%#x SubNet=%#x", __FUNCTION__, ptCVNetid->CallId, ptCVNetid->VoiceId, ptCVNetid->SubNet);
     }
 }
 
@@ -493,13 +472,28 @@ void SavCcIDNetData(unsigned char *pvcenterdata, unsigned char *CCcvNetid)
 * @since
 * @bug
 */
-void ODP_CclprintLc(unsigned char * pvDllData)
+void ODP_PrintLc(unsigned char * pvDllData)
 {
-    char buf[100];
-    DLL_CCL_UL_T * ptDllData=(DLL_CCL_UL_T * )pvDllData;
-    SetIdDec2buf(ptDllData->SrcId, ptDllData->DstId, buf, sizeof(buf));
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s] LC MsgType=%d,DataType=%d,FrmType=%d,DataLen=%d,%s", 
-        __FUNCTION__, ptDllData->MsgType, ptDllData->DataType, ptDllData->FrmType, ptDllData->DataLen, buf);
+    char IdBuf[100];
+    const char *pcDataType;
+    DLL_CCL_UL_T * ptDllData = (DLL_CCL_UL_T *)pvDllData;
+    SetIdDec2buf(ptDllData->SrcId, ptDllData->DstId, IdBuf, sizeof(IdBuf));
+
+    if (ptDllData->DataType == CT_LC_HEADER)
+    {
+        pcDataType = "Hdr";
+    }
+    else if (ptDllData->DataType == CT_LC_TERMINATOR)
+    {
+        pcDataType = "Ter";
+    }
+    else
+    {
+        pcDataType = "Err";
+
+    }
+        
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] LC:%s MsgType=%d DataType=%d FrmType=%d DataLen=%d %s", __FUNCTION__, pcDataType, ptDllData->MsgType, ptDllData->DataType, ptDllData->FrmType, ptDllData->DataLen, IdBuf);
 }
 
 
@@ -510,52 +504,50 @@ void ODP_CclprintLc(unsigned char * pvDllData)
 * @since
 * @bug
 */
-void ODP_CclPrintCcSig(unsigned char *Pttcmd)
-{    
-    char buf[100];
-    SHARE_CC_DATA_D *CcDatadl = (SHARE_CC_DATA_D *)Pttcmd;
-    PTT_CMD *pvPttcmd = (PTT_CMD *)Pttcmd;
-    unsigned char sigtype = pvPttcmd->SharedHead.SigType;
-    SetCCSig2Str(&pvPttcmd->SharedHead, buf, sizeof(buf));
-    LOG_DEBUG(s_LogMsgId, "[CCL][%s] sigtype:%s DLEN:%d ", __FUNCTION__, buf, pvPttcmd->SharedHead.Datalength);
-//    ODP_PrintSigLog(&pvPttcmd->SharedHead);    // by zhoudayuan
+void ODP_PrintCcSig(unsigned char *CcCmdBuf)
+{
+    char SigTypeBuf[50];
+    char SmsTypeBuf[100];
+    CENTER_CMD_SHARE_HEAD *ptHead = (CENTER_CMD_SHARE_HEAD *)CcCmdBuf;  // 获取接入单元与中心命令交互共用头
+    SHARE_CC_DATA_D *ptCcData = (SHARE_CC_DATA_D *)CcCmdBuf;
+    PTT_CMD *ptCcPttCmd = (PTT_CMD *)CcCmdBuf;
+    PTT_OFF_ACK *ptCcPttAck = (PTT_OFF_ACK *)CcCmdBuf;
+    SMS_CENTER_CCL_DL *ptCcSms = (SMS_CENTER_CCL_DL *)CcCmdBuf;  // 获取中心发送短消息到CCL 接口
+    SetCCSig2Str(ptHead, SigTypeBuf, sizeof(SigTypeBuf));  // 将Sig转化字符串，方便打印查看
 
-    if (SIG_PTT_CMD == sigtype)
+    if (SIG_PTT_CMD == ptHead->SigType) // PPT_ON or PPT_OFF 命令
     {
-        LOG_DEBUG(s_LogMsgId, "[CCL][%s] PttST:%s caling[0-2]=[%#x:%#x:%#x] Caled[0-2]=[%#x:%#x:%#x]",
-            __FUNCTION__,
-            (CcDatadl->CC_PTT_CMD.PttStat==0x06?"PPT_ON":"PPT_OFF"),
-            CcDatadl->CC_PTT_CMD.CallingNum[0], CcDatadl->CC_PTT_CMD.CallingNum[1], CcDatadl->CC_PTT_CMD.CallingNum[2],
-            CcDatadl->CC_PTT_CMD.CalledNum[0],  CcDatadl->CC_PTT_CMD.CalledNum[1],  CcDatadl->CC_PTT_CMD.CalledNum[2]);
+        LOG_DEBUG(s_LogMsgId, "[CCL][%s] SigType=%s SigLen=%d PttST=%s Calling[0-2]=[%#x:%#x:%#x] Called[0-2]=[%#x:%#x:%#x]", 
+            __FUNCTION__, SigTypeBuf, ptHead->Datalength,
+            (ptCcPttCmd->PttStat==0x06?"PPT_ON":"PPT_OFF"),
+            ptCcPttCmd->CallingNum[0], ptCcPttCmd->CallingNum[1], ptCcPttCmd->CallingNum[2], 
+            ptCcPttCmd->CalledNum[0],  ptCcPttCmd->CalledNum[1],  ptCcPttCmd->CalledNum[2]);
     }
-    else if (SIG_PTT_ON_ACK ==sigtype)
+    else if (SIG_PTT_ON_ACK == ptHead->SigType)
     {
-        LOG_DEBUG(s_LogMsgId, "[CCL][%s] caling[0-2]=[%#x:%#x:%#x] Caled[0-2]=[%#x:%#x:%#x]",
-            __FUNCTION__,
-            CcDatadl->CC_Ptt_Ack.CallingNum[0], CcDatadl->CC_Ptt_Ack.CallingNum[1], CcDatadl->CC_Ptt_Ack.CallingNum[2],
-            CcDatadl->CC_Ptt_Ack.CalledNum[0],  CcDatadl->CC_Ptt_Ack.CalledNum[1],  CcDatadl->CC_Ptt_Ack.CalledNum[2]);
+        LOG_DEBUG(s_LogMsgId, "[CCL][%s] SigType=%s SigLen=%d Calling[0-2]=[%#x:%#x:%#x] Called[0-2]=[%#x:%#x:%#x]", 
+            __FUNCTION__, SigTypeBuf, ptHead->Datalength,
+            ptCcPttAck->CallingNum[0], ptCcPttAck->CallingNum[1], ptCcPttAck->CallingNum[2], 
+            ptCcPttAck->CalledNum[0],  ptCcPttAck->CalledNum[1],  ptCcPttAck->CalledNum[2]);
     }
-    else if (SIG_SMS_SEND == sigtype)
+    else if (SIG_SMS_SEND == ptHead->SigType)
     {
-        ODP_PrintSms(&CcDatadl->CcSmsSig, buf, sizeof(buf));
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s] SmsType=%s validlen=%d SND[0-2]=[%#x:%#x:%#x] RCV[0-2]=[%#x:%#x:%#x]",
-            __FUNCTION__,
-            buf, CcDatadl->CcSmsSig.ValidLength,
-            CcDatadl->CcSmsSig.SenderNum[0], CcDatadl->CcSmsSig.SenderNum[1],CcDatadl->CcSmsSig.SenderNum[2],
-            CcDatadl->CcSmsSig.ReceiverNum[0],CcDatadl->CcSmsSig.ReceiverNum[1],CcDatadl->CcSmsSig.ReceiverNum[2]);
-
+        ODP_PrintSms(&ptCcData->CcSmsSig, SmsTypeBuf, sizeof(SmsTypeBuf));
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] SigType=%s SigLen=%d SmsType=%s SmsValidLen=%d Snd[0-2]=[%#x:%#x:%#x] Rcv[0-2]=[%#x:%#x:%#x]", 
+            __FUNCTION__, SigTypeBuf, ptHead->Datalength,
+            SmsTypeBuf, ptCcData->CcSmsSig.ValidLength,
+            ptCcSms->SenderNum[0], ptCcSms->SenderNum[1],ptCcSms->SenderNum[2], 
+            ptCcSms->ReceiverNum[0], ptCcSms->ReceiverNum[1], ptCcSms->ReceiverNum[2]);
     }
-    else if (SIG_PTT_OFF_ACK == sigtype)
+    else if (SIG_PTT_OFF_ACK == ptHead->SigType)
     {
-        LOG_ERROR(s_LogMsgId,"[CCL][%s] REC sig type SIG_PTT_OFF_ACK", __FUNCTION__);
+        LOG_ERROR(s_LogMsgId,"[CCL][%s] Rcv sig type SIG_PTT_OFF_ACK", __FUNCTION__);
     }
     else
     {
-        LOG_ERROR(s_LogMsgId,"[CCL][%s] REC sig type error", __FUNCTION__);
-
+        LOG_ERROR(s_LogMsgId,"[CCL][%s] Rcv sig type error", __FUNCTION__);
     }
 }
-
 
 
 
@@ -566,24 +558,14 @@ void ODP_CclPrintCcSig(unsigned char *Pttcmd)
 * @since
 * @bug
 */
-#if 0
-void ODP_CclPrintDllData(unsigned char *DllData)
-{
-    DLL_CCL_UL_T *ptDllData = (DLL_CCL_UL_T *)DllData;
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s] MsgType=%#x DataType=%#x DataLen=%#x", __FUNCTION__, ptDllData->MsgType, ptDllData->DataType, ptDllData->DataLen);
-    ODP_PrintMsgDatalog(ptDllData);
-    PrintIDbyDec(ptDllData->SrcId, ptDllData->DstId);
-}
-#endif
 void ODP_CclPrintDllData(unsigned char *DllData)
 {
     char MsgDatabuf[100];
     char IDbuf[100];
-
     CCL_DLL_DL_T *ptDllData = (CCL_DLL_DL_T *)DllData;
     ODP_PrintMsgDatalog(ptDllData, MsgDatabuf, sizeof(MsgDatabuf));
     SetIdDec2buf(ptDllData->SrcId, ptDllData->DstId, IDbuf, sizeof(IDbuf));
-    LOG_DEBUG(s_LogMsgId,"[CCL][%s] %s, DataLen=%#x, %s", __FUNCTION__, MsgDatabuf, ptDllData->DataLen, IDbuf);
+    LOG_DEBUG(s_LogMsgId,"[CCL][%s] %s,DataLen=%d,%s", __FUNCTION__, MsgDatabuf, ptDllData->DataLen, IDbuf);
 }
 
 

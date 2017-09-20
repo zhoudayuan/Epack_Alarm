@@ -10,8 +10,8 @@
  */
 /*
  *   函数列表
- *   1. ODP_GenSilentFrmpacket       封装CCL下行静音帧数据包
- *   2. ODP_GenVoicepacket           封装CCL下行语音包
+ *   1. ODP_GenSilentFrm       封装CCL下行静音帧数据包
+ *   2. ODP_GenVoicePacket           封装CCL下行语音包
  *   3. ODP_GenSmsDataPacket         封装CCL层下行短信帧
  *   4. ODP_GenLcHeader              封装语音LC头
  *   5.
@@ -52,12 +52,12 @@
 /**
  * @brief   封装CCL下行静音帧数据包
  */
-void ODP_GenSilentFrmpacket(unsigned  char *pvSilentData,unsigned  char *pvDllData,unsigned  char FrmType , int *Len);
+void ODP_GenSilentFrm(unsigned  char *pvSilentData,unsigned  char *pvDllData,unsigned  char FrmType , int *Len);
 
 /**
  * @brief   封装CCL下行语音包
  */
-void ODP_GenVoicepacket(unsigned  char *pvCenterData,unsigned  char *pvDllData,unsigned  char FrmType , int *Len);
+void ODP_GenVoicePacket(unsigned  char *pvCenterData,unsigned  char *pvDllData,unsigned  char FrmType , int *Len);
 
 /**
  * @brief封装CCL层下行短信帧
@@ -80,12 +80,12 @@ void ODP_GenTerminatorPacket(unsigned char * pvCenterData, unsigned  char *pvDll
 /**
 * @brief    打印LC_HEADER 、LC_TERMINATOR
 */
-void ODP_CclprintLc(unsigned char  * pvDllData);
+void ODP_PrintLc(unsigned char  * pvDllData);
 /**
 * @brief  打印中心信令
 * @bug
 */
-void  ODP_CclPrintCcSig(unsigned char *Pttcmd);
+void ODP_PrintCcSig(unsigned char *Pttcmd);
 /**
 * @brief    打印 ccl_dll 数据
 */

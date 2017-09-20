@@ -22,6 +22,13 @@
 /******************************************************************************
   *   全局变量定义
   *   *************************************************************************/
+extern int CC_ERR_COUNT;
+extern int  g_CcRightFlg;
+extern int CCERR_SUPERFRM_COUNT;
+#define FPGA_FOLLOW     1
+#define FPGA_IDLE       0
+#define ARRAY_NEGR_LEN  3  // 邻点信息暂存数组长度
+
 /**
  * @var  s_i4LogMsgId
  * @brief 命令行套接字
@@ -149,6 +156,13 @@ UINT32 uWaitNearTimes = 0;
 UINT32 uWaitWluTimes = 0;
 
 /**
+ * @var uWaitErrTimes
+ * @brief  误码率测试计时器
+ */
+UINT32 uWaitErrTimes = 0;
+
+
+/**
  * @var CCLSocket
  * @brief 呼叫控制层socket
  */
@@ -240,6 +254,44 @@ UINT8 g_discon_state = 0;
  */
 UINT8 g_DisconCnt = 0;
 
+/**
+ * @var g_BurstCnt
+ * @brief 邻点突发周期计数器，
+ *        当有语音时，该计时器清零，当其小于2时，时候邻点功能无效。
+ */
+UINT32 g_BurstCnt = 0;
+
+/**
+ * @var 
+ * @brief 关闭断链打印标志
+ */
+UINT8 g_DisconRecoverPrintFlg = 0;
+
+
+/**
+ * @var s_NerCycCnt
+ * @brief 邻点突发周期计数器。记录邻点突发的个数,主要功能是鉴别奇数or偶数周期
+ *        s_NerCycCnt 和 g_BurstCnt 区别是 s_NerCycCnt 不被清零，g_BurstCnt 反之
+ */
+UINT32 s_NerCycCnt = 0;
+
+/**
+ * @var g_NerbValidFlg
+ * @brief 在通话过程中，邻点可查询标志, 0为不可查，1为可查(非通话状态下该标志为1)
+ */
+INT8 g_NerbValidFlg = 0;
+
+
+/**
+ * @var s_auiNegrId
+ * @brief 邻点信息暂存数组，数组中的每一个元素代表邻点信息的一次获取，
+ * 获取三次邻点信息将数组内元素或计算，得出最终邻点信息数值，
+ */
+static unsigned int s_auiNegrId[ARRAY_NEGR_LEN] = {0};
+static int s_uiNegrIdArrayLen = sizeof(s_auiNegrId)/sizeof(s_auiNegrId[0]);
+
+void delay(unsigned long msec);
+
 
 /******************************************************************************
   *   内部函数实现
@@ -275,6 +327,7 @@ void DLL_GlobalConfig(void)
     memset((UINT8 *)tDllPrint, 0x00, sizeof(DLL_PRINT_T));
     tDllPrint->FrqSlt = 0;
     tDllPrint->WorkMode = 0;
+    tDllPrint->Ccerrsuperfrmcnt=3;
 
 }
 
@@ -301,7 +354,7 @@ int DLL_FpgaConfig(void)
     }
 
     p_DllFpgaShm = (DLL_FPGA_SHM_T *)mmap(NULL, FPGA_SHM_LEN, PROT_READ|PROT_WRITE, MAP_SHARED, fd_mem, FPGA_SHM_ADDR);
-    if (p_DllFpgaShm < 0)
+    if (p_DllFpgaShm == MAP_FAILED)
     {
         printf("[DLL] FpgaConfig  map fpga shm addr error!");
         close(fd_mem);
@@ -448,6 +501,9 @@ void DLL_SetTimer(UINT8 CallState, UINT16 CallWait)
     uWaitDataTimes = 0;
     uWaitNearTimes = 0;
     uWaitWluTimes = 0;
+
+    // 误码率测试计时器, 仅在测语音误码率时有效
+    uWaitErrTimes = 0;
 }
 
 
@@ -473,6 +529,9 @@ void DLL_ClearTimer(void)
     {
         uGpsFlag = 0xff;
     }
+
+    // 误码率测试计时器, 仅在测语音误码率时有效
+    uWaitErrTimes = 0;
 }
 
 
@@ -535,7 +594,7 @@ void DLL_SyncFpgaCfg(void)
  * @since   trunk.00001
  * @bug
 */
-void * DLL_TimerTask(void * p)
+void *DLL_TimerTask(void * p)
 {
     short GpsTimSync = SYNC_CYC;
     int ret;
@@ -556,8 +615,9 @@ void * DLL_TimerTask(void * p)
             continue;
         }
 
+        TimerTask();  // 定时器
         DLL_SyncFpgaCfg();
-        if (0 == p_DllFpgaShm->FollowEn)
+        if (0 == p_DllFpgaShm->FollowEn)  // 0-解除/1-锁定
         {
             p_DllFpgaShm->WorkOver = WORK_START;
             uLockFreq = 0xff;
@@ -602,9 +662,11 @@ void * DLL_TimerTask(void * p)
             case CALL_VOICE_D:
             {
                 uWaitVoiceTimes++;
-
                 if (uWaitVoiceTimes > uCallWait)
                 {
+                    CC_ERR_COUNT=0;
+                    g_CcRightFlg=0;
+                    CCERR_SUPERFRM_COUNT=0;
                     LOG_DEBUG(s_LogMsgId,"[DLL][%s] TIM  ai data over time, mission complete!", _F_);
                 }
                 break;
@@ -632,11 +694,19 @@ void * DLL_TimerTask(void * p)
                 }
                 break;
             }
+            case CALL_ERR_VOICE_U:
+            {
+                uWaitErrTimes++;
+                if (uWaitErrTimes > uCallWait)
+                {
+                    ErrRateVoiceTest(NULL, STATE_VOICE_TERMINATOR);
+                }
+                break;
+            }
             default:
             {
                 break;
             }
-
         }
 
         continue;
@@ -675,16 +745,9 @@ static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
 }
 
 
-
-
 // 检测邻点断链告警，唯一判断是否产生断链，连续两个周期内没有备份邻点，则认为断链。
 static int check_discon_state()
 {
-    if (ptCFGShm->start_neighbor.val == 0)  // 判断邻点功能是否打开
-    {
-        return DISCON_DISABLE;
-    }
-
     // 根据是否有邻点备份判断断链产生
     if (g_DllGlobalCfg.auNegrId2 == 0)  // auNegrId2=0,认为断链一次
     {
@@ -716,194 +779,483 @@ void set_alarm_discon_switch(int AlarmSwitch)
 
 
 /**
- * @brief   数据链路层邻点突发线程
- *          2个BurstCyc上报一次，
- *          2个上报时间得出是否产生断链
- * @param [in] p       传递给线程start_routine的参数
- * @author  陈禹良
- * @since   trunk.00001
- * @bug
+ * @brief   打印本地印邻点信息
+ * @author  周大元
 */
-void * DLL_NerBurstTask(void * p)
+void CheckLocalNerInfoPrint()
 {
-    int ret;
-    int val;
+    int i;
+    char acNerIdBuf[200] = {0};
+    const char *aStrNer[]={
+        "[0] ",  "[1] ",  "[2] ",  "[3] ",  "[4] ",
+        "[5] ",  "[6] ",  "[7] ",  "[8] ",  "[9] ",
+        "[10] ", "[11] ", "[12] ", "[13] ", "[14] ",
+        "[15] ", "[16] ", "[17] ", "[18] ", "[19] ",
+        "[20] ", "[21] ", "[22] ", "[23] ", "[24] ",
+        "[25] ", "[26] ", "[27] ", "[28] ", "[29] ",
+        "[30] ", "[31] "
+    };
+    int StrNerLen = sizeof(aStrNer)/sizeof(aStrNer[0]);
+    s_uiNegrIdArrayLen = sizeof(s_auiNegrId)/sizeof(s_auiNegrId[0]); 
+
+    for (i = 0; i < StrNerLen; i++)
+    {
+        if (g_DllGlobalCfg.auNegrId2 & (1<<i))
+        {
+            strcat(acNerIdBuf, aStrNer[i]);
+        }
+    }
+
+    /* 查看邻点数组内容 */
+    LOG_DEBUG(s_LogMsgId, "[DLL][%s] s_auiNegrId[0-%d]=[%#x:%#x:%#x], auNegrId2=%#lx",  _F_, (s_uiNegrIdArrayLen-1), s_auiNegrId[0], s_auiNegrId[1], s_auiNegrId[2], g_DllGlobalCfg.auNegrId2);
+    LOG_DEBUG(s_LogMsgId, "[DLL][%s] local Neighbor: NodeId=%d, NerId=[ %s]",  _F_, g_DllGlobalCfg.auNodeId, acNerIdBuf);
+}
+
+/**
+ * @brief   打印其他点邻点信息
+ * @author  周大元
+*/
+void CheckOtherNerInfoPrint(unsigned char *pucData)
+{
+    int i;
+    unsigned char  ucOtherNodeId = pucData[0]; 
+    unsigned long  ulOtherNegrId2;
+    char acNerIdBuf[200] = {0};
+    const char *aStrNer[]={
+        "[0] ",  "[1] ",  "[2] ",  "[3] ",  "[4] ",
+        "[5] ",  "[6] ",  "[7] ",  "[8] ",  "[9] ",
+        "[10] ", "[11] ", "[12] ", "[13] ", "[14] ",
+        "[15] ", "[16] ", "[17] ", "[18] ", "[19] ",
+        "[20] ", "[21] ", "[22] ", "[23] ", "[24] ",
+        "[25] ", "[26] ", "[27] ", "[28] ", "[29] ",
+        "[30] ", "[31] "
+    };
+    int StrNerLen = sizeof(aStrNer)/sizeof(aStrNer[0]);
+    memcpy(&ulOtherNegrId2, &pucData[1], NER_LEN);
+    for (i = 0; i < StrNerLen; i++)
+    {
+        if (ulOtherNegrId2 & (1<<i))
+        {
+            strcat(acNerIdBuf, aStrNer[i]);
+        }
+    }
+    LOG_DEBUG(s_LogMsgId, "[DLL][%s] Other Neighbor: NodeId=%d, NerId=[ %s]",  _F_, ucOtherNodeId, acNerIdBuf);
+}
+
+/**
+ * @brief   打印邻点信息
+ * @author  周大元
+*/
+void CheckNerInfo(unsigned char *pucNodeID, unsigned long *pulNerID, const char *Prompt)
+{
+    const char *aStrNer[] = {
+        "0:" ,  "1:" , "2:",  "3:",  "4:",
+        "5:" ,  "6:" , "7:",  "8:",  "9:",
+        "10:",  "11:", "12:", "13:", "14:",
+        "15:",  "16:", "17:", "18:", "19:",
+        "20:",  "21:", "22:", "23:", "24:",
+        "25:",  "26:", "27:", "28:", "29:",
+        "30:",  "31"
+    };
+
+    int i;
+    char acNerIdBuf[200] = {0};
+    int StrNerLen = sizeof(aStrNer)/sizeof(aStrNer[0]);
+    unsigned char ucNodeID = pucNodeID[0];  // NodeID
+    unsigned long ulNerID;  // NerID
+    memcpy(&ulNerID, pulNerID, NER_LEN);
+
+    for (i = 0; i < StrNerLen; i++)
+    {
+        if (ulNerID & (1<<i))
+        {
+            strcat(acNerIdBuf, aStrNer[i]);
+        }
+    }
+    LOG_DEBUG(s_LogMsgId, "[DLL][%s][%s] NodeId=%d NerId=[%s] NerFlg=%#.8lx",  _F_, Prompt, ucNodeID, acNerIdBuf, ulNerID);
+}
+
+/**
+ * @brief   打印邻点矩阵信息
+ * @author  周大元
+*/
+void CheckNerMatrixPrint()
+{
+    UINT8  i;
+    UINT8  NodeId;
+    UINT32 NerIdFlg;
+    
+    for (i = 0; i < 32; i++)
+    {
+        if (g_DllGlobalCfg.auNerInfo2[i] != 0)
+        {
+            NodeId = i;
+            NerIdFlg = g_DllGlobalCfg.auNerInfo2[i];
+            CheckNerInfo(&NodeId, &NerIdFlg, "Local Matrix");
+        }
+    }
+}
+
+/**
+ * @brief   打印邻点信息
+ * @author  周大元
+*/
+void CheckNerArray()
+{
+    int flag = 0; // 数组元素相等
+    if ((s_auiNegrId[0] != s_auiNegrId[1]) || (s_auiNegrId[0] != s_auiNegrId[2]) || (s_auiNegrId[1] != s_auiNegrId[2]))
+    {
+        flag = 1; // 数组元素不相等
+    }
+    LOG_DEBUG(s_LogMsgId, "[DLL][%s] NegrId[0-2]=[%#x:%#x:%#x], differ=%d, NegrId2=%#lx",  _F_,  s_auiNegrId[0], s_auiNegrId[1], s_auiNegrId[2], flag, g_DllGlobalCfg.auNegrId2);
+}
+
+
+
+
+
+/**
+ * @brief 获取邻点突发周期随机值
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+void GetBurstCyc(UINT32 *pCycFirst, UINT32 *pCycLast)
+{
+    UINT32 BurstCyc;
+#if BURST_CYC_VALUE
+    BurstCyc = BURST_CYC_VALUE*1000;    // 毫秒级
+#else
+    BurstCyc = ptCFGShm->neighbor_period.val*60*1000;  // 突发周期赋值，最小值 1*60*1000ms
+#endif
+    *pCycFirst = rand() % BurstCyc;  // 取值单位周期内的某个时间点
+    *pCycLast = BurstCyc - *pCycFirst;
+#if BURST_CYC_VALUE
+    printf("[%s:%d] BurstCyc=%lu, *pCycFirst=%lu, *pCycLast=%lu\n", _F_, __LINE__, BurstCyc, *pCycFirst, *pCycLast);
+#endif
+}
+
+
+/**
+ * @brief 当前是否摇晕
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+int IsNasStun()
+{
+    return g_DllGlobalCfg.auStunFlag;
+}
+
+/**
+ * @brief 当前是否摇避
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+int IsNasKill()
+{
+    return g_DllGlobalCfg.auKillFlag;
+}
+
+
+/**
+ * @brief 邻点突发开关是否打开
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+int IsNegrBurstSwitch()
+{
+    return ptCFGShm->start_neighbor.val;
+}
+
+
+
+/**
+ * @brief  获取当前DLL状态
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+int GetCallState()
+{
+    return uCallState;   
+}
+
+
+
+/**
+ * @brief  获取当前FPGA状态
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+int GetFpgaFollowState()
+{
+    return p_DllFpgaShm->FollowEn;
+}
+
+
+
+/**
+ * @brief  邻点突发
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+void NegrBurstStart()
+{
     UINT16 u2CRC;
-    UINT32 LeftDelay = 0;
-    UINT32 BurstCyc = 60000;         //毫秒
-    UINT32 BurstCnt = 0;
-
-    struct timeval tv;
-    srand((unsigned int)time( NULL ));
     NAS_NEGR_BURST_T NegrBurst;
+    memset(&NegrBurst, 0, sizeof(NAS_NEGR_BURST_T));
+    NegrBurst.NodeId = g_DllGlobalCfg.auNodeId;
+    NegrBurst.NegrId = g_DllGlobalCfg.auNegrId2;
+    u2CRC = ALG_Crc16((UINT8 *)&NegrBurst, CSBK_LEN);
+    if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
+    {
+        u2CRC = u2CRC ^ PDT_CRC_MASK_CSBK;
+    }
+    else
+    {
+        u2CRC = u2CRC ^ DMR_CRC_MASK_CSBK;
+    }
+    NegrBurst.Crc[0] = (UINT8)(u2CRC >> 8);
+    NegrBurst.Crc[1] = (UINT8)(u2CRC & 0xff);
+    memset(ptInfData, 0, sizeof(NAS_INF_DL_T));  //封装下行fpga数据帧
+    ptInfData->TimeStamp = 0xffffffff;
+    ptInfData->SlotNum = S_1;
+    ptInfData->TxFreq1 = 1;
+    ptInfData->TxFreq2 = 0;
+    ptInfData->tDataLink[F_1].MsgType = DI_MSG_NEAR;
+    ptInfData->tDataLink[F_1].FrmType = FT_VOICE_NO;
+    ptInfData->tDataLink[F_1].CC = g_DllGlobalCfg.auWLUCC;
+    ptInfData->tDataLink[F_1].PI = g_DllGlobalCfg.auPI;
+    ptInfData->tDataLink[F_1].DataType = DI_MSG_NEAR;
+    ptInfData->tDataLink[F_1].DataLen = CSBK_LEN+2;
+    memcpy(ptInfData->tDataLink[F_1].PayLoad, &NegrBurst, (CSBK_LEN+2));
+    ODP_SendInfData(ptInfData, S_NEGR_BST); // 突发
+}
+
+
+
+/**
+ * @brief  邻点周期自加
+ * @param [in]
+ * @author  周大元
+ * 
+*/
+void IncNgbrCycCnt()
+{
+    s_NerCycCnt++;  // 不会被清零的计数器，只记录周期数
+    g_BurstCnt++;    // 会被其他业务清零的计数器
+}
+
+
+
+/**
+ * @brief  邻点信息是否可以读取
+ * @param [in]
+ * @author  周大元
+ * 每两个周期认为接收到一次邻点突发
+*/
+int IsGetNgbrInfoReady()
+{
+    return (s_NerCycCnt % 2 == 0) && (s_NerCycCnt != 0);  // 偶数周期查询一次，首次除外
+}
+
+/**
+ * @brief   备份当前邻点信息
+ * @param [in]
+ * @author  周大元
+*/
+void SaveNgbrInfo()
+{
+    unsigned char i;
+    unsigned int InValidFlag = 0;
+    unsigned char MoveNum = 1; // 取值范围 MoveNumq < ARRAY_NEGR_LEN
+    unsigned int sum = 0;
+    s_uiNegrIdArrayLen = sizeof(s_auiNegrId)/sizeof(s_auiNegrId[0]);
+
+    /*
+    ** 如果在正常运行时， g_BurstCnt=0 or 1, 说明有语音介入。
+    ** 则认为当前邻点信息受到干扰
+    */
+    if (g_BurstCnt < 2)
+    {
+        if ((tDllPrint->PrintLv == PRINT_DEBUG) || (tDllPrint->PrintLv == PRINT_ALL))
+        {
+            LOG_DEBUG(s_LogMsgId,"[DLL][%s] NerCycCnt=%lu, BurstCnt=%lu", _F_, s_NerCycCnt, g_BurstCnt);
+        }
+        g_DllGlobalCfg.auNegrId1 = ~0;  // 如果g_BurstCnt=0 或者  g_BurstCnt=1, 则赋值全 (~0 == 0xffffffff), 本次记录为无效
+    }
+
+    /* 存入新的邻点信息，数组整体右移 更新一次 */
+    for (i = 0; i < s_uiNegrIdArrayLen-MoveNum; i++)
+    {
+        s_auiNegrId[i] = s_auiNegrId[i + MoveNum];
+    }
+    s_auiNegrId[s_uiNegrIdArrayLen-1] = g_DllGlobalCfg.auNegrId1; // 存储新值
+
+    /* 过滤无效邻点信息*/
+    for (i = 0; i < s_uiNegrIdArrayLen; i++)
+    {
+        if (s_auiNegrId[i] != (unsigned int )~0)
+        {
+            sum |= s_auiNegrId[i];
+        }
+        else
+        {
+            InValidFlag |= (1<<i); // 设置bit标志位，邻点无效标志。
+        }
+    }
+
+    /* 如果连续三次，收到的邻点信息均为无效值，则认为当前邻点信息确实为无效 */
+    if (InValidFlag == 0x7)  // 数组s_auiNegrId[]内部为 [0xffffffff: 0xffffffff: 0xffffffff ] 
+    {
+        sum = ~0;
+    }
+
+    // 备份本地邻点信息
+    g_DllGlobalCfg.auNegrId2 = sum;
+    memcpy(g_DllGlobalCfg.auNerInfo2, g_DllGlobalCfg.auNerInfo1, sizeof(g_DllGlobalCfg.auNerInfo1));
+    // 清除本地邻点信息
+    g_DllGlobalCfg.auNegrId1 = 0;
+    memset(g_DllGlobalCfg.auNerInfo1, 0, sizeof(g_DllGlobalCfg.auNerInfo1));
+
+    if ((tDllPrint->PrintLv == PRINT_DEBUG) || (tDllPrint->PrintLv == PRINT_ALL))
+    {
+        CheckNerArray();   // 查看邻点数组
+        CheckNerInfo(&g_DllGlobalCfg.auNodeId, &g_DllGlobalCfg.auNegrId2, "Local Bak");
+    }
+}
+
+
+
+/**
+ * @brief   邻点主动上报开关是否开启
+ * @param [in]
+ * @author  周大元
+*/
+int IsNgbrReportSwitch()
+{
+    return ptCFGShm->neighbor_report_ai.val;
+}
+
+/**
+ * @brief   邻点主动上报
+ * @param [in]
+ * @author  周大元
+*/
+void NgbrReportStart()
+{
     NAS_AI_PAYLOAD NasAiData;
+    memset(&NasAiData, 0, sizeof(NAS_AI_PAYLOAD));
+    NasAiData.cmd_code = CMO_CODE_NER_REPORT;
+    NasAiData.nm_type = NM_TYPE_CENTER;
+    NasAiData.op_code = OP_CODE_GET_ACK;
+    NasAiData.src_id = 31;  // 11111
+    NasAiData.dst_id = 31;  // 11111
+    NasAiData.data[0] = g_DllGlobalCfg.auNodeId;
+    memcpy(&NasAiData.data[1], (UINT8 *)&g_DllGlobalCfg.auNegrId2, NER_LEN);
+    NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
 
-    if (BurstCyc < 60)
+    //封装下行fpga数据帧
+    memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+    ptInfData->TimeStamp = 0xffffffff;
+    ptInfData->SlotNum = S_1;
+    ptInfData->TxFreq1 = 1;
+    ptInfData->TxFreq2 = 0;
+    ptInfData->tDataLink[F_1].MsgType = DI_MSG_WLU;
+    ptInfData->tDataLink[F_1].FrmType = FT_VOICE_NO;
+    ptInfData->tDataLink[F_1].CC = g_DllGlobalCfg.auWLUCC;
+    ptInfData->tDataLink[F_1].PI = g_DllGlobalCfg.auPI;
+    ptInfData->tDataLink[F_1].DataType = DI_MSG_WLU;
+    ptInfData->tDataLink[F_1].DataLen  = CSBK_LEN+2;
+    memcpy(ptInfData->tDataLink[F_1].PayLoad, &NasAiData, (CSBK_LEN+2));
+    // 主动上报4份 by zhoudayuan
+    ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 4-邻点上报
+    ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 3-邻点上报
+    ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 2-邻点上报
+    ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 1-邻点上报
+}
+
+
+
+
+
+
+/**
+ * @brief   数据链路层邻点突发线程
+ * @param [in]
+ * @author  周大元
+*/
+void *DLL_NerBurstTask(void * p)
+{
+    UINT32 BurstCycFirst;  // 毫秒级
+    UINT32 BurstCycLast;   // 毫秒级
+    sleep(30);  // 目的是等待其他模块准备就绪
+    while (1)
     {
-        BurstCyc = 60;
-    }
+        GetBurstCyc(&BurstCycFirst, &BurstCycLast); // 获取前周期 后周期
+        delay(BurstCycFirst);  // 前周期延时
 
-    while(1)
-    {
-        BurstCyc = ptCFGShm->neighbor_period.val*60*1000; //
-        val = rand() % BurstCyc;
-        tv.tv_sec = val / 1000;
-        tv.tv_usec = val % 1000 * 1000;
-        LeftDelay = BurstCyc / 1000 - tv.tv_sec;
-
-        if (BurstCnt == 0)
-        {
-            sleep(60);
-        }
-
-        ret = select(0, NULL, NULL, NULL, &tv);
-
-        if (ret < 0)
-        {
-            printf("[DLL] TIM  select error\n");
-            continue;
-        }
-
-        if (g_DllGlobalCfg.auStunFlag == 1 || g_DllGlobalCfg.auKillFlag == 1)
+        if ((IsNasKill() == 1) || (IsNasStun() == 1)) // 遥晕遥毙是否使能
         {
             continue;
         }
 
-        if (ptCFGShm->start_neighbor.val == 0)
+        if (IsNegrBurstSwitch() == 0)  // 邻点开关是否打开
         {
             continue;
         }
 
-        // 邻点突发
-        if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn)
+        /* 邻点突发 */
+        if ((GetCallState() == CALL_IDLE) && (GetFpgaFollowState() == FPGA_IDLE))
         {
-            memset(&NegrBurst, 0, sizeof(NAS_NEGR_BURST_T));
-            NegrBurst.NodeId = g_DllGlobalCfg.auNodeId;
-            NegrBurst.NegrId = g_DllGlobalCfg.auNegrId2;
+            NegrBurstStart();  // 启动邻点突发
+        }
+        delay(BurstCycLast);   // 后半周期延时
 
-            u2CRC = ALG_Crc16((UINT8 *)&NegrBurst, CSBK_LEN);
 
-            if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
-            {
-                u2CRC = u2CRC ^ PDT_CRC_MASK_CSBK;
-            }
-            else
-            {
-                u2CRC = u2CRC ^ DMR_CRC_MASK_CSBK;
-            }
-            NegrBurst.Crc[0] = (UINT8)(u2CRC >> 8);
-            NegrBurst.Crc[1] = (UINT8)(u2CRC & 0xff);
-
-             //封装下行fpga数据帧
-            memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-
-            ptInfData->TimeStamp = 0xffffffff;
-            ptInfData->SlotNum = S_1;
-            ptInfData->TxFreq1 = 1;
-            ptInfData->TxFreq2 = 0;
-            ptInfData->tDataLink[F_1].MsgType = DI_MSG_NEAR;
-            ptInfData->tDataLink[F_1].FrmType = FT_VOICE_NO;
-            ptInfData->tDataLink[F_1].CC = g_DllGlobalCfg.auWLUCC;
-            ptInfData->tDataLink[F_1].PI = g_DllGlobalCfg.auPI;
-            ptInfData->tDataLink[F_1].DataType = DI_MSG_NEAR;
-            ptInfData->tDataLink[F_1].DataLen = CSBK_LEN+2;
-            memcpy(ptInfData->tDataLink[F_1].PayLoad, &NegrBurst, (CSBK_LEN+2));
-
-            ODP_SendInfData(ptInfData, S_NEGR_BST);         //邻点突发
-
+        /* 邻点信息保存 */
+        if (IsGetNgbrInfoReady() == 1)
+        {
+            SaveNgbrInfo();  // 保存邻点信息
         }
 
-        sleep(LeftDelay);
-        BurstCnt++;
-
-        // 邻点上报
-        if ((BurstCnt % 2 == 0) && (ptCFGShm->neighbor_report_ai.val == 1))
+        /* 邻点上报 */ 
+        if ((IsGetNgbrInfoReady() == 1)  && (IsNgbrReportSwitch() == 1))
         {
-            if (LeftDelay < 5)  // 邻点突发和邻点上报消息保护间隔
+            if (BurstCycLast < 5)  // 上报和突发之间 间隔5S
             {
                 sleep(5);
             }
 
-            if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn && ptCFGShm->start_neighbor.val == 1)
+            if ((GetCallState() == CALL_IDLE) && (GetFpgaFollowState() == FPGA_IDLE) && (IsNegrBurstSwitch() == 1))
             {
-                memset(&NasAiData, 0, sizeof(NAS_AI_PAYLOAD));
-                NasAiData.cmd_code = CMO_CODE_NER_REPORT;
-                NasAiData.nm_type = NM_TYPE_CENTER;
-                NasAiData.op_code = OP_CODE_GET_ACK;
-                NasAiData.src_id = 31;  // 11111
-                NasAiData.dst_id = 31;  // 11111
-                NasAiData.data[0] = g_DllGlobalCfg.auNodeId;
-                memcpy(&NasAiData.data[1], (UINT8 *)&g_DllGlobalCfg.auNegrId2, NER_LEN);
-                NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-
-                //封装下行fpga数据帧
-                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
-                ptInfData->TimeStamp = 0xffffffff;
-                ptInfData->SlotNum = S_1;
-                ptInfData->TxFreq1 = 1;
-                ptInfData->TxFreq2 = 0;
-                ptInfData->tDataLink[F_1].MsgType = DI_MSG_WLU;
-                ptInfData->tDataLink[F_1].FrmType = FT_VOICE_NO;
-                ptInfData->tDataLink[F_1].CC = g_DllGlobalCfg.auWLUCC;
-                ptInfData->tDataLink[F_1].PI = g_DllGlobalCfg.auPI;
-                ptInfData->tDataLink[F_1].DataType = DI_MSG_WLU;
-                ptInfData->tDataLink[F_1].DataLen  = CSBK_LEN+2;
-                memcpy(ptInfData->tDataLink[F_1].PayLoad, &NasAiData, (CSBK_LEN+2));
-                ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
-                // 主动上报4份 by zhoudayuan
-                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 4-邻点上报
-                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 3-邻点上报
-                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 2-邻点上报
-                ODP_SendInfData(ptInfData, S_NEGR_RPT);         // 1-邻点上报
-#if 0
-                //备份本地邻点信息
-                g_DllGlobalCfg.auNegrId2 = g_DllGlobalCfg.auNegrId1;
-                memcpy(g_DllGlobalCfg.auNerInfo2, g_DllGlobalCfg.auNerInfo1, sizeof(g_DllGlobalCfg.auNerInfo1));
-                //清除本地邻点信息
-                g_DllGlobalCfg.auNegrId1 = 0;
-                memset(g_DllGlobalCfg.auNerInfo1, 0, sizeof(g_DllGlobalCfg.auNerInfo1));
-
-                // 检测邻点断链告警
-                if (check_discon_state() == DISCON_HAPPEN)
-                {
-                    set_alarm_discon_switch(TURN_ON);  // 开启告警
-                }
-#endif
+                NgbrReportStart();
             }
-
         }
 
-        if (BurstCnt % 2 == 0)
+        /* 断链告警 */ 
+        if (IsGetNgbrInfoReady() == 1)  
         {
-#if 0
-            if (LeftDelay < 5)  // 邻点突发和邻点上报消息保护间隔
+            if ((GetCallState() == CALL_IDLE) && (GetFpgaFollowState() == FPGA_IDLE) && (IsNegrBurstSwitch() == 1))
             {
-                sleep(5);
-            }
-#endif
-            if (uCallState == CALL_IDLE && 0 == p_DllFpgaShm->FollowEn && ptCFGShm->start_neighbor.val == 1)
-            {
-                //备份本地邻点信息
-                g_DllGlobalCfg.auNegrId2 = g_DllGlobalCfg.auNegrId1;
-                memcpy(g_DllGlobalCfg.auNerInfo2, g_DllGlobalCfg.auNerInfo1, sizeof(g_DllGlobalCfg.auNerInfo1));
-                //清除本地邻点信息
-                g_DllGlobalCfg.auNegrId1 = 0;
-                memset(g_DllGlobalCfg.auNerInfo1, 0, sizeof(g_DllGlobalCfg.auNerInfo1));
-                
-                // 检测邻点断链告警
                 if (check_discon_state() == DISCON_HAPPEN)
                 {
                     set_alarm_discon_switch(TURN_ON);  // 开启告警
+                    g_DisconRecoverPrintFlg = 0;  // 开打印
                 }
-
             }
-
         }
-        continue;
-    }
 
+        IncNgbrCycCnt(); // 记录邻点突发周期
+    }
     pthread_exit(NULL);
 }
+
 
 /**
  * @brief   秒级定时器

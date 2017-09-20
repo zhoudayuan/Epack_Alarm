@@ -63,6 +63,8 @@ typedef enum _CCL_DATA_TYPE_E
     CT_LC_TERMINATOR        = 0x03,                      ///< LC终结帧标识
     CT_PACKET_DATA          = 0x04,                      ///< 短消息
 
+    
+
     CT_GPS_REPORT_REQ_MS    = 0x11,                      ///< 手台GPS上拉
     CT_GPS_REPORT_ACK_MS    = 0x12,                      ///< 手台GPS上拉
     CT_DISABLE_REQ_MS       = 0x13,                      ///< 摇晕
@@ -91,6 +93,8 @@ typedef enum _CCL_DATA_TYPE_E
     CT_DISCON_ALARM         = 0x34,                      ///< 断链告警
     CT_DISCON_ALARM_CLEAR   = 0x35,                      ///< 断链告警清除
 
+    // 语音内嵌
+    CT_GPS_EMB_VOICE        = 0x40,                      ///< 语音内嵌GPS
 } CCL_DATA_TYPE_E;
 
 /**
@@ -162,6 +166,7 @@ void _CFG_Shm();
  */
 int _LocalCfgPrint();
 
+void printf_localtime(char *str);
 
 /******************************************************************************
  *   调用函数声明

@@ -26,6 +26,23 @@
 #define PDT_WORK_MODE            ((UINT8)0)       ///< PDT
 #define DMR_WORK_MODE            ((UINT8)1)       ///< DMR
 
+/*
+** GPSn内嵌相关信息
+*/
+#define  EAST               0   // 从测试来看 0 是东经
+#define  WEST               1   // 从测试来看 1 是西经
+#define  LON_RATIO          ((1<<25)/360.0)
+#define  LON_BIT            24
+#define  NORTH              0
+#define  SOUTH              1
+#define  LAT_RATIO          ((1<<24)/180.0)
+#define  LAT_BIT            23
+#define  LON_LAT_LEN        3
+
+extern const char *g_acpLatStr[2];
+extern const char *g_acpLonStr[2];
+
+
 /**
  * @def  FPGA_SHM_DEV
  * @brief FPGA共享内存设备驱动
@@ -146,6 +163,7 @@ typedef struct _DLL_PRINT_T
     UINT8 PrintLv;      //打印级别
     UINT8 FrqSlt;       //主动发射频点时隙
     UINT8 WorkMode;     //工作模式0:业务1:调测
+    UINT8 Ccerrsuperfrmcnt;//cc错误的超帧数
 } DLL_PRINT_T;
 
 /**
@@ -179,7 +197,7 @@ typedef struct _ERR_PRINT_T
  */
 typedef struct _DLL_FPGA_SHM_T
 {
-    UINT8   FollowEn;                  ///< FPGA跟随使能0:idle, 1:follow
+    UINT8   FollowEn;                  ///< FPGA跟随使能0:idle, 1:follow。当前业务是否结束标记，结束才可以重新跟随
     UINT8   CallingST;                 ///< 主呼标示
     UINT8   EmbInfo[16];               ///< 语音内嵌信令32bit
     UINT8   MSCC;                      ///< 终端CC
@@ -203,7 +221,7 @@ typedef struct _DATA_LINK_T
     UINT8 FrmType;         ///< 见枚举 _FrameType_E
     UINT8 CC:   4;         ///< 色码
     UINT8 PI:   1;         ///< 加密标示
-    UINT8 LCSS: 3;         ///< lc start/stop 标示
+    UINT8 LCSS: 3;         ///< LC start/stop , 标识LC信令的开始，中间，结束.   00-单片LC, 01-LC信令的第一片, 10-LC的最后片， 11-LC的中间片 
     UINT8 DataType;        ///< 空口数据类型
     UINT8 EmbInfo[4];      ///< 空口语音内嵌
     UINT8 Vari[2];         ///< 方差FD 上行有效

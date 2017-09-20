@@ -182,7 +182,7 @@ void ODP_AiPrintf(NAS_INF_DL_T * pdInfData, UINT8 SapType);
 /**
  * @brief 下行发送数据链路终结帧函数
  */
-void ODP_TerminDataLC(UINT8 *DstId, UINT8 *SrcId, UINT8 GI, UINT8 ResFrq, UINT8 ResSlt);
+void ODP_TerDataLC(UINT8 *DstId, UINT8 *SrcId, UINT8 GI, UINT8 ResFrq, UINT8 ResSlt);
 
 /**
  * @brief 下行发送预载波数据处理函数

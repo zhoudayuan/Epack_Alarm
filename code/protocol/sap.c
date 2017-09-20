@@ -93,7 +93,7 @@ int main(void)
     GetSvnRevision();  // 打印svn版本号
     GetCompileTime();  // 打印编译时间
 
-    
+
     // log写文件
     pLogFd = fopen("./LOG.txt", "r+");
     if(NULL == pLogFd)
@@ -133,7 +133,7 @@ int main(void)
     }
     printf("[SAP] local cfg print ok!\n");
 
-    setDebugInit();    // 误码率测试初始化
+    InitDebug();    // 误码率测试初始化
 
     DLL_Init();
     printf("[SAP] dll init\n");
@@ -165,7 +165,7 @@ void GetSvnRevision()
 #if __SVN_VERSION__
     printf("SVN version:%d, Build time:%s\n", BUILD_SVN_VERSION, BUILD_TIMER);
 #endif
-   
+
 }
 
 
@@ -241,7 +241,7 @@ void _IPC_Shm()
 
     /* 将共享内存映射到当前进程的地址中 */
     ptIPCShm = (SHM_IPC_STRU *)shmat(shmid, NULL, 0);
-    if (0 > ptIPCShm)
+    if ((void *)-1  == (void *)ptIPCShm)
     {
         LOG_WFile(pLogFd,"Get IPC Shm MAT error!!!");
         LOG_ERROR(s_LogMsgId,"..._Get IPC Shm MAT error!!!, exit!!!");
@@ -466,4 +466,25 @@ int _LocalCfgPrint()
     return 0;
 }
 
+/**
+ * @brief   获取本地时间
+ *
+ * @author  陈禹良
+ * @since   trunk.00001
+ * @bug
+ */
+void printf_localtime(char *str)
+{
+    time_t timep; 
+    struct tm *localtime; 
+    struct timeval tv; 
+    struct timezone tz; 
+    
+    time(&timep); 
+    localtime = gmtime(&timep);     //·μ???á11tm′ú±í???°UTC ê±??    
+    gettimeofday (&tv , &tz); 
+    
+    printf("%d/%d/%d ",(1900+localtime->tm_year), (1+localtime->tm_mon),localtime->tm_mday); 
+    printf("%02d:%02d:%02d.%06ld  %s\n", localtime->tm_hour, localtime->tm_min, localtime->tm_sec, tv.tv_usec, str); 
+}
 

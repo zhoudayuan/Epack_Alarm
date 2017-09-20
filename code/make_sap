@@ -42,6 +42,7 @@ $gcc_path/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o sap \
                                 ccl_thread.c \
                                 ccl_fun.c \
                                 print_debug.c \
+                                viterbi_decode.c\
                                 -I ../inc -lpthread
 
 if [ -e sap ]

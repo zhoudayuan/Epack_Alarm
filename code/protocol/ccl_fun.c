@@ -17,11 +17,15 @@
  *   *************************************************************************/
 #include "ccl_fun.h"
 #include"ccl.h"
-
+#include "dll.h"
+#include <unistd.h>
 /******************************************************************************
  *   类型定义
  *   *************************************************************************/
 
+extern CCL_PRINT_T * tcclPrint;
+extern SHM_CFG_STRU *ptCFGShm ;
+extern DLL_FPGA_SHM_T *p_DllFpgaShm;
 
 
 extern unsigned int  s_LogMsgId;
@@ -336,21 +340,27 @@ unsigned int QUE_Init(void)
 * @since
 * @bug
 */
- void delay(unsigned long msec)
+void delay(unsigned long msec)
 {
-     struct timeval tv;
-     tv.tv_sec = msec / 1000;
-     tv.tv_usec = (msec % 1000) * 1000;
-     switch(select(0, NULL, NULL, NULL, &tv))
-     {
-     case -1:  // 错误
-         LOG_ERROR(s_LogMsgId,"[CCL][%s]d Error!", __FUNCTION__);
-         break;
-     case 0: //超时
-         break;
-     default:
-        LOG_ERROR(s_LogMsgId,"[CCL][%s]delay default!", __FUNCTION__);
-         break;
+    struct timeval tv;
+    tv.tv_sec = msec / 1000;
+    tv.tv_usec = (msec % 1000) * 1000;
+    switch (select(0, NULL, NULL, NULL, &tv))
+    {
+        case -1:  // 错误
+        {
+            LOG_ERROR(s_LogMsgId,"[CCL][%s]d Error!", __FUNCTION__);
+            break;
+        }
+        case 0:  // 超时
+        {
+            break;
+        }
+        default:
+        {
+            LOG_ERROR(s_LogMsgId,"[CCL][%s]delay default!", __FUNCTION__);
+            break;
+        }
      }
 }
 
@@ -512,123 +522,7 @@ int semaphore_v(int sem_id)
     //SeqNum = data[2] << 8 | data[3];
     return (size-PayloadOffset+1);
 }
- /**
- * @brief  解压经纬度数据包
- * @param [in] src 压缩经纬度数据
- * @param [in]lnglatflg 经度维度标识
- * @param [out] dest解压后数据
- * @author 牛功喜      @ 成功返回长度、失败返回-1
- * @since
- * @bug
- */
-/* int  extract_lng_lat(unsigned int src,unsigned char *dest,unsigned char lnglatflg)
 
-{
-        unsigned int u4Lnglat;
-        unsigned char ubuff[10]={0};
-        u4Lnglat =src;
-        ubuff=itoa(u4Lnglat);
-        if( lnglatflg==LONGTITUDE)
-        {
-            memcpy(dest,ubuff,5);
-
-            dest[5]=0x2e;
-            memcpy(&dest[6],&ubuff[5],4);
-
-            return  GPS_LONGITUEDE_LEN;
-
-        }
-     else if( lnglatflg==LATITUDE)
-        {
-            memcpy(dest,ubuff,4);
-            dest[4]=0x2e;
-            memcpy(&dest[5],&ubuff[5],4);
-
-            return  GPS_LATITUDE_LEN;
-        }
-        else
-        {
-            return -1;
-
-        }
-        return 0;
-}*/
-/**
-* @brief  解压经纬度数据包
-* @param [in] src 压缩速度、方向数据
-* @param [out] dest解压后数据
-* @author 牛功喜      @ 成功返回长度、失败返回-1
-* @since
-* @bug
-*/
-
-int  extract_speed_dir(unsigned short src,unsigned char *dest)
-{
-
-    unsigned short  speed_dir=src;
-    if(speed_dir/1000 !=0)   // 3210   ASCII  321
-        {
-            //speed_dir=speed_dir/10;
-            //dest=itoa(speed_dir);
-            dest[0]=speed_dir/1000+'0';
-            dest[1]=speed_dir/100+'0';
-            dest[2]=speed_dir/10+'0';
-        }
-    else if(speed_dir/10==0 &&speed_dir/100 !=0 )    // 320 ASCII  32.
-        {
-            dest[0]=speed_dir/100+'0';
-            dest[2]=speed_dir/10+'0';
-            dest[3]='.';
-        }
-    else if (speed_dir/10!=0 &&speed_dir/100 ==0)   //32  ASCII  3.2
-        {
-            //ASCII  32
-            dest[0]=speed_dir/10 +'0';                //ASCII  3.2
-            dest[1]='.';
-            dest[2]=speed_dir%10 +'0';
-        }
-    else if(speed_dir/10==0  ) //3
-        {
-            dest[0]='0';
-            dest[1]='.';
-            dest[2]= speed_dir+ '0';
-        }
-    else
-        {
-            return -1;
-        }
-    return 0;
-}
-
-/**
-* @brief  解压时间、日期数据包
-* @param [in] src 压缩时间、日期数据
-* @param [out] dest解压后数据
-* @author 牛功喜      @ 成功返回长度、失败返回-1
-* @since
-* @bug
-*/
-int extract_time(unsigned char *src,unsigned char *dest)
-{
-    unsigned    char i;
-    unsigned char srclen=sizeof(src);
-    unsigned char destlen=sizeof(dest);
-
-    if(3 != srclen || 6 != destlen )
-    {
-       printf("time extract buff error \n");
-       return -1;
-    }
-    for(i=0;i<3;i++)
-    {
-       *dest= *src /10+'0';
-       dest++;
-       *dest= *src %10+'0';
-       dest++;
-       src++;
-    }
-    return 0;
-}
 
 /**
 * @brief    大小端转换
@@ -655,6 +549,67 @@ void LitToBigSmsData(unsigned char *ConvertedData,unsigned char *RawData,unsigne
     }
 }
 
+
+/**
+ * @brief   数据链路层同步GPS时间
+ *
+*/
+void CLL_SyncGpsTime(void)
+{
+    struct tm _tm;
+    struct timeval tv;
+    time_t timep;
+
+    GPS_DEV_DATA_T *GpsDevData;
+    GpsDevData = (GPS_DEV_DATA_T *)(p_DllFpgaShm->GpsData);
+
+    if ((p_DllFpgaShm->GpsFlag & 0x01) == 1)
+    {
+        _tm.tm_sec = GpsDevData->SEC;
+        _tm.tm_min = GpsDevData->MIN;
+        _tm.tm_hour = (GpsDevData->HOUR+8)%24;
+        _tm.tm_mday = GpsDevData->DAY;
+        _tm.tm_mon = GpsDevData->MONTH - 1;
+        _tm.tm_year = GpsDevData->YEAR+ 2000- 1900;
+
+        timep = mktime(&_tm);
+        tv.tv_sec = timep;
+        tv.tv_usec = 0;
+        if(settimeofday (&tv, (struct timezone *) 0) < 0)
+        {
+            printf("Set system datatime error!/n");
+            return;
+        }
+    }
+    return;
+}
+
+/**
+ * @brief   数据链路层同步GPS时间
+ *
+*/
+void CLL_GetGpsTime(struct tm* pvTm)
+{
+    GPS_DEV_DATA_T *GpsDevData;
+    GpsDevData = (GPS_DEV_DATA_T *)(p_DllFpgaShm->GpsData);
+
+    if(NULL != pvTm)
+    {
+        pvTm->tm_sec = GpsDevData->SEC;
+        pvTm->tm_min = GpsDevData->MIN;
+        pvTm->tm_hour = (GpsDevData->HOUR)%24;
+        pvTm->tm_mday = GpsDevData->DAY;
+        pvTm->tm_mon = GpsDevData->MONTH - 1;
+        pvTm->tm_year = GpsDevData->YEAR+ 2000- 1900;
+        return;
+    }
+    else
+    {
+        printf("CLL_SyncGpsTime error!/n");
+    }
+    return;
+}
+
 /**
 * @brief    获取系统时间 按字符串输出
 * @param [out] pvtime  字符格式时间数据指针
@@ -665,20 +620,30 @@ void LitToBigSmsData(unsigned char *ConvertedData,unsigned char *RawData,unsigne
 int GetTime( char *pvtime)
 {
     char pttime[20]={0};
-    time_t rawtime;
-    struct tm* timeinfo;
-    //pttime=pvtime;
-    time(&rawtime);
-    timeinfo=localtime(&rawtime);
-    strftime(pttime,20,"%Y%m%d%H%M%S",timeinfo);
-    //printf("%s \n",pttime);
-    //printf("time len=%d\n",strlen(pttime));
-    /*if (1 == tcclPrint->DllUp)
-    {
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s]  GPSTIME=%s   len=%d  ", __FUNCTION__,pttime,strlen(pttime));
+    struct tm timeinfo;
+    //同步共享内存
+    msync((void *)FPGA_SHM_ADDR, FPGA_SHM_LEN, MS_SYNC);
+
+   // GpsExsit = 0x01 & (p_DllFpgaShm->GpsFlag >> 1);
+
+    if((p_DllFpgaShm->GpsFlag & 0x01) != 1)//GPS 没有锁定
+    {   
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s] GPS time err :gpsexsit:%d lockflg:%d  ", __FUNCTION__,(0x01 & (p_DllFpgaShm->GpsFlag >> 1)),p_DllFpgaShm->GpsFlag & 0x01);
+        memset(pttime,48,14);
     }
-    */
+    else
+    {
+        CLL_SyncGpsTime();
+        memset(&timeinfo,0,sizeof(timeinfo));
+        CLL_GetGpsTime(&timeinfo);
+        usleep(30000);
+        strftime(pttime,20,"%Y%m%d%H%M%S",&timeinfo);
+    }
     strcpy(pvtime,pttime);
+    if (1 == tcclPrint->DllUp)
+    {
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s]  GPSTIME=%s   len=%d  ", __FUNCTION__,pvtime,strlen(pvtime));
+    }
     return 0;
 }
 

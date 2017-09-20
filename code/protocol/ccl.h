@@ -180,7 +180,9 @@
 * @brief  CC 与CCL 层短消息最大有效数据长度
 */
 
-#define    CC_CCL_SMS_PAYLODDLEN            512
+#define    CC_CCL_SMS_PAYLODD_MAX_LEN       255
+#define    CCL_DLL_PAYLODDLEN               500
+
 
 /******************************************************************************
  *   全局变量定义
@@ -194,7 +196,6 @@
  /******************************************************************************
  *   结构体声明
  *   *************************************************************************/
-
 /**
  * @struct _CC_CVID_SUBNET_DATA
  * @brief  中心呼叫、语音ID、子网段数据
@@ -202,8 +203,8 @@
 typedef struct  _CC_CVID_SUBNET_DATA
 {
     unsigned char SubNet;
-    unsigned int  CallId;           // 控制面ID 标识一次呼叫的控制面ID
-    unsigned int  VoiceId;          // 业务面ID 标识一次呼叫的业务面ID
+    unsigned int  CallId;   // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int  VoiceId;  // 业务面ID 标识一次呼叫的业务面ID
     unsigned char srcid[3];
     unsigned char destid[3];
 } CC_CVID_SUBNET_DATA;
@@ -327,16 +328,16 @@ typedef struct _SMS_CCL_DLL_EN
 
 
 /**
- * @struct   _DT_VOICE_LC_HEADER
- * @brief  语音LC 头
+ * @struct   _DT_VOICE_LC_HEADER 9bytes
+ * @brief  语音LC头, 该结构等同于 NAS_PRE_LC_PDU
  */
 typedef struct _DT_VOICE_LC_HEADER
 {
-    unsigned char CtrOpcode:6;          // 设置成0
-    unsigned char Reserved:1;           // 设置成0
-    unsigned char ProtectFlg:1;
-    unsigned char FeatureId;            // 设置成0
-    unsigned char ServiceOpt;
+    unsigned char CtrOpcode:6;   // uFLCO, 设置成0
+    unsigned char Reserved:1;    // uREV, 设置成0
+    unsigned char ProtectFlg:1;  // uPF,
+    unsigned char FeatureId;     // uFID, 设置成0
+    unsigned char ServiceOpt;    // uSO
     unsigned char GroupAddr[3];
     unsigned char SourceAddr[3];
 }  DT_VOICE_LC_HEADER;
@@ -524,11 +525,12 @@ typedef struct _CCL_STAT_INFO_HEAD
     unsigned int   CheckVal;            // 校验值      标识信令校验结果(01版本 与02版本 目前都填写全F，标示无校验方式)
 
 }CCL_STAT_INFO_HEAD;
+
+
 /**
  * @struct   _CCL_STAT_INFO
  * @brief CCL 状态消息
  */
-
 typedef  struct _CCL_STAT_INFO
 {
     CCL_STAT_INFO_HEAD  StatInfoHead;
@@ -651,8 +653,8 @@ typedef  struct _GPS__CC_INFO
 
 typedef union _SHARE_CC_DATA_D
 {
-    PTT_CMD  CC_PTT_CMD;        // 中心手台命令
-    PTT_OFF_ACK CC_Ptt_Ack;     // 中心PTT命令响应
+    PTT_CMD  CcPttCmd;        	// 中心手台命令  on/off
+    PTT_OFF_ACK CcPttAck;     	// 中心PTT命令响应  on/off ack
     SMS_CENTER_CCL_DL CcSmsSig; // 中心短消息命令
 } SHARE_CC_DATA_D;
 
@@ -704,7 +706,10 @@ typedef union _SHARE_CC_DATA_D
     DISCON_ALARM            =0x40,
     MS_ALARM                =0x41,
     DISCON_NAS_ALARM_CLEAR  =0x42,
-    MS_ALARM_CLEAR          =0x43
+    MS_ALARM_CLEAR          =0x43,
+
+    //语音内嵌
+    GPS_EMB_VOICE_REPORT    =0x44
 
  } SMS_DATA_CALL_TYPE;
 
@@ -733,26 +738,26 @@ typedef enum _INF_SIG_TYPE_EN
 }INF_SIG_TYPE_EN;
 
 /**
- * @enum     _INF_CCL_STATE_EN
+ * @enum   _INF_CCL_STATE_EN
  * @brief  呼叫控制层状态
  */
 typedef  enum  _INF_CCL_STATE_EN
 {
-    INF_CCL_IDLE        =0x01,      //呼叫控制层空闲
-    CENTER_VOICE_DL     =0x02,      //中心语音下行
-    Wait_Stun_Ms_Ack    =0x03,      //等待摇晕MS响应
-    Wait_Stun_Nas_Ack   =0x04,      //等待摇晕WLU响应状态
-    Wait_Kill_Nas_Ack   =0x05,      //WLU 摇毙
-    Wait_Gps_Nas_Ack    =0x06,
-    Wait_Gps_Ms_Ack     =0x07,
-    Wait_NEGHR_Nas_Ack  =0x08,
-    Wait_Reviv_NAS_Ack  =0x09,
-    Wait_Reviv_MS_Ack   =0x0b,
-    NAS_VOICE_UL        =0x0c,
-    NAS_STAT_STUNED     =0x18,      //设备摇晕
-    INF_CCL_DISABLE     =0x19,
-    SMS_SEND            =0X1a       //短消息发送
-}INF_CCL_STATE_EN;
+    INF_CCL_IDLE        =1,      // 呼叫控制层空闲
+    CENTER_VOICE_DL     =2,      // 中心语音下行
+    Wait_Stun_Ms_Ack    =3,      // 等待摇晕MS响应
+    Wait_Stun_Nas_Ack   =4,      // 等待摇晕WLU响应状态
+    Wait_Kill_Nas_Ack   =5,      // WLU 摇毙
+    Wait_Gps_Nas_Ack    =6,
+    Wait_Gps_Ms_Ack     =7,
+    Wait_NEGHR_Nas_Ack  =8,
+    Wait_Reviv_NAS_Ack  =9,
+    Wait_Reviv_MS_Ack   =10,
+    NAS_VOICE_UL        =11,
+    NAS_STAT_STUNED     =12,      // 设备摇晕
+    INF_CCL_DISABLE     =13,
+    SMS_SEND            =14       // 短消息发送
+} INF_CCL_STATE_EN;
 
 
 typedef enum _NAS_WORK_STATE_E
@@ -790,4 +795,3 @@ typedef enum _NEAR_REPORT_TYPE_E
 
 
 #endif //UINT_INF_H
-

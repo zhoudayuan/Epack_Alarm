@@ -13,15 +13,15 @@
  */
 /*
  *   函数列表
- *   1. set_ticker                           时间定时器函数
-      2. timercallback                       定时器回调函数
- *   3. CCL_init                             CCL初始化函数
- *   4. thread_create                     线程创建函数
- *   5. ODP_HandleCenterVioce       处理中心语音数据线程函数
- *   6. ODP_HandleCenterSig          处理中心数据线程函数
- *   7. IDP_RecfromDll                   接收DLL数据线程函数
- *   8.  isSocketReadble                   检查套接字是否可读
- *   9. Handletimerthread             定时器处理线程
+ *   1. set_ticker                 时间定时器函数
+      2. timercallback             定时器回调函数
+ *   3. CCL_init                   CCL初始化函数
+ *   4. thread_create              线程创建函数
+ *   5. ODP_CcVioceTask  处理中心语音数据线程函数
+ *   6. ODP_CcSigTask    处理中心数据线程函数
+ *   7. IDP_RecfromDll             接收DLL数据线程函数
+ *   8.  isSocketReadble           检查套接字是否可读
+ *   9. CclTimerTask          定时器处理线程
  *   10.
  *   11.
  *   12.
@@ -127,21 +127,21 @@ int    CCL_init(void);
  /**
  * @brief   处理中心语音线程函数
  */
-void  *ODP_HandleCenterVioce(void *arg);
+void *ODP_CcVioceTask(void *arg);
 
  /**
  * @brief   处理中心信令线程
  */
-void *ODP_HandleCenterSig(void *arg);
+void *ODP_CcSigTask(void *arg);
  /**
  * @brief   CCL 接收DLL数据线程
  */
-void* IDP_RecFrmDllthread(void *arg);
+void *IDP_DllMsgTask(void *arg);
 
 /**
 * @brief  定时器处理函数线程
 */
-void*  Handletimerthread(void);
+void *CclTimerTask(void);
 /**
 * @brief   CCL 创建线程函数
 */

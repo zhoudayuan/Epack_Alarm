@@ -25,6 +25,7 @@
  *  Include
  * ***************************************************************************/
 #include "dll_algrthm.h"
+#include <math.h>
 
 
 void voice_enc(UINT16* pu2Voice, UINT16* pu2AiData);
@@ -98,6 +99,45 @@ void cach_frag_dec(UINT16* pu2AiData, UINT16* pu2TACT, UINT32* pu4CACH);
 void rc_enc(UINT16* pu2RC, UINT16* pu2AiData);
 
 void rc_dec(UINT16* pu2AiData, UINT16* pu2RC, UINT16* pu2Result);
+
+INT16 distance(INT16 px1, INT16 px2, INT16 py1, INT16 py2,INT16 pout);
+void TriBit(UINT16 *psymbol, UINT16 num, UINT16 *pbit);
+void quick_sort(UINT16 alldata[], INT16 l, INT16 r);
+void DealArray(INT16 array[8], UINT16 nn);
+
+/** @defgroup  3/4网格码维特比译码功能函数 */
+/**
+* @brief 星图映射函数
+*/
+	void MapStar(UINT16 *pinstar, UINT16 num, INT16 *pdataX, INT16 *pdataY);
+
+/**
+* @brief 输入及状态确定函数
+*/
+
+void Status(UINT16 *pinth, UINT16 *pstat, UINT16 *pdata);
+
+/**
+* @brief 最小的8条可能路径确定函数
+*/
+
+void PathFunc(UINT16 *parrary, UINT16 *pipath_ed, UINT16 *pstate, UINT16 *pdata);
+
+/**
+* @brief 最终译码输出函数
+*/
+
+UINT16 MinPath(UINT16 *pdata);
+
+/**
+* @brief 维特比译码函数
+*/
+void Virterbi(UINT16 *pindata,  UINT16 outdata[]);
+
+/**
+* @brief 10进制符号转换为2进制bit流
+*/
+INT16 BitToSymbol(INT16 InBit);
 
 #endif /* __INTERLEAVE_H__ */
 

@@ -87,11 +87,17 @@ typedef struct _WLU_LOG_MSG_T
     }\
 }while(0)
 
+#if 0
+// bak
 #define LOG_DEBUG(x,...) LOG_Debug(x,"[""DEBUG""]""["TASK_NAME"]"__VA_ARGS__)
-
 #define LOG_ERROR(x,...) LOG_Debug(x,"[""ERROR""]""["TASK_NAME"]"__VA_ARGS__)
-
 #define LOG_WARNING(x,...) LOG_Debug(x,"[""WARNING""]""["TASK_NAME"]"__VA_ARGS__)
+#endif
+#define LOG_DEBUG(x,...) LOG_Debug(x,"[""DEBUG""]"__VA_ARGS__)
+#define LOG_ERROR(x,...) LOG_Debug(x,"[""ERROR""]"__VA_ARGS__)
+#define LOG_WARNING(x,...) LOG_Debug(x,"[""WARNING""]"__VA_ARGS__)
+
+
 
 #define LOG_Wfile(x,...) do{\
      time_t timep;\

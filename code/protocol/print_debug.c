@@ -22,58 +22,46 @@ extern CCL_PRINT_T * tcclPrint;
  */
 extern DLL_PRINT_T *tDllPrint;
 /**
- * @var 
+ * @var
  * @brief 语音信源数据
  */
 extern UINT8 s_au2VoiceSource[3][6][27];
 /**
- * @var 
+ * @var
  * @brief 计算误码率
  */
 extern UINT16 ones16(UINT16 u2Data);
 /**
- * @var 
+ * @var
  * @brief 计算误码率
  */
 FILE *g_fp_err_test;
 
 
+//------------------邻点功能调试------------------
+#define NER_CHECK_LOG_PATH   "NerCheckLog.log"
+FILE *g_fpNerCheckLog = NULL;
 
-#if 0
-extern TYPE_PRINT_T *pTable_sms;
-extern unsigned short pTable_sms_len;
-extern TYPE_PRINT_T *pTable_msg;
-extern unsigned short pTable_msg_len;
-extern TYPE_PRINT_T *pTable_data;
-extern unsigned short pTable_data_len;
-if (tDllPrint->CCUp == 1)
-if (tDllPrint->CCDown == 1)
-if (tDllPrint->AIUp == 1)
-if (tDllPrint->AIDown == 1)
-
-#endif
-
-
-
+UINT8  g_ErrVoiceState = ERR_VOICE_HEADER;
 
 //------------------------类型------------------------
 // table-0 sms-类型调试表--by zhoudayuan
-TYPE_PRINT_T table_sig_type_print[] = {
-    {SIG_STATUS_REPORT   ,  "SIG_STATUS_REPORT"},       // NAS状态上报
-    {SIG_PTT_CMD         ,  "SIG_PTT_CMD"},             // PTT命令信令
-    {SIG_PTT_ON_ACK      ,  "SIG_PTT_ON_ACK"},          // PTTON回复信令
-    {SIG_SMS_SEND        ,  "SIG_SMS_SEND"},            // 短消息命令
-    {SIG_SMS_ACK         ,  "SIG_SMS_ACK"},             // 短消息回复信令
-    {SIG_PTT_OFF_ACK     ,  "SIG_PTT_OFF_ACK"},         // PTTOFF回复信令
+T_TypePrint atSigTable[] = {
+    {SIG_STATUS_REPORT   ,  "StatusRpt"},       // NAS状态上报
+    {SIG_PTT_CMD         ,  "PttCmd"},          // PTT命令信令
+    {SIG_PTT_ON_ACK      ,  "PttOnAck"},        // PTTON回复信令
+    {SIG_SMS_SEND        ,  "SmsSnd"},          // 短消息命令
+    {SIG_SMS_ACK         ,  "SmsAck"},          // 短消息回复信令
+    {SIG_PTT_OFF_ACK     ,  "PttOffAck"},       // PTTOFF回复信令
 };
 
-TYPE_PRINT_T *pTable_sig = table_sig_type_print;
-unsigned short pTable_sig_len = sizeof(table_sig_type_print)/sizeof(table_sig_type_print[0]);
+T_TypePrint *ptSigTable = atSigTable;
+unsigned short usSigTableLen = sizeof(atSigTable)/sizeof(atSigTable[0]);
 
 
 
 // table-1 sms-类型调试表--by zhoudayuan
-TYPE_PRINT_T table_sms_type_print[] = {
+T_TypePrint table_sms_type_print[] = {
     //短消息
     {MESSAGE_PRIVATE_CALL    ,   "MESSAGE_PRIVATE_CALL"},
     {MESSAGE_GROUP_CALL      ,   "MESSAGE_GROUP_CALL"},
@@ -109,66 +97,66 @@ TYPE_PRINT_T table_sms_type_print[] = {
     {DISCON_NAS_ALARM_CLEAR  ,   "DISCON_NAS_ALARM_CLEAR"},
     {MS_ALARM_CLEAR          ,   "MS_ALARM_CLEAR"}
 };
-TYPE_PRINT_T *pTable_sms = table_sms_type_print;
+T_TypePrint *pTable_sms = table_sms_type_print;
 unsigned short pTable_sms_len = sizeof(table_sms_type_print)/sizeof(table_sms_type_print[0]);
 
 
 
 
 // table-2 msg-类型调试表--by zhoudayuan
-TYPE_PRINT_T table_msg_type_print[] = {
-    {DI_MSG_IDLE             ,   "DI_MSG_IDLE"},               ///< 空闲消息
-    {DI_MSG_VOICE            ,   "DI_MSG_VOICE"},              ///< 语音消息
-    {DI_MSG_DATA             ,   "DI_MSG_DATA"},               ///< 数据消息
-    {DI_MSG_NEAR             ,   "DI_MSG_NEAR"},               ///< 邻点消息
-    {DI_MSG_NM               ,   "DI_MSG_NM"},                 ///< 网管消息
-    {DI_MSG_WLU              ,   "DI_MSG_WLU"}                 ///< WLU数据消息
+T_TypePrint atMsgTable[] = {
+    {DI_MSG_IDLE             ,   "Idle"},               ///< 空闲消息
+    {DI_MSG_VOICE            ,   "Voice"},              ///< 语音消息
+    {DI_MSG_DATA             ,   "Data"},               ///< 数据消息
+    {DI_MSG_NEAR             ,   "Ner"},               ///< 邻点消息
+    {DI_MSG_NM               ,   "Nm"},                 ///< 网管消息
+    {DI_MSG_WLU              ,   "Wlu"}                 ///< WLU数据消息
 };
-TYPE_PRINT_T *pTable_msg = table_msg_type_print;
-unsigned short pTable_msg_len = sizeof(table_msg_type_print)/sizeof(table_msg_type_print[0]);
+T_TypePrint *ptMsgTable = atMsgTable;
+unsigned short usMsgTableLen = sizeof(atMsgTable)/sizeof(atMsgTable[0]);
 
 
 // table-3 ccl data-类型调试表--by zhoudayuan
-TYPE_PRINT_T table_ccl_data_print[] = {
+T_TypePrint table_ccl_data_print[] = {
     // 空口数据类型DC_MSG_DATA
-    {CT_JUNK_DATA            ,   "CT_JUNK_DATA"},              ///<非数据消息
-    {CT_PI_HEADER            ,   "CT_PI_HEADER"},              ///<PI头帧标识
-    {CT_LC_HEADER            ,   "CT_LC_HEADER"},              ///<LC头帧标识
-    {CT_LC_TERMINATOR        ,   "CT_LC_TERMINATOR"},          ///<LC终结帧标识
-    {CT_PACKET_DATA          ,   "CT_PACKET_DATA"},            ///<短消息
-    {CT_GPS_REPORT_REQ_MS    ,   "CT_GPS_REPORT_REQ_MS"},      ///<手台GPS上拉
-    {CT_GPS_REPORT_ACK_MS    ,   "CT_GPS_REPORT_ACK_MS"},      ///<手台GPS上拉
-    {CT_DISABLE_REQ_MS       ,   "CT_DISABLE_REQ_MS"},         ///<摇晕
-    {CT_DISABLE_ACK_MS       ,   "CT_DISABLE_ACK_MS"},         ///<摇晕
-    {CT_ENABLE_REQ_MS        ,   "CT_ENABLE_REQ_MS"},          ///<终端激活
-    {CT_ENABLE_ACK_MS        ,   "CT_ENABLE_ACK_MS"},          ///<终端激活
-    {CT_ALARM_REQ_MS         ,   "CT_ALARM_REQ_MS"},           ///<终端紧急告警
-    {CT_ALARM_ACK_MS         ,   "CT_ALARM_ACK_MS"},           ///<终端紧急告警
+    {CT_JUNK_DATA            ,   "Junk_Data"},            ///<非数据消息
+    {CT_PI_HEADER            ,   "PiHdr"},                ///<PI头帧标识
+    {CT_LC_HEADER            ,   "LcHdr"},                ///<LC头帧标识
+    {CT_LC_TERMINATOR        ,   "LcTer"},                ///<LC终结帧标识
+    {CT_PACKET_DATA          ,   "PacketData"},           ///<短消息
+    {CT_GPS_REPORT_REQ_MS    ,   "GpsRptReqMs"},          ///<手台GPS上拉
+    {CT_GPS_REPORT_ACK_MS    ,   "GpsRptAckMs"},          ///<手台GPS上拉
+    {CT_DISABLE_REQ_MS       ,   "DisableReqMs"},         ///<摇晕
+    {CT_DISABLE_ACK_MS       ,   "DisableAckMs"},         ///<摇晕
+    {CT_ENABLE_REQ_MS        ,   "EnableReqMs"},          ///<终端激活
+    {CT_ENABLE_ACK_MS        ,   "EnableAckMs"},          ///<终端激活
+    {CT_ALARM_REQ_MS         ,   "AlarmReqMs"},           ///<终端紧急告警
+    {CT_ALARM_ACK_MS         ,   "AlarmAckMs"},           ///<终端紧急告警
     // 链路机数据类型DC_MSG_WLU /链路机数据类型DC_MSG_WLU
-    {CT_GPS_REPORT_REQ_NAS   ,   "CT_GPS_REPORT_REQ_NAS"},     ///< GPS上拉
-    {CT_GPS_REPORT_ACK_NAS   ,   "CT_GPS_REPORT_ACK_NAS"},     ///< GPS上拉
-    {CT_STUN_REQ_NAS         ,   "CT_STUN_REQ_NAS"},           ///<摇晕
-    {CT_STUN_ACK_NAS         ,   "CT_STUN_ACK_NAS"},           ///<摇晕
-    {CT_KILL_REQ_NAS         ,   "CT_KILL_REQ_NAS"},           ///<摇毙
-    {CT_KILL_ACK_NAS         ,   "CT_KILL_ACK_NAS"},           ///<摇毙
-    {CT_ENABLE_REQ_NAS       ,   "CT_ENABLE_REQ_NAS"},         ///<WLU激活
-    {CT_ENABLE_ACK_NAS       ,   "CT_ENABLE_ACK_NAS"},         ///<WLU激活
-    {CT_STUN_RPT_NAS         ,   "CT_STUN_RPT_NAS"},           ///<WLU遥晕?
-    {CT_KILL_RPT_NAS         ,   "CT_KILL_RPT_NAS"},           ///<WLU遥毙上报
-    {CT_ENABLE_RPT_NAS       ,   "CT_ENABLE_RPT_NAS"},         ///< WLU激活上报
-    {CT_NEGHR_QUERY          ,   "CT_NEGHR_QUERY"},            ///<邻点信息查询
-    {CT_NEGHR_QUERY_ACK      ,   "CT_NEGHR_QUERY_ACK"},        ///< 邻点信息响应
-    {CT_NEGHR_REPORT         ,   "CT_NEGHR_REPORT"},           ///<邻点信息上报
-    {CT_DISCON_ALARM         ,   "CT_DISCON_ALARM"},           ///<断链告警
-    {CT_DISCON_ALARM_CLEAR   ,   "CT_DISCON_ALARM_CLEAR"}      ///< 断链告警清除
+    {CT_GPS_REPORT_REQ_NAS   ,   "GpsRptReqNas"},         ///< GPS上拉
+    {CT_GPS_REPORT_ACK_NAS   ,   "GpsRptAckNas"},         ///< GPS上拉
+    {CT_STUN_REQ_NAS         ,   "StunReqNas"},           ///<摇晕
+    {CT_STUN_ACK_NAS         ,   "StunAckNas"},           ///<摇晕
+    {CT_KILL_REQ_NAS         ,   "KillReqNas"},           ///<摇毙
+    {CT_KILL_ACK_NAS         ,   "KillAckNas"},           ///<摇毙
+    {CT_ENABLE_REQ_NAS       ,   "EnableReqNas"},         ///<WLU激活
+    {CT_ENABLE_ACK_NAS       ,   "EnableAckNas"},         ///<WLU激活
+    {CT_STUN_RPT_NAS         ,   "StunRptNas"},           ///<WLU遥晕?
+    {CT_KILL_RPT_NAS         ,   "KillRptNas"},           ///<WLU遥毙上报
+    {CT_ENABLE_RPT_NAS       ,   "EnableRptNas"},         ///< WLU激活上报
+    {CT_NEGHR_QUERY          ,   "NeghrQuery"},           ///<邻点信息查询
+    {CT_NEGHR_QUERY_ACK      ,   "NeghrQueryAck"},        ///< 邻点信息响应
+    {CT_NEGHR_REPORT         ,   "NeghrReport"},          ///<邻点信息上报
+    {CT_DISCON_ALARM         ,   "DisconAlarm"},          ///<断链告警
+    {CT_DISCON_ALARM_CLEAR   ,   "DisconAlarmClear"}      ///< 断链告警清除
 };
 
-TYPE_PRINT_T *pTable_data = table_ccl_data_print;
+T_TypePrint *pTable_data = table_ccl_data_print;
 unsigned short pTable_data_len = sizeof(table_ccl_data_print)/sizeof(table_ccl_data_print[0]);
 
 
 // table-4 cmd 类型调试表--by zhoudayuan
-TYPE_PRINT_T table_cmd_type_print[] = {
+T_TypePrint atCmdTable[] = {
 #if 0
     //网管空口命令
     {CMD_CODE_DEV_FREQ                ,    "CMD_CODE_DEV_FREQ"},
@@ -183,16 +171,16 @@ TYPE_PRINT_T table_cmd_type_print[] = {
     {CMD_CODE_ALARM                  ,    "CMD_CODE_ALARM"},
 #endif
     //业务模块命令字C0~FF
-    {CMD_CODE_GPS_REPORT              ,    "CMD_CODE_GPS_REPORT"},
-    {CMD_CODE_STUN                    ,    "CMD_CODE_STUN"},
-    {CMD_CODE_KILL                    ,    "CMD_CODE_KILL"},
-    {CMD_CODE_ENABLE                  ,    "CMD_CODE_ENABLE"},
-    {CMD_CODE_NER_QUERY               ,    "CMD_CODE_NER_QUERY"},
-    {CMO_CODE_NER_REPORT              ,    "CMO_CODE_NER_REPORT"},
-    {CMO_CODE_MS_GPS                  ,    "CMO_CODE_MS_GPS"},
-    {CMO_CODE_MS_DISABlE              ,    "CMO_CODE_MS_DISABlE"},
-    {CMO_CODE_MS_ENABLE               ,    "CMO_CODE_MS_ENABLE"},
-    {CMO_CODE_NAS_PRE                 ,    "CMO_CODE_NAS_PRE"},
+    {CMD_CODE_GPS_REQUEST             ,    "GpsReq"},
+    {CMD_CODE_STUN                    ,    "Stun"},
+    {CMD_CODE_KILL                    ,    "Kill"},
+    {CMD_CODE_ENABLE                  ,    "Enable"},
+    {CMD_CODE_NER_QUERY               ,    "NerQuery"},
+    {CMO_CODE_NER_REPORT              ,    "NerRpt"},
+    {CMO_CODE_MS_GPS                  ,    "MsGps"},
+    {CMO_CODE_MS_DISABlE              ,    "MsDisable"},
+    {CMO_CODE_MS_ENABLE               ,    "MsEnable"},
+    {CMO_CODE_NAS_PRE                 ,    "Pre"},
 #if 0
     //网管本地命令
     {CMD_CODE_OPEN_CLOSE_LOOP         ,    "CMD_CODE_OPEN_CLOSE_LOOP"},
@@ -277,63 +265,70 @@ TYPE_PRINT_T table_cmd_type_print[] = {
     {CMD_CODE_CENTER_QUERY_ALARM      ,    "CMD_CODE_CENTER_QUERY_ALARM"}
 #endif
 };
-TYPE_PRINT_T *pTable_cmd = table_cmd_type_print;
-unsigned short pTable_cmd_len = sizeof(table_cmd_type_print)/sizeof(table_cmd_type_print[0]);
+T_TypePrint *ptCmdTable = atCmdTable;
+unsigned short usCmdTableLen = sizeof(atCmdTable)/sizeof(atCmdTable[0]);
 
 // table-5 cmd 类型调试表--by zhoudayuan
-TYPE_PRINT_T table_op_type_print[] = {
-    {OP_CODE_GET        ,  "OP_CODE_GET"},
-    {OP_CODE_GET_ACK    ,  "OP_CODE_GET_ACK"},
-    {OP_CODE_SET        ,  "OP_CODE_SET"},
-    {OP_CODE_SET_ACK    ,  "OP_CODE_SET_ACK"},
-    {OP_CODE_ALARM      ,  "OP_CODE_ALARM"},
-    {OP_CODE_E_ALARM    ,  "OP_CODE_E_ALARM"}
+T_TypePrint atOpTable[] = {
+    {OP_CODE_GET        ,  "Get"},
+    {OP_CODE_GET_ACK    ,  "GetAck"},
+    {OP_CODE_SET        ,  "Set"},
+    {OP_CODE_SET_ACK    ,  "SetAck"},
+    {OP_CODE_ALARM      ,  "Alarm"},
+    {OP_CODE_E_ALARM    ,  "E_Alarm"}
 };
-TYPE_PRINT_T *pTable_op = table_op_type_print;
-unsigned short pTable_op_len = sizeof(table_op_type_print)/sizeof(table_op_type_print[0]);
+T_TypePrint *ptOpTable = atOpTable;
+unsigned short usOpTableLen = sizeof(atOpTable)/sizeof(atOpTable[0]);
 
 
 // table-6 cmd 类型调试表--by zhoudayuan
-TYPE_PRINT_T table_AI_type_print[] = {
-    {DT_PI_HEADER        ,  "DT_PI_HEADER"},        ///<PI头帧标识
-    {DT_LC_HEADER        ,  "DT_LC_HEADER"},        ///<LC头帧标识
-    {DT_LC_TERMINATOR    ,  "DT_LC_TERMINATOR"},    ///<LC终结帧标识
-    {DT_CSBK             ,  "DT_CSBK"},
-    {DT_MBC_HEADER       ,  "DT_MBC_HEADER"},
-    {DT_MBC_CONTINUE     ,  "DT_MBC_CONTINUE"},
-    {DT_DATA_HEADER      ,  "DT_DATA_HEADER"},
-    {DT_R_1_2_DATA       ,  "DT_R_1_2_DATA"},
-    {DT_R_3_4_DATA       ,  "DT_R_3_4_DATA"},
-    {DT_IDLE             ,  "DT_IDLE"},
-    {DT_R_1_1_DATA       ,  "DT_R_1_1_DATA"}
+T_TypePrint atDllDataTable[] = {
+    {DT_PI_HEADER        ,  "PiHdr"},   ///<PI头帧标识
+    {DT_LC_HEADER        ,  "LcHdr"},   ///<LC头帧标识
+    {DT_LC_TERMINATOR    ,  "LcTer"},   ///<LC终结帧标识
+    {DT_CSBK             ,  "CSBK"},
+    {DT_MBC_HEADER       ,  "MbcHdr"},
+    {DT_MBC_CONTINUE     ,  "MbcCont"},
+    {DT_DATA_HEADER      ,  "DtHdr"},
+    {DT_R_1_2_DATA       ,  "R12"},
+    {DT_R_3_4_DATA       ,  "R34"},
+    {DT_IDLE             ,  "Idle"},
+    {DT_R_1_1_DATA       ,  "R11"}
 };
+T_TypePrint *ptDllDataTable = atDllDataTable;
+unsigned short usDllDataTableLen = sizeof(atDllDataTable)/sizeof(atDllDataTable[0]);
 
-TYPE_PRINT_T *pTable_AI = table_AI_type_print;
-unsigned short pTable_AI_len = sizeof(table_AI_type_print)/sizeof(table_AI_type_print[0]);
+// table-7 CSBKO 类型调试表
+T_TypePrint atCsbkoTable[] = {
+    {PRE_CSBKO               ,    "Pre"      },    // 预载波
+//    {REQ_CSBKO_DMR           ,    "ReqDmr"   },    // Common Signalling Request CSBKO FOR DMR
+    {REQ_CSBKO               ,    "Req"      },    // Common Signalling Request CSBKO
+    {ACK_CSBKO               ,    "Ack"      },    // Common Signalling Answer Response CSBKO
+    {ALARM_CSBKO             ,    "Alarm"    },    // Digital Alarm Service Request CSBKO
+//    {ALARM_CSBKO_DMR         ,    "AlarmDmr" },    // Digital Alarm Service Request CSBKO For DMR
+};                                                 
 
-// table-7 CSBKO 类型调试表--by zhoudayuan
-TYPE_PRINT_T table_CSBKO_type_print[] = {
-    {PRE_CSBKO      ,   "PRE_CSBKO"},               //  预载波
-    {REQ_CSBKO      ,   "REQ_CSBKO"},               //  Common Signalling Request CSBKO
-    {ACK_CSBKO      ,   "ACK_CSBKO"},               //  Common Signalling Answer Response CSBKO
-    {ALARM_CSBKO    ,   "ALARM_CSBKO"},             //  Digital Alarm Service Request CSBKO
-};
-TYPE_PRINT_T *pTable_CSBKO = table_CSBKO_type_print;
-unsigned short pTable_CSBKO_len = sizeof(table_CSBKO_type_print)/sizeof(table_CSBKO_type_print[0]);
+T_TypePrint *ptCsbkoTable = atCsbkoTable;
+unsigned short usCsbkoTableLen = sizeof(atCsbkoTable)/sizeof(atCsbkoTable[0]);
 
 // table-8 SSO 类型调试表--by zhoudayuan
-TYPE_PRINT_T table_SSO_type_print[] = {
-    {CALL_ALERT_SSO       ,   "CALL_ALERT_SSO"},      // CallAlertService
-    {EN_RADIO_SSO         ,   "EN_RADIO_SSO"},        // RadioEnableService
-    {DIS_RADIO_SSO        ,   "DIS_RADIO_SSO"},       // RadioDisableService
-    {DIGITAL_ALARM_SSO    ,   "DIGITAL_ALARM_SSO"},   // 该值暂定-DigitalAlarmService
-};
-TYPE_PRINT_T *pTable_SSO = table_SSO_type_print;
-unsigned short pTable_SSO_len = sizeof(table_SSO_type_print)/sizeof(table_SSO_type_print[0]);
+T_TypePrint atSsoTable[] = {
+    {CALL_ALERT_SSO          ,   "CallAlert" },    // Call Alert Service
+    {EN_RADIO_SSO            ,   "En"        },    // Radio Enable Service
+    {DIS_RADIO_SSO           ,   "Dis"       },    // Radio Disable Service
+//    {DIGITAL_ALARM_SSO       ,   "Alarm"     },    // 该值暂定-Digital Alarm Service
+//    {DIGITAL_ALARM_SSO_DMR   ,   "AlarmDmr"  },    // 该值暂定-Digital Alarm Service FOR DMR
+//    {EN_RADIO_REV_DMR        ,   "EnDmr"     },    // Radio Enable Service for DMR
+//    {DIS_RADIO_REV_DMR       ,   "DisDmr"    },    // Radio Disable Service for DMR
+//    {EN_RADIO_REV_ACK_DMR    ,   "EnAckDmr"  },    // Radio Enable Service for DMR ACK
+//    {DIS_RADIO_REV_ACK_DMR   ,   "DisAckDmr" },    // Radio Disable Service for DMR ACK
+};                                                 
+T_TypePrint *ptSsoTable = atSsoTable;
+unsigned short usSsoTableLen = sizeof(atSsoTable)/sizeof(atSsoTable[0]);
 
 
 // table-9  GPS
-TYPE_PRINT_T Table_Gps_Status[] = {
+T_TypePrint Table_Gps_Status[] = {
     {GPS_REQ  ,  "GPS_REQ"},
     {GPS_ACK  ,  "GPS_ACK"},
     {GPS_OK   ,  "GPS_OK "},
@@ -342,7 +337,7 @@ TYPE_PRINT_T Table_Gps_Status[] = {
     {0xff     ,  "0xFF"   }
 };
 
-TYPE_PRINT_T *pTable_Gps_Status = Table_Gps_Status;
+T_TypePrint *pTable_Gps_Status = Table_Gps_Status;
 unsigned short Table_Gps_Status_Len = sizeof(Table_Gps_Status)/sizeof(Table_Gps_Status[0]);
 
 
@@ -400,37 +395,58 @@ char *PrintGPSFlag(int uGpsFlag)
 void PrintSigLog(CENTER_CMD_SHARE_HEAD *pSharedHead, const char *prompt)
 {
     int i;
-    for (i = 0; i < pTable_sig_len; i++)
+    for (i = 0; i < usSigTableLen; i++)
     {
-        if (pSharedHead->SigType == pTable_sig[i].Type)
+        if (pSharedHead->SigType == ptSigTable[i].Type)
         {
-            if (pTable_sig[i].TypeStr != NULL)
+            if (ptSigTable[i].TypeStr != NULL)
             {
-                LOG_DEBUG(s_LogMsgId,"[CCL][%s][%s]@SIG:[%#x-%s]", _F_, prompt, pTable_sig[i].Type, pTable_sig[i].TypeStr);
+                LOG_DEBUG(s_LogMsgId,"[CCL][%s][%s]@SIG:[%#x-%s]", _F_, prompt, ptSigTable[i].Type, ptSigTable[i].TypeStr);
                 break;
             }
         }
     }
 }
 
+
+// 将短消息命令转换为字符串
 char *SetCCSig2Str(CENTER_CMD_SHARE_HEAD *pSharedHead, char *BufGet, unsigned short BufLen)
 {
     int i;
-    for (i = 0; i < pTable_sig_len; i++)
+    for (i = 0; i < usSigTableLen; i++)
     {
-        if (pSharedHead->SigType == pTable_sig[i].Type)
+        if (pSharedHead->SigType == ptSigTable[i].Type)
         {
-            if (pTable_sig[i].TypeStr != NULL)
+            if (ptSigTable[i].TypeStr != NULL)
             {
-                snprintf(BufGet, BufLen, "[%#x-%s]", pTable_sig[i].Type, pTable_sig[i].TypeStr);
+                snprintf(BufGet, BufLen, "[%#x-%s]", ptSigTable[i].Type, ptSigTable[i].TypeStr);
                 return BufGet;
             }
+            break;
         }
     }
     return strncpy(BufGet, "No The Sig", strlen("No The Sig")+1);
 }
 
 
+// 将短消息命令转换为字符串-未来替换 SetCCSig2Str
+char *SetType2Str(unsigned short Type, unsigned short TableLen, char *BufGet, unsigned short BufLen)
+{
+    unsigned short i;
+    for (i = 0; i < TableLen; i++)
+    {
+        if (Type == ptSigTable[i].Type)
+        {
+            if (ptSigTable[i].TypeStr != NULL)
+            {
+                snprintf(BufGet, BufLen, "[%#x-%s]", ptSigTable[i].Type, ptSigTable[i].TypeStr);
+                return BufGet;
+            }
+            break;
+        }
+    }
+    return strncpy(BufGet, "No The Sig", strlen("No The Sig")+1);
+}
 
 
 
@@ -459,42 +475,22 @@ void ODP_PrintSigLog(CENTER_CMD_SHARE_HEAD *pSharedHead)
 
 // sms-类型字符串打印
 // 打印Sms
-void PrintSmsLog(SMS_CENTER_CCL_DL *ptCenterData, const char *prompt)
+void PrintSmsLog(unsigned char SmsType, char *buf, int len)
 {
     int i;
     for (i = 0; i < pTable_sms_len; i++)
     {
-        if (ptCenterData->SmsType == pTable_sms[i].Type)
+        if (SmsType == pTable_sms[i].Type)
         {
             if (pTable_sms[i].TypeStr != NULL)
             {
-                LOG_DEBUG(s_LogMsgId,"[CCL][%s][%s]@SMS:[%#x-%s]", __FUNCTION__, prompt, pTable_sms[i].Type, pTable_sms[i].TypeStr);
-                break;
+                snprintf(buf , len, "[%#x-%s]", pTable_sms[i].Type, pTable_sms[i].TypeStr);
+                return;
             }
         }
     }
 }
-// 上行
-void IDP_PrintSmsLog(SMS_CENTER_CCL_DL *ptCenterData)
-{
-    const char *prompt = "CclUp";
-    if (1 == tcclPrint->CclUp)
-    {
-        PrintSmsLog(ptCenterData, prompt);
-    }
-}
 
-
-
-// 下行
-void ODP_PrintSmsLog(SMS_CENTER_CCL_DL *ptCenterData)
-{
-    const char *prompt = "CcDown";
-    if (1 == tcclPrint->CcDown)
-    {
-        PrintSmsLog(ptCenterData, prompt);
-    }
-}
 
 void ODP_PrintSms(SMS_CENTER_CCL_DL *ptCenterData, char *buf, int len)
 {
@@ -524,11 +520,11 @@ void PrintMsgDatalog(CCL_DLL_DL_T *ptDllData, const char *prompt)
     char LogBuff[200] = {0};
 
     // 打印Msg
-    for (i = 0; i < pTable_msg_len; i++)
+    for (i = 0; i < usMsgTableLen; i++)
     {
-        if (ptDllData->MsgType == pTable_msg[i].Type)
+        if (ptDllData->MsgType == ptMsgTable[i].Type)
         {
-            if (pTable_msg[i].TypeStr != NULL)
+            if (ptMsgTable[i].TypeStr != NULL)
             {
                 i_index = i;
                 break;
@@ -551,33 +547,33 @@ void PrintMsgDatalog(CCL_DLL_DL_T *ptDllData, const char *prompt)
 
     if ((i_index != -1) && (j_index != -1))
     {
-        snprintf(LogBuff, sizeof(LogBuff), "MSG:[%#06x-%s], DATA:[%#04x-%s]", pTable_msg[i_index].Type, pTable_msg[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
+        snprintf(LogBuff, sizeof(LogBuff), "MSG:[%#06x-%s], DATA:[%#04x-%s]", ptMsgTable[i_index].Type, ptMsgTable[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
         LOG_DEBUG(s_LogMsgId, "[CCL][%s][%s]@%s", _F_, prompt, LogBuff);
     }
 }
-// 上行  DLL TO CCL
-void IDP_PrintMsgDatalog(DLL_CCL_UL_T  *ptDllData)
-{
-    const char *prompt = "DllUp";
-    unsigned short i, j;
-    int i_index = -1, j_index = -1;
-    char LogBuff[200] = {0};
 
-    if (1 == tcclPrint->DllUp)
+
+// 上行  DLL TO CCL
+void IDP_PrintMsgDatalog(DLL_CCL_UL_T  *ptDllData, char *MsgBuf, char *DataBuf)
+{
+    unsigned short i, j;
+
+    // 打印Msg
+    for (i = 0; i < usMsgTableLen; i++)
     {
-        // 打印Msg
-        for (i = 0; i < pTable_msg_len; i++)
+        if (ptDllData->MsgType == ptMsgTable[i].Type)
         {
-            if (ptDllData->MsgType == pTable_msg[i].Type)
+            if (ptMsgTable[i].TypeStr != NULL)
             {
-                if (pTable_msg[i].TypeStr != NULL)
-                {
-                    i_index = i;
-                    break;
-                }
+                snprintf(MsgBuf, 50, "[%d-%s]", ptMsgTable[i].Type, ptMsgTable[i].TypeStr);
+                break;
             }
         }
+    }
 
+    // 打印data
+    if ((ptDllData->MsgType == DI_MSG_DATA) || (ptDllData->MsgType == DI_MSG_WLU))
+    {
         // 打印data
         for (j = 0; j < pTable_data_len; j++)
         {
@@ -585,19 +581,88 @@ void IDP_PrintMsgDatalog(DLL_CCL_UL_T  *ptDllData)
             {
                 if (pTable_data[j].TypeStr != NULL)
                 {
-                    j_index = j;
+                    snprintf(DataBuf, 50, "[%#x-%s]", pTable_data[j].Type, pTable_data[j].TypeStr);
                     break;
                 }
             }
         }
+    }
+    else if (ptDllData->MsgType == DI_MSG_IDLE)
+    {
+        snprintf(DataBuf, 50, "[%d-%s]", 123, "DI_MSG_IDLE");
+        return;
+    }
+    else if (ptDllData->MsgType == DI_MSG_VOICE)
+    {
+        snprintf(DataBuf, 50, "[%d]", 0);
+        return;
+    }
+    else if (ptDllData->MsgType == DI_MSG_NEAR)
+    {
+        snprintf(DataBuf, 50, "[%d-%s]", 5, "DI_MSG_NEAR");
+        return;
+    }
+    else if (ptDllData->MsgType == DI_MSG_NM)
+    {
+        snprintf(DataBuf, 50, "[%d-%s]", 456, "DI_MSG_NM");
+        return;
+    }
+    else
+    {
+        snprintf(DataBuf, 50, "[%d-%s]", 789, "Data Err");
+        return;
+    }
+}
+
+#if 0
+void IDP_PrintMsgDatalog(DLL_CCL_UL_T  *ptDllData, char *MsgBuf, char *DataBuf)
+{
+    unsigned short i, j;
+    int i_index = -1, j_index = -1;
+    char LogBuff[200] = {0};
+
+    if (1 != tcclPrint->DllUp)
+    {
+        return ;
+    }
+
+
+
+    // 打印Msg
+    for (i = 0; i < usMsgTableLen; i++)
+    {
+        if (ptDllData->MsgType == ptMsgTable[i].Type)
+        {
+            if (ptMsgTable[i].TypeStr != NULL)
+            {
+                i_index = i;
+                break;
+            }
+        }
+    }
+
+
+    // 打印data
+    for (j = 0; j < pTable_data_len; j++)
+    {
+        if (ptDllData->DataType == pTable_data[j].Type)
+        {
+            if (pTable_data[j].TypeStr != NULL)
+            {
+                j_index = j;
+                break;
+            }
+        }
+
 
         if ((i_index != -1) && (j_index != -1))
         {
-            snprintf(LogBuff, sizeof(LogBuff), "MSG:[%#x-%s], DATA:[%#x-%s]", pTable_msg[i_index].Type, pTable_msg[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
+            snprintf(LogBuff, sizeof(LogBuff), "MSG:[%#x-%s], DATA:[%#x-%s]", ptMsgTable[i_index].Type, ptMsgTable[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
             LOG_DEBUG(s_LogMsgId, "[CCL][%s][%s]@%s", _F_, prompt, LogBuff);
         }
     }
 }
+#endif
 
 
 
@@ -605,26 +670,26 @@ void IDP_PrintMsgDatalog(DLL_CCL_UL_T  *ptDllData)
 // 下行  CCL TO DLL
 void ODP_PrintMsgDatalog(CCL_DLL_DL_T *ptDllData, char *buf, int len)
 {
- 
+
     unsigned short i, j;
     int i_index = -1, j_index = -1;
-    
+
     if (1 == tcclPrint->CclDown)
     {
-        
+
         // 打印Msg
-        for (i = 0; i < pTable_msg_len; i++)
+        for (i = 0; i < usMsgTableLen; i++)
         {
-            if (ptDllData->MsgType == pTable_msg[i].Type)
+            if (ptDllData->MsgType == ptMsgTable[i].Type)
             {
-                if (pTable_msg[i].TypeStr != NULL)
+                if (ptMsgTable[i].TypeStr != NULL)
                 {
                     i_index = i;
                     break;
                 }
             }
         }
-        
+
         // 打印data
         for (j = 0; j < pTable_data_len; j++)
         {
@@ -640,7 +705,7 @@ void ODP_PrintMsgDatalog(CCL_DLL_DL_T *ptDllData, char *buf, int len)
 
         if ((i_index != -1) && (j_index != -1))
         {
-            snprintf(buf, len, "MsgType=[%#x-%s], DataType=[%#x-%s]", pTable_msg[i_index].Type, pTable_msg[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
+            snprintf(buf, len, "MsgType=[%#x-%s],DataType=[%#x-%s]", ptMsgTable[i_index].Type, ptMsgTable[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
             return;
         }
         else
@@ -661,23 +726,23 @@ void ODP_PrintMsgDatalog(CCL_DLL_DL_T *ptDllData)
     unsigned short i, j;
     int i_index = -1, j_index = -1;
     char LogBuff[200] = {0};
-    
+
     if (1 == tcclPrint->CclDown)
     {
-        
+
         // 打印Msg
-        for (i = 0; i < pTable_msg_len; i++)
+        for (i = 0; i < usMsgTableLen; i++)
         {
-            if (ptDllData->MsgType == pTable_msg[i].Type)
+            if (ptDllData->MsgType == ptMsgTable[i].Type)
             {
-                if (pTable_msg[i].TypeStr != NULL)
+                if (ptMsgTable[i].TypeStr != NULL)
                 {
                     i_index = i;
                     break;
                 }
             }
         }
-        
+
         // 打印data
         for (j = 0; j < pTable_data_len; j++)
         {
@@ -693,7 +758,7 @@ void ODP_PrintMsgDatalog(CCL_DLL_DL_T *ptDllData)
 
         if ((i_index != -1) && (j_index != -1))
         {
-            snprintf(LogBuff, sizeof(LogBuff), "MSG:[%#x-%s], DATA:[%#x-%s]", pTable_msg[i_index].Type, pTable_msg[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
+            snprintf(LogBuff, sizeof(LogBuff), "MSG:[%#x-%s], DATA:[%#x-%s]", ptMsgTable[i_index].Type, ptMsgTable[i_index].TypeStr, pTable_data[j_index].Type, pTable_data[j_index].TypeStr);
             LOG_DEBUG(s_LogMsgId, "[CCL][%s][%s]@%s", _F_, prompt, LogBuff);
         }
     }
@@ -715,11 +780,11 @@ void PrintNasCmdOpLog(NAS_AI_PAYLOAD *pNasAiData, const char *prompt)
     int i_index = -1, j_index = -1;
     char LogBuff[200] = {0};
 
-    for (i = 0; i < pTable_cmd_len; i++)
+    for (i = 0; i < usCmdTableLen; i++)
     {
-        if (pNasAiData->cmd_code == pTable_cmd[i].Type)
+        if (pNasAiData->cmd_code == ptCmdTable[i].Type)
         {
-            if (pTable_cmd[i].TypeStr != NULL)
+            if (ptCmdTable[i].TypeStr != NULL)
             {
                 i_index = i;
                 break;
@@ -727,12 +792,12 @@ void PrintNasCmdOpLog(NAS_AI_PAYLOAD *pNasAiData, const char *prompt)
         }
     }
 
-    for (j = 0; j < pTable_op_len; j++)
+    for (j = 0; j < usOpTableLen; j++)
     {
 
-        if (pNasAiData->op_code == pTable_op[j].Type)
+        if (pNasAiData->op_code == ptOpTable[j].Type)
         {
-            if (pTable_op[j].TypeStr != NULL)
+            if (ptOpTable[j].TypeStr != NULL)
             {
                 j_index = j;
                 break;
@@ -742,7 +807,7 @@ void PrintNasCmdOpLog(NAS_AI_PAYLOAD *pNasAiData, const char *prompt)
 
     if ((i_index != -1) && (j_index != -1))
     {
-        snprintf(LogBuff, sizeof(LogBuff), "CMD:[%#06x-%s], OP:[%#x-%s]", pTable_cmd[i_index].Type, pTable_cmd[i_index].TypeStr, pTable_op[j_index].Type, pTable_op[j_index].TypeStr);
+        snprintf(LogBuff, sizeof(LogBuff), "CMD=[%#x-%s], OP=[%#x-%s]", ptCmdTable[i_index].Type, ptCmdTable[i_index].TypeStr, ptOpTable[j_index].Type, ptOpTable[j_index].TypeStr);
         LOG_DEBUG(s_LogMsgId, "[DLL][%s][%s]@%s", _F_, prompt, LogBuff);
     }
 }
@@ -776,13 +841,13 @@ void ODP_PrintNasCmdOpLog(NAS_AI_PAYLOAD *pNasAiData)
 void PrintInfDataLog(DATA_LINK_T *pDataLink, const char *prompt)
 {
     int i;
-    for (i = 0; i < pTable_AI_len; i++)
+    for (i = 0; i < usDllDataTableLen; i++)
     {
-        if (pDataLink->DataType == pTable_AI[i].Type)
+        if (pDataLink->DataType == ptDllDataTable[i].Type)
         {
-            if (pTable_AI[i].TypeStr != NULL)
+            if (ptDllDataTable[i].TypeStr != NULL)
             {
-                LOG_DEBUG(s_LogMsgId, "[DLL][%s][%s]@AI [%#x-%s]", _F_, prompt, pTable_AI[i].Type, pTable_AI[i].TypeStr);
+                LOG_DEBUG(s_LogMsgId, "[DLL][%s][%s]@AI [%#x-%s]", _F_, prompt, ptDllDataTable[i].Type, ptDllDataTable[i].TypeStr);
                 break;
             }
         }
@@ -799,7 +864,7 @@ void IDP_PrintInfDataLog(DATA_LINK_T *pDataLink)
 }
 
 void ODP_PrintInfDataLog(DATA_LINK_T *pDataLink)
-{   
+{
     const char *prompt = "AIDown";
     if (tDllPrint->AIDown == 1)
     {
@@ -807,10 +872,10 @@ void ODP_PrintInfDataLog(DATA_LINK_T *pDataLink)
     }
 }
 
- 
+
  /**
-  * @brief  
-  * @param [in] 
+  * @brief
+  * @param [in]
   * @author  周大元
   * @since   trunk.00001
   * @bug
@@ -820,48 +885,40 @@ void ODP_PrintInfDataLog(DATA_LINK_T *pDataLink)
      int i, j;
      int i_index = -1, j_index = -1;
      char LogBuff[200] = {0};
- 
-     for (i = 0; i < pTable_CSBKO_len; i++)
+
+     for (i = 0; i < usCsbkoTableLen; i++)
      {
-         if (pSupsCsbk->uCSBKO == pTable_CSBKO[i].Type)
+         if (pSupsCsbk->uCSBKO == ptCsbkoTable[i].Type)
          {
-             if (pTable_CSBKO[i].TypeStr != NULL)
+             if (ptCsbkoTable[i].TypeStr != NULL)
              {
                  i_index = i;
                  break;
              }
          }
      }
- 
-     for (j = 0; j < pTable_SSO_len; j++)
-     {
- 
-         if (pSupsCsbk->uSSO == pTable_SSO[j].Type)
+
+    for (j = 0; j < usSsoTableLen; j++)
+    {
+
+         if (pSupsCsbk->uSSO == ptSsoTable[j].Type)
          {
-            if (pTable_SSO[j].TypeStr != NULL)
+            if (ptSsoTable[j].TypeStr != NULL)
             {
                 j_index = j;
                 break;
             }
          }
-     }
- 
+    }
+
      if ((i_index != -1) && (j_index != -1))
      {
-         snprintf(LogBuff, sizeof(LogBuff), "CSBKO:[%#x-%s], SSO:[%#x-%s]", pTable_CSBKO[i_index].Type, pTable_CSBKO[i_index].TypeStr, pTable_SSO[j_index].Type, pTable_SSO[j_index].TypeStr);
+         snprintf(LogBuff, sizeof(LogBuff), "CSBKO:[%#x-%s], SSO:[%#x-%s]", ptCsbkoTable[i_index].Type, ptCsbkoTable[i_index].TypeStr, ptSsoTable[j_index].Type, ptSsoTable[j_index].TypeStr);
          LOG_DEBUG(s_LogMsgId, "[DLL][%s][%s]@%s", _F_, prompt, LogBuff);
      }
 }
 
 
-void IDP_PrintCsbkoSSOLog(SUPS_CSBK_PDU *pSupsCsbk)
-{
-    const char *prompt = "AIUp";
-    if (tDllPrint->AIUp == 1)
-    {
-        PrintCsbkoSSOLog(pSupsCsbk, prompt);
-    }
-}
 
 
 
@@ -969,12 +1026,15 @@ void test_err_voice_init()
     int i;
     ptErrVoice->FrmCnt = 0;
     ptErrVoice->ErrTotal = 0;
-
     for (i = 0; i < FRM_F + 1;i++)
     {
         ptErrVoice->pErrFrm[i].FrmErrBit = 0;
     }
 }
+
+
+
+
 
 void test_err_voice_result()
 {
@@ -985,13 +1045,13 @@ void test_err_voice_result()
     r = a/b * 100;
 
     // 接收情况
-    LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] Result:Frm=%d,SuperFrm=%d,bytes=%d,bits=%d", _F_, 
+    LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] Result:Frm=%d,SuperFrm=%d,bytes=%d,bits=%d", _F_,
         ptErrVoice->FrmCnt, ptErrVoice->FrmCnt/6, ptErrVoice->FrmCnt*27, ptErrVoice->FrmCnt*27*8);
 
-    // 每帧A-F 有多少误码    
+    // 每帧A-F 有多少误码
     for (i = 0; i < FRM_F + 1;i++)
     {
-        LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] %s ErrBits:%d", _F_, ptErrVoice->pErrFrm[i].FrmNameStr, ptErrVoice->pErrFrm[i].FrmErrBit);
+        LOG_DEBUG(s_LogMsgId, "[ERR][V] %s ErrBits:%d",  ptErrVoice->pErrFrm[i].FrmNameStr, ptErrVoice->pErrFrm[i].FrmErrBit);
     }
     // 所有
     LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] Total ErrBits:%d, ErrRate:%.3f%%\n", _F_, ptErrVoice->ErrTotal, r);
@@ -1033,12 +1093,12 @@ void test_err_voice_dll(DATA_LINK_T *pDataLink)
             ptErrVoice->ErrTotal += result;  // 记录所有的错误
 #if ERR_VOICE_DEBUG
             // 第多少帧, 哪帧(A~F), 错误的真实数据，当前多少个
-            len = snprintf(buf, sizeof(buf), "voice: RcvCnt=%d,Frm=%s,byte=%dth[%#x-%#x],ErrNum=%d", 
+            len = snprintf(buf, sizeof(buf), "voice: RcvCnt=%d,Frm=%s,byte=%dth[%#x-%#x],ErrNum=%d",
                 ptErrVoice->FrmCnt,
-                ptErrVoice->pErrFrm[ptErrVoice->FrmIndx].FrmNameStr, 
-                i, 
-                pDataLink->PayLoad[i], 
-                s_au2VoiceSource[VOICE_SRC_153][ptErrVoice->FrmIndx][i], 
+                ptErrVoice->pErrFrm[ptErrVoice->FrmIndx].FrmNameStr,
+                i,
+                pDataLink->PayLoad[i],
+                s_au2VoiceSource[VOICE_SRC_153][ptErrVoice->FrmIndx][i],
                 result);
 
             LOG_DEBUG(s_LogMsgId,"[ERR][%s] %s", _F_, buf);
@@ -1052,23 +1112,326 @@ void test_err_voice_dll(DATA_LINK_T *pDataLink)
 
 
 
+void ErrRateVoiceTest(DATA_LINK_T *pDataLink, int state)
+{
+    if (ptErrPrint->Voice == 0) // 语音误码率开关关闭
+    {
+        return;
+    }
+
+    switch (state)
+    {
+        case STATE_VOICE_HEADER:
+        {
+            if (g_ErrVoiceState == ERR_VOICE_HEADER)
+            {
+                test_err_voice_init();
+                g_ErrVoiceState = ERR_VOICE_TERMINATOR;
+                DLL_ClearTimer();  // 清除超时处理
+            }
+            break;
+        }
+        case STATE_VOICE_TERMINATOR:
+        {
+            if (g_ErrVoiceState == ERR_VOICE_TERMINATOR)
+            {
+                test_err_voice_result();
+                g_ErrVoiceState = ERR_VOICE_HEADER;
+                DLL_ClearTimer();  // 清除超时处理
+            }
+            break;
+        }
+        case STATE_VOICE_RCV:
+        {
+            if (pDataLink != NULL)
+            {
+                LOG_DEBUG(s_LogMsgId,"Rcv:%d-%s", ptErrVoice->FrmCnt, ptErrVoice->pErrFrm[(pDataLink->FrmType-1)%(FRM_F+1)].FrmNameStr);
+                test_err_voice_dll(pDataLink); //  语音接收时间
+                if (pDataLink->FrmType == FT_VOICE_A)
+                {
+                    // 设置超时处理，如果在指定时间(1.5s)内没有清定时器，则说明没有收到 Terminator,
+                    DLL_SetTimer(CALL_ERR_VOICE_U, 1500);  // 设置超时时间
+                }
+            }
+            break;
+        }
+        default:
+        {
+            LOG_DEBUG(s_LogMsgId,"[%s:%d] Err: default\n", __FUNCTION__, __LINE__);
+            break;
+        }
+    }
+}
 
 
-void setDebugInit()
+
+
+void InitDebug()
 {
     ptErrPrint = (ERR_PRINT_T *)ptIPCShm->Err_printf;
     memset(ptErrPrint, 0x00, sizeof(ERR_PRINT_T));
 
 #if ERR_VOICE_DEBUG
     // 打开写入文件
-	g_fp_err_test = fopen("err_test.log","w+");   
-	if (g_fp_err_test == NULL)
-	{    	
-		printf("fopen err_test.log error\n");	
-		fclose(g_fp_err_test);
+    g_fp_err_test = fopen("err_test.log","w+");
+    if (g_fp_err_test == NULL)
+    {
+        printf("fopen err_test.log error\n");
+        fclose(g_fp_err_test);
         return;
-	}
-#endif 
+    }
+#endif
+#if NER_CHECK_DEBUG
+//    g_fpNerCheckLog = fopen(NER_CHECK_LOG_PATH, "w+");
+    g_fpNerCheckLog = fopen(NER_CHECK_LOG_PATH, "w+");
+    if (g_fpNerCheckLog == NULL)
+    {
+        printf("Err: open=%s\n", NER_CHECK_LOG_PATH);
+        fclose(g_fpNerCheckLog);
+        return;
+    }
+#endif
+}
 
+
+
+
+
+T_TypePrint atCclState[] = {
+    {INF_CCL_IDLE        ,   "CCL_IDLE"       },
+    {CENTER_VOICE_DL     ,   "CenterVoiceDl"  },
+    {Wait_Stun_Ms_Ack    ,   "WaitStunMsAck"  },
+    {Wait_Stun_Nas_Ack   ,   "WaitStunNasAck" },
+    {Wait_Kill_Nas_Ack   ,   "WaitKillNasAck" },
+    {Wait_Gps_Nas_Ack    ,   "WaitGpsNasAck"  },
+    {Wait_Gps_Ms_Ack     ,   "WaitGpsMsAck"   },
+    {Wait_NEGHR_Nas_Ack  ,   "WaitNerNasAck"  },
+    {Wait_Reviv_NAS_Ack  ,   "WaitRcvNasAck"  },
+    {Wait_Reviv_MS_Ack   ,   "WaitRcvMsAck"   },
+    {NAS_VOICE_UL        ,   "NasVoiceUl"     },
+    {NAS_STAT_STUNED     ,   "NasStatStuned"  },
+    {INF_CCL_DISABLE     ,   "InfCclDisable"  },
+    {SMS_SEND            ,   "SmsSend"        }
+};
+
+T_TypePrint *ptCclState = atCclState;
+
+char *GetCclStateByStr(unsigned char CclState, char *buf)
+{
+    unsigned char i;
+    for (i = 0; i < sizeof(atCclState)/sizeof(atCclState[0]); i++)
+    {
+        if (ptCclState[i].Type ==  CclState)
+        {
+            strcpy(buf, ptCclState[i].TypeStr);
+            return buf;
+        }
+    }
+    strcpy(buf, "Err: No This State");
+    return buf;
+}
+
+
+
+/*********************************************************************************
+**********************************************************************************
+***************************定时器*************************************************
+**********************************************************************************
+**********************************************************************************/
+
+
+typedef struct _T_Timer {
+    unsigned short item;
+    const char *name;
+    unsigned int Switch;
+    unsigned int Cnt;
+    F_Timer TimerHandle;
+} T_Timer;
+
+
+
+
+// 定时初始化
+T_Timer TimerTable[] = {
+
+    {TMR_NER_ACK,     "TMR_NER_ACK",     0/*switch*/,    0/*cnt=17, 1000ms*/,  SetTimerOff/*fun*/},
+    {NAS_PRE_IDP,     "NAS_PRE_IDP",     0/*switch*/,    0/**/,                SetTimerOff/*fun*/},
+    {NAS_PRE_ODP,     "NAS_PRE_ODP",     0/*switch*/,    0/**/,                SetTimerOff/*fun*/},
+    {FLC_GPS_ODP,     "FLC_GPS_ODP",     0/*switch*/,    0,                    SetTimerOff/*fun*/},
+//    {TMR_MAX,         "TMR_MAX",         0/*switch*/,    0/**/,                NULL/*fun*/},
+};
+
+unsigned short usTimerTableLen = sizeof(TimerTable)/sizeof(TimerTable[0]);
+
+
+
+
+int RegisterTimerFun(unsigned short item, F_Timer TimerHandle)
+{  
+    int i;
+    for (i = 0; i < usTimerTableLen; i++)
+    {
+        if (TimerTable[i].item == item)
+        {
+            TimerTable[i].TimerHandle = TimerHandle;
+            return 0;
+        }
+    }
+    return -1;
+}
+
+
+
+/**
+ * @brief  定时器计时
+ * @author  周大元
+ */
+void TimerTask()
+{
+    unsigned short i;
+    for (i = 0; i < usTimerTableLen; i++)
+    {
+        if (TimerTable[i].Switch == 1)
+        {
+            if (TimerTable[i].Cnt != 0)
+            {
+                TimerTable[i].Cnt --;
+            }
+            else
+            {
+                if (TimerTable[i].TimerHandle != NULL)
+                {
+                    TimerTable[i].TimerHandle(i);
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * @brief  获取定时器当前时间
+ * @author  周大元
+ */
+int GetTimerCnt(unsigned int item)
+{
+    if (item >= usTimerTableLen)
+    {
+        return -1;
+    }
+    return TimerTable[item].Cnt;
+}
+
+/**
+ * @brief  启动定时器
+ * @author  周大元
+ */
+int SetTimerOn(unsigned short item, unsigned int cnt, F_Timer TimerHandle)
+{
+    if (item >= usTimerTableLen)
+    {
+        return -1;
+    }
+
+    TimerTable[item].Cnt = cnt;
+    TimerTable[item].TimerHandle = TimerHandle;
+    TimerTable[item].Switch = 1;    // 必须放在最后赋值
+    return 0;
+}
+
+/**
+ * @brief  关闭定时器
+ * @author  周大元
+ */
+void SetTimerOff(unsigned short index)
+{
+    TimerTable[index].Cnt = 0;
+    TimerTable[index].Switch = 0;
+}
+
+
+
+/*********************************************************************************
+**********************************************************************************
+***************************IDP-打印************************************************
+**********************************************************************************
+**********************************************************************************/
+void SearchAiItem(T_TypePrint *ptAiTable, unsigned short usLen, unsigned char ucItem, const char **ppItemStr)
+{
+    unsigned short i;
+    for (i = 0; i < usLen; i++)
+    {
+        if (ucItem == ptAiTable[i].Type)
+        {
+            if (ptAiTable[i].TypeStr != NULL)
+            {
+                *ppItemStr = ptAiTable[i].TypeStr;
+                return;
+            }
+        }
+    }
+    *ppItemStr = "";
+}
+
+
+
+/**
+ * @brief   将消息转化为字符串
+ * @author  周大元
+ */
+void GetAiItemStr(DATA_LINK_T *ptDataLink, char *Buf, unsigned short usBufLen)
+{
+    const char *pStrData = NULL;
+    const char *pStrCmd = NULL;
+    const char *pStrOp = NULL;
+    const char *pStrCsbk = NULL;
+    const char *pStrsSso = NULL;
+
+    if (ptDataLink->MsgType == DI_MSG_WLU)
+    {
+        NAS_AI_PAYLOAD *pNasAiData = (NAS_AI_PAYLOAD *)(ptDataLink->PayLoad);
+        SearchAiItem(ptCmdTable, usCmdTableLen, pNasAiData->cmd_code, &pStrCmd);
+        if (pNasAiData->cmd_code != CMO_CODE_NAS_PRE)
+        {
+            SearchAiItem(ptOpTable, usOpTableLen, pNasAiData->op_code, &pStrOp);
+            snprintf(Buf, usBufLen, "W:%s:%s", pStrCmd, pStrOp);        
+            return;
+        }
+        snprintf(Buf, usBufLen, "W:%s", pStrCmd);
+        return;
+    }
+    else if (ptDataLink->MsgType == DI_MSG_DATA)
+    {
+        SUPS_CSBK_PDU *ptSupsCsbkPdu = (SUPS_CSBK_PDU *)(ptDataLink->PayLoad);
+        SearchAiItem(ptDllDataTable, usDllDataTableLen, ptDataLink->DataType, &pStrData);
+        if (ptDataLink->DataType == DT_CSBK)
+        {
+            SearchAiItem(ptCsbkoTable, usCsbkoTableLen, ptSupsCsbkPdu->uCSBKO, &pStrCsbk);
+            if ((ptSupsCsbkPdu->uCSBKO != PRE_CSBKO) && (ptSupsCsbkPdu->uCSBKO != ALARM_CSBKO))
+            {
+                SearchAiItem(ptSsoTable, usSsoTableLen, ptSupsCsbkPdu->uCSBKO, &pStrsSso);
+                snprintf(Buf, usBufLen, "D:%s:%s:%s", pStrData, pStrCsbk, pStrsSso);
+                return;
+            }
+            snprintf(Buf, usBufLen, "D:%s:%s", pStrData, pStrCsbk);
+            return;
+        }
+        snprintf(Buf, usBufLen, "D:%s", pStrData);
+        return;
+
+    }
+    else if (ptDataLink->MsgType == DI_MSG_NEAR)
+    {
+        snprintf(Buf, usBufLen, "B");
+        return;
+    }
+    else if (ptDataLink->MsgType == DI_MSG_VOICE)
+    {
+        Buf[0] = 'V';
+        Buf[1] = '\0';
+        return;
+    }
+    Buf[0] = '\0';
+    return;
 }
 
