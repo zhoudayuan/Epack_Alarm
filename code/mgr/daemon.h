@@ -26,7 +26,7 @@
 #define TASK_NAME   "daemon"
 
 /* 初始值*/
-#define SOFT_VERSION                 "V1.0.03.005"
+#define SOFT_VERSION                 "V1.0.03.012"
 #define FPGA_VERSION                 "V0.0.00.000"
 #define DEFAULT_DEV_ID               0x00
 #define DEFAULT_CC                   1
@@ -62,6 +62,12 @@
 #define DEFAULT_NEIGHBOR_REPORT_AI     0
 #define DEFAULT_WEB_CODE      "admin"
 #define DEFAULT_WEB_USER      "admin"
+#define DEFAULT_STOP_TRANSMIT      0
+#define DEFAULT_BOOT_MODE      0
+#define DEFAULT_REBOOT_STRATEGY      0
+
+
+
 
 
 
@@ -93,7 +99,7 @@ typedef struct {
  * @struct _CENTER_CMD_SHAREHEADER
  * @brief  接入单元与中心命令交互共用头
  */
-typedef struct  _CENTER_CMD_SHARE_HEAD
+/*typedef struct  _CENTER_CMD_SHARE_HEAD
 {
     unsigned short SigHead;         // 标识AC接口信令头标志(0x13ec)
     unsigned short SigType;         // 信令类型-标识AC接口PTT命令信令（0x000a）
@@ -106,7 +112,7 @@ typedef struct  _CENTER_CMD_SHARE_HEAD
     unsigned char  Exhead[11];      // 扩展头-扩展头中心无须关心参数
     unsigned int   CheckVal;        // 校验值-标识信令校验结果(01版本 与02版本 目前都填写全F，标示无校验方式)
 } CENTER_CMD_SHARE_HEAD ;
-
+*/
 /**
  * @struct SMS_CENTER_CCL_DL
  * @brief  中心发送短消息到CCL 接口
@@ -138,10 +144,16 @@ int daemon_pthread_create(void);
 void * pthread_run_led(void *arg);
 void * pthread_pwr_key_det(void *arg);
 void * pthread_wd_wg(void *arg);
-void load_fpga(void);
 int init_alarm_table(void);
 void GetCompileTime(void);
 int write_epack_version_to_file();
+void md5();
+int CalcFileMD5(char *filename, char *md5_sum);
+int bin_to_bz2(char * bin_name, char * bz2_name);
+int test_code(int status);
+int verify_fpga();
+void load_fpga(void);
+
 
 
 #endif

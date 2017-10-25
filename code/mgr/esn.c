@@ -39,6 +39,7 @@
 #include <net/if_arp.h>
 #include <asm/ioctl.h>
 #include <sys/ioctl.h>
+#include "ccl_interface.h"
 
 #include "esn.h"
 
@@ -411,6 +412,8 @@ int main(void)
 						sleep(2);
 						printf("Start reboot\n");
 						chdir("/loadapp");
+                        SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+                        sleep(2);
                         system("./reboot_epack");
 					}
 					else

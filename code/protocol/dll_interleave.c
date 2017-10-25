@@ -86,6 +86,8 @@ static UINT16 s_au2PdtTermtRsMask[3] =
 {
     0x00fa, 0x0023, 0x0054
 };
+extern unsigned int  s_LogMsgId;
+extern SHM_IPC_STRU *ptIPCShm;
 
 static void transpose16(UINT16* pu2Data)
 {
@@ -586,8 +588,15 @@ void emb_enc(UINT16 u2EMB, UINT16* pu2AiData)
 void emb_dec(UINT16* pu2AiData, UINT16* pu2EMB)
 {
     UINT16 u2EMB = 0;
+	UINT16 pu2AiData_temp[8];
+	//需要转序
+    for (UINT8 i = 0; i < 8; i++)
+    {
+        pu2AiData_temp[i] = ((pu2AiData[i]>>8)&0x00ff)|((pu2AiData[i]<<8)&0xff00);
+    }
 
-    u2EMB = (pu2AiData[6] << 12) | ((pu2AiData[7] >> 4) & 0x0f00) | ((pu2AiData[9] >> 4) & 0x00ff);
+	
+    u2EMB = (pu2AiData_temp[6] << 12) | ((pu2AiData_temp[7] >> 4) & 0x0f00) | ((pu2AiData_temp[6] >> 4) & 0x00ff);
 
     *pu2EMB = (quadratic_residue_16_7_6_dec(u2EMB) >> 9);
 
@@ -976,6 +985,8 @@ void cach_frag_dec(UINT16* pu2AiData, UINT16* pu2TACT, UINT32* pu4CACH)
     return;
 }
 
+#if 0
+
 void rc_enc(UINT16* pu2RC, UINT16* pu2AiData)
 {
     UINT16 u2Temp;
@@ -1004,6 +1015,7 @@ void rc_enc(UINT16* pu2RC, UINT16* pu2AiData)
 
     return;
 }
+
 
 void rc_dec(UINT16* pu2AiData, UINT16* pu2RC, UINT16* pu2Result)
 {
@@ -1043,7 +1055,90 @@ void rc_dec(UINT16* pu2AiData, UINT16* pu2RC, UINT16* pu2Result)
 
     return;
 }
+#endif
 
+void rc_enc(UINT16* pu2RC,UINT16* pu2EncodedRC)//keyid,algid,,,内嵌标识PI/LC,,,编码后的48bit
+{
+    UINT16 u2Temp;
+    UINT16 u2Mask;
+	
+	//LOG_WARNING(s_LogMsgId,"[DLL][%s] pu2RC=%x",_F_,*pu2RC);
+
+    u2Temp = hamming_16_11_4_enc(*pu2RC);
+
+    u2Mask = ((u2Temp >> 4) ^ u2Temp) & 0x00f0;
+    u2Temp = u2Temp ^ u2Mask ^ (u2Mask << 4);
+
+    u2Mask = ((u2Temp >> 2) ^ u2Temp) & 0x0c0c;
+    u2Temp = u2Temp ^ u2Mask ^ (u2Mask << 2);
+
+    u2Mask = ((u2Temp >> 1) ^ u2Temp) & 0x2222;
+    u2Temp = u2Temp ^ u2Mask ^ (u2Mask << 1);
+
+    pu2EncodedRC[0] = u2Temp;
+	//LOG_WARNING(s_LogMsgId,"[DLL][%s] pu2EncodedRC[0]=%x",_F_,pu2EncodedRC[0]);
+    pu2EncodedRC[0] = ((pu2EncodedRC[0]<<8)&0xff00)|((pu2EncodedRC[0]>>8)&0x00ff);
+	//LOG_WARNING(s_LogMsgId,"[DLL][%s] pu2EncodedRC1[0]=%x",_F_,pu2EncodedRC[0]);
+
+    u2Mask = ((u2Temp >> 1) ^ u2Temp) & 0x5555;
+    u2Temp = u2Temp ^ u2Mask ^ (u2Mask << 1);
+
+    pu2EncodedRC[1] = u2Temp;
+	//LOG_WARNING(s_LogMsgId,"[DLL][%s] pu2EncodedRC[1]=%x",_F_,pu2EncodedRC[1]);
+    pu2EncodedRC[1] = ((pu2EncodedRC[1]<<8)&0xff00)|((pu2EncodedRC[1]>>8)&0x00ff);
+	//LOG_WARNING(s_LogMsgId,"[DLL][%s] pu2EncodedRC1[1]=%x",_F_,pu2EncodedRC[1]);
+    return;
+}
+
+
+void rc_dec(UINT16* pu2EncodedRC,UINT16* pu2Result)//32bit内嵌，KeyID+AlgID 11bit 
+{
+     UINT32 u4Temp;
+     UINT32 u4Mask;
+     UINT16 au2RcData[2];
+ 
+	 //LOG_WARNING(s_LogMsgId,"[DLL][%s] pDataLink->EmbInfo2 pu2EncodedRC[0]=%#04x",_F_,pu2EncodedRC[0]);
+	 //LOG_PrintM(s_LogMsgId, pu2EncodedRC, 2);
+	 //UINT16 u2Temp1=0;
+	 //u2Temp1=pu2EncodedRC[0]<< 8;
+	 //LOG_WARNING(s_LogMsgId,"[DLL][%s] u2Temp1=%#04x",_F_,u2Temp1);
+	 //LOG_PrintM(s_LogMsgId, &u2Temp1, 2);//内存值
+	 //LOG_PrintM(s_LogMsgId, (char*)&u2Temp1, 2);//地址区分值
+     u4Temp = (((UINT32)(((pu2EncodedRC[0] << 8)&0xff00)|((pu2EncodedRC[0]>> 8)& 0x00ff)))<<16)|
+	 	((UINT32)(((pu2EncodedRC[1] << 8)&0xff00)|((pu2EncodedRC[1]>> 8)& 0x00ff)));
+	 
+	 //LOG_WARNING(s_LogMsgId,"[DLL][%s] u4Temp=%#08lx",_F_,u4Temp);
+	 //LOG_PrintM(s_LogMsgId, (char*)&u4Temp, 4);
+	 
+     u4Mask = ((u4Temp >> 1) ^ u4Temp) & 0x22222222;
+     u4Temp = u4Temp ^ u4Mask ^ (u4Mask << 1);
+ 
+     u4Mask = ((u4Temp >> 2) ^ u4Temp) & 0x0c0c0c0c;
+     u4Temp = u4Temp ^ u4Mask ^ (u4Mask << 2);
+ 
+     u4Mask = ((u4Temp >> 4) ^ u4Temp) & 0x00f000f0;
+     u4Temp = u4Temp ^ u4Mask ^ (u4Mask << 4);
+ 
+     u4Mask = ((u4Temp >> 8) ^ u4Temp) & 0x0000ff00;
+     u4Temp = u4Temp ^ u4Mask ^ (u4Mask << 8);
+ 
+     u4Mask = ((u4Temp >> 8) ^ u4Temp) & 0x000000ff;
+     u4Temp = u4Temp ^ u4Mask ^ (u4Mask << 8);
+ 
+     au2RcData[0] = hamming_16_11_4_dec((UINT16)(u4Temp >> 16));
+     au2RcData[1] = hamming_16_11_4_dec((UINT16)(u4Temp & 0xffff));
+ 
+     if (au2RcData[0] != au2RcData[1])
+     {
+         // ???????
+         //return 0x03;
+     }
+     *pu2Result = ((au2RcData[0] >> 5) & 0x07ff);
+ 
+ 	//LOG_WARNING(s_LogMsgId,"[DLL][%s] au2RcData[0]=%x,au2RcData[1]=%x,pu2Result=%x",_F_,au2RcData[0],au2RcData[1],*pu2Result);
+	//LOG_PrintM(s_LogMsgId, pu2Result, 1);
+     return ;
+ } 
 
 //大端模式
 void bptc_144_196_enc(UINT16* pu2Data, UINT16* pu2AiData)

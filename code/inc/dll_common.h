@@ -29,20 +29,22 @@
 /*
 ** GPSn内嵌相关信息
 */
-#define  EAST               0   // 从测试来看 0 是东经
-#define  WEST               1   // 从测试来看 1 是西经
-#define  LON_RATIO          ((1<<25)/360.0)
-#define  LON_BIT            24
-#define  NORTH              0
-#define  SOUTH              1
-#define  LAT_RATIO          ((1<<24)/180.0)
-#define  LAT_BIT            23
-#define  LON_LAT_LEN        3
+#define EAST               0   // 从测试来看 0 是东经
+#define WEST               1   // 从测试来看 1 是西经
+#define LON_RATIO          ((1<<25)/360.0)
+#define LON_BIT            24
+#define NORTH              0
+#define SOUTH              1
+#define LAT_RATIO          ((1<<24)/180.0)
+#define LAT_BIT            23
+#define LON_LAT_LEN        3
+#define FLCO_GPS           0X08
+#define FLCO_HDR           0X00
+#define FLCO_TER           FLCO_HDR
+#define FLCO_TDLC          0X30
 
 extern const char *g_acpLatStr[2];
 extern const char *g_acpLonStr[2];
-
-
 /**
  * @def  FPGA_SHM_DEV
  * @brief FPGA共享内存设备驱动
@@ -163,7 +165,7 @@ typedef struct _DLL_PRINT_T
     UINT8 PrintLv;      //打印级别
     UINT8 FrqSlt;       //主动发射频点时隙
     UINT8 WorkMode;     //工作模式0:业务1:调测
-    UINT8 Ccerrsuperfrmcnt;//cc错误的超帧数
+    UINT8 CcErrSuperFrmCnt; // cc错误的超帧数
 } DLL_PRINT_T;
 
 /**
@@ -220,7 +222,7 @@ typedef struct _DATA_LINK_T
     UINT8 MsgType;         ///< 0x01:语音 0x02:数据 0x03: 邻点0x04:网管
     UINT8 FrmType;         ///< 见枚举 _FrameType_E
     UINT8 CC:   4;         ///< 色码
-    UINT8 PI:   1;         ///< 加密标示
+    UINT8 PI:   1;         ///< 内嵌是否是PI
     UINT8 LCSS: 3;         ///< LC start/stop , 标识LC信令的开始，中间，结束.   00-单片LC, 01-LC信令的第一片, 10-LC的最后片， 11-LC的中间片 
     UINT8 DataType;        ///< 空口数据类型
     UINT8 EmbInfo[4];      ///< 空口语音内嵌

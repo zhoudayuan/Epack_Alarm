@@ -207,22 +207,22 @@ static unsigned short s_len_ERR_MARK;  // 误码率测试项结构的长度
  * @var s_auCliRoute
  * @brief Route模块打印
  */
-static UINT8  s_auCliRoute[1000];
+//static UINT8  s_auCliRoute[1000];
  /**
  * @var s_auCliCCL
  * @brief Protocol模块打印
  */
-static UINT8  s_auCliCCL[1000];
+//static UINT8  s_auCliCCL[1000];
   /**
  * @var s_auCliDLL
  * @brief Protocol模块打印
  */
-static UINT8  s_auCliDLL[1000];
+//static UINT8  s_auCliDLL[1000];
   /**
  * @var s_auCliMgr
  * @brief Mgr模块打印
  */
-static UINT8  s_auCliMgr[1000];
+//static UINT8  s_auCliMgr[1000];
 /**
  * @var s_tCliCmdList
  * @brief 命令行接口命令列表数组
@@ -237,7 +237,7 @@ static CLI_CMD_NODE_T* s_ptCurCliCmd;
  * @var s_tCliNodePool
  * @brief 命令行接口节点分配缓冲区
  */
-static CLI_CMD_NODE_T s_tCliNodePool[CLI_NODE_NUM] = {0};
+static CLI_CMD_NODE_T s_tCliNodePool[CLI_NODE_NUM];
 
 /**
  * @var s_tCliInputTask
@@ -248,7 +248,7 @@ static pthread_t s_tCliInputTask;
  * @var s_tCliRegTask
  * @brief 命令行注册
  */
-static pthread_t s_tCliRegTask;
+//static pthread_t s_tCliRegTask;
 /**
  * @var s_bEnableCli
  * @brief 命令行接口使能标识
@@ -658,7 +658,7 @@ static int  pfDllSet(UINT32 u4Arc, CHAR* pcArg[])
 		    UINT8 superfrmcount = atoi(pcArg[1]);
 			if(6 >= superfrmcount)
 			{
-				ptDllPrint->Ccerrsuperfrmcnt = superfrmcount;
+				ptDllPrint->CcErrSuperFrmCnt = superfrmcount;
 				CLI_Printf("dll set ccerr frmcnt (%d )\n", superfrmcount);
 			}
             else
@@ -982,7 +982,7 @@ static int pfErrGet(UINT32 u4Arc, CHAR* pcArg[])
 {
     int i;
     unsigned short TableErrLen = s_len_ERR_MARK;
-    unsigned short IndxALL = TableErrLen - 1;
+    //unsigned short IndxALL = TableErrLen - 1;
 
     for (i = 0; i < TableErrLen; i++)
     {
@@ -1235,7 +1235,7 @@ static void CLI_PreOrder(CLI_CMD_NODE_T* ptNode, CLI_CMD_NODE_T* ptFocusNode, CL
  */
 static STATUS CLI_DoCmd(UINT32 u4Arc, CHAR* pcArg[])
 {
-    CHAR*           pcCmd  = pcArg[0];
+    CHAR* pcCmd  = pcArg[0];
     CLI_CMD_NODE_T* ptNode = NULL;
     STATUS          i4Ret  = 0;
 
@@ -1276,14 +1276,14 @@ static STATUS CLI_DoCmd(UINT32 u4Arc, CHAR* pcArg[])
             {
                 CLI_UpdateCurCmd(ptNode->ptFather);
 
-                pcCmd = CLI_LS;
+                pcCmd = (CHAR*)CLI_LS;
                 CLI_DoCmd(1, &pcCmd);
             }
         }
         // cd . command
         else if (0 == strncmp(pcCmd, CLI_CD_HERE, sizeof(CLI_CD_HERE)))
         {
-            pcCmd = CLI_LS;
+            pcCmd = (CHAR*)CLI_LS;
             CLI_DoCmd(1, &pcCmd);
         }
         // cd \ command
@@ -1291,7 +1291,7 @@ static STATUS CLI_DoCmd(UINT32 u4Arc, CHAR* pcArg[])
         {
             CLI_UpdateCurCmd(&s_tCliCmdList);
 
-            pcCmd = CLI_LS;
+            pcCmd = (CHAR*)CLI_LS;
             CLI_DoCmd(1, &pcCmd);
         }
         // cd help command
@@ -1315,7 +1315,7 @@ static STATUS CLI_DoCmd(UINT32 u4Arc, CHAR* pcArg[])
                         {
                             CLI_UpdateCurCmd(ptNode);
                 
-                            pcCmd = CLI_LS;
+                            pcCmd = (CHAR*)CLI_LS;
                             CLI_DoCmd(1, &pcCmd);
                         }
                         else
@@ -1349,7 +1349,7 @@ static STATUS CLI_DoCmd(UINT32 u4Arc, CHAR* pcArg[])
                     {
                         CLI_UpdateCurCmd(ptNode);
 
-                        pcCmd = CLI_LS;
+                        pcCmd = (CHAR*)CLI_LS;
                         CLI_DoCmd(1, &pcCmd);
                     }
                     else
@@ -1693,7 +1693,7 @@ cli_accept_client:
 		if (s_bEnableCli)
 		{
 			gettimeofday(&tCurTime, NULL);
-			if ((tCurTime.tv_sec - tPreTime.tv_sec) >= s_u4CLI_TIMEOUT)
+			if ((tCurTime.tv_sec - tPreTime.tv_sec) >= (INT32)s_u4CLI_TIMEOUT)
 			{
 				memset(acCmd,  0x0, CLI_MAX_SIZE);
 				CLI_Printf("Hytera VCHU Software CLI stops, timeout.\n");
@@ -1937,23 +1937,23 @@ void CLI_Init(void)
 	int i;
 #ifdef _ENABLE_CLI
 
-    CLI_CMD_T tCliCmd = {0};
+    CLI_CMD_T tCliCmd = {{0}};
 
-    CHAR* pcName0 = "ccl";
-    CHAR* pcDesc0 = "here is the top level of CCL";
+    CHAR* pcName0 = (CHAR*)("ccl");
+    CHAR* pcDesc0 = (CHAR*)("here is the top level of CCL");
 
-    CHAR* pcName1 = "dll";
-    CHAR* pcDesc1 = "here is the top level of DLL";
+    CHAR* pcName1 = (CHAR*)("dll");
+    CHAR* pcDesc1 = (CHAR*)("here is the top level of DLL");
 
-    CHAR* pcName2 = "route";
-    CHAR* pcDesc2 = "here is the top level of Route";
+    CHAR* pcName2 = (CHAR*)("route");
+    CHAR* pcDesc2 = (CHAR*)("here is the top level of Route");
 	
-    CHAR* pcName3 = "mgr";
-    CHAR* pcDesc3 = "here is the top level of Mgr";
+    CHAR* pcName3 = (CHAR*)("mgr");
+    CHAR* pcDesc3 = (CHAR*)("here is the top level of Mgr");
 
 
-    CHAR* pcName4 = "err";
-    CHAR* pcDesc4 = "here is the top level of err";
+    CHAR* pcName4 = (CHAR*)("err");
+    CHAR* pcDesc4 = (CHAR*)("here is the top level of err");
     
 
     memset(s_tCliCmdList.acClass, 0x0, sizeof(s_tCliCmdList.acClass));

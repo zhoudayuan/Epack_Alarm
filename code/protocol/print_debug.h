@@ -7,27 +7,33 @@
 #include  "dll.h"
 #include  "sap.h"
 
-//------误码率调试开关------
-#define ERR_VOICE_DEBUG         0
-#define ERR_D_21_DEBUG          0
-#define ERR_D_43_DEBUG          0
-//--------------------------
-#define  VOICE_SRC_153          2
 
-#define  ERR_VOICE_HEADER               0
-#define  ERR_VOICE_FRAME                1
-#define  ERR_VOICE_TERMINATOR           2
 
-#define  STATE_VOICE_HEADER             0
-#define  STATE_VOICE_TERMINATOR         1
-#define  STATE_VOICE_RCV                2
+/*------ 调试开关------*/
+
+#define EMB_GPS_DEBUG                   0  // GPS-调试
 
 //  DEBUG SWITCH 0-off , 1-on
-
 //------------邻点调试----------------------
+#define BURST_CYC_VALUE                 0   // 正式版本为0, 邻点突发周期开关。上传SVN设置0。 当该数值为0时候，邻点突发周期为正常数值，当该数值为非0时，为调试模式，其值邻点突发周期，取值范围 > 10，即邻点突发周期10秒钟。
+#define NER_CHECK_DEBUG                 0
 
-#define BURST_CYC_VALUE         0   // 正式版本为0, 邻点突发周期开关。上传SVN设置0。 当该数值为0时候，邻点突发周期为正常数值，当该数值为非0时，为调试模式，其值邻点突发周期，取值范围 > 10，即邻点突发周期10秒钟。
-#define NER_CHECK_DEBUG         0
+
+//------误码率调试开关------
+#define ERR_VOICE_DEBUG                 0  // 初始化默认写文件关闭，初始化网管配置
+#define ERR_D_21_DEBUG                  0
+#define ERR_D_43_DEBUG                  0
+
+//--------------------------
+#define  VOICE_SRC_153                  2
+
+#define  WAIT_ERR_VOICE_HDR             0  // 当前状态-等待语音头
+#define  WAIT_ERR_VOICE_TER             1  // 当前状态-等待语音结束
+#define  SET_ERR_HDR                    0
+#define  SET_ERR_TER                    1  
+#define  SET_ERR_RCV                    2
+
+
 
 
 typedef enum _FRAME_CNT_E
@@ -77,7 +83,7 @@ typedef struct _ERR_VOICE_T
 {
     unsigned char FrmIndx;   // 语音帧索引
     unsigned int FrmCnt;  // 当前检测的语音帧数量
-    unsigned int ErrTotal;
+    unsigned int ErrTotal;//所有出错的比特数
     ERR_FRM_T *pErrFrm;
 } ERR_VOICE_T;
 
@@ -127,6 +133,7 @@ extern int GetTimerCnt(unsigned int item);
 extern void TimerTask();
 extern void GetAiItemStr(DATA_LINK_T *ptDataLink, char *Buf, unsigned short usBufLen);
 extern int RegisterTimerFun(unsigned short item, F_Timer TimerHandle);
+extern void DLL_SetIdDec2buf(unsigned char *pucSrc, unsigned char *pucDst, char *OutBuf, unsigned int OutBufLen);
 
 extern FILE *g_fpNerCheckLog;
 #endif

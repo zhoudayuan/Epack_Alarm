@@ -38,6 +38,7 @@
 #include "ccl_fun.h"
 #include "dll.h"
 #include "print_debug.h"
+#include "EncDec.h"
 
 //#include "DLL.h"
 
@@ -94,12 +95,13 @@ extern DLL_GLB_CFG_T g_DllGlobalCfg;
 * @brief FPGA配置共享内存
 */
 extern DLL_FPGA_SHM_T *p_DllFpgaShm;
-
+extern UINT8 auPiFlag;
+extern UINT8 auLastPiFlag;
 /******************************************************************************
  *   宏定义
  *   *************************************************************************/
 /**
- * @def  s_LastRelayFlg
+ * @def  s_tLast_Relay_Flg
  * @brief  上一次停止转发标志
  */
 unsigned char s_LastRelayFlg = 0;
@@ -400,7 +402,7 @@ static unsigned short   WaitNearNodeQueyAckTime;
 /**
  * @brief 保存CC层ID 数据
  */
- unsigned char s_aCCcvNetId[20]={0};
+ unsigned char s_aucCCcvNetId[20]={0};
 /**
  * @brief 时间计数
  */
@@ -410,11 +412,16 @@ unsigned int TimeCount = 0;
 * @var s_au2AmbeEraData[];
 * @brief AMBE静音帧数据
 */
-static unsigned  short  s_au2AmbeEraData[14] =
+unsigned  short  s_au2AmbeEraData[14] =
 {
-    0xb9e8, 0x8152, 0x6173, 0x002a, 0x6bb9, 0xe881, 0x5261,
-    0x7300, 0x2a6b, 0xb9e8, 0x8152, 0x6173, 0x002a, 0x6b00
+    0xe8b9, 0x5281, 0x7361, 0x2a00, 0xb96b, 0x81e8, 0x6152,
+    0x0073, 0x6b2a, 0xe8b9, 0x5281, 0x7361, 0x2a00, 0x006b
 };
+unsigned  short s_auNvocEraData[14] =
+  {
+	  0x408c,0x0de9,0xb48d,0x2030,0x8c00,0xe940,0x8d0d,
+	  0x30b4,0x0020,0x408c,0x0de9,0xb48d,0x2030,0x0000
+  };
 
 
 
@@ -784,12 +791,12 @@ void *ODP_CcVioceTask(void *arg)
         if (CENTER_VOICE_DL == g_CclState)
         {
             s_tFramType++;
-            TimeCount = 0;
+            TimeCount = 0;//下行语音有计数，下行清除超时标志位
             if (0 == (s_tFramType % 6))
             {
                 if (0 == s_tFramType)
                 {
-                    s_tFramType = FT_VOICE_A;
+                    s_tFramType = FT_VOICE_A;//不会走此分支
                 }
                 else
                 {
@@ -830,10 +837,9 @@ void ODP_CcSmsSigHandle(unsigned char *pvCenterData, unsigned char *pvDllData)
     char CclStateBuf[50];
     int u4Datalen;
     SMS_CENTER_CCL_DL *ptCenterData = (SMS_CENTER_CCL_DL *)pvCenterData;
-
     if ((INF_CCL_IDLE == g_CclState) || ((ptCenterData->ReceiverNum[0] == g_DllGlobalCfg.auNodeId) && (ptCenterData->ReceiverNum[1] == 0) && (ptCenterData->ReceiverNum[2] == 0))) //本地节点 且不是临点查询 则命令直接下发
     {
-        SavCcIDNetData(pvCenterData, s_aCCcvNetId);  // pvCenterData => pvCenterData
+        SavCcIDNetData(pvCenterData, s_aucCCcvNetId);  // pvCenterData => s_aucCCcvNetId
         ODP_GenSigCtrlDataPacket(pvCenterData, pvDllData, &u4Datalen);
         sendto(s_tSendToDllSocket, pvDllData, u4Datalen, 0, (struct sockaddr *)&s_tSendToDllAddr, sizeof(s_tSendToDllAddr));
     }
@@ -854,7 +860,7 @@ void *ODP_CcSigTask(void *arg)
     int u4Datalen;
     SHARE_CC_DATA_D *CcCmd;
     unsigned char PttCmdResult = 0;
-    unsigned char SendBuf[768] = {0};
+    unsigned char SendBuf[768] = {0};    // 最大长度
     unsigned char RecSigBuf[768] = {0};
     unsigned char i;
 
@@ -904,33 +910,48 @@ void *ODP_CcSigTask(void *arg)
             ODP_PrintCcSig((unsigned char *)CcCmd);
         }
 
+        /*if(Wait_Stun_Nas_Ack == INF_CCL_STATE || Wait_Kill_Nas_Ack == INF_CCL_STATE || INF_CCL_DISABLE== INF_CCL_STATE
+            || ((NAS_STAT_STUNED == INF_CCL_STATE)&& (REVIVE_REQ_NAS !=CcCmd->CcSmsSig.SmsType)))
+            {
+                LOG_ERROR(s_LogMsgId,"[CCL][%s]REC CC Sig NAS busy   cclworkstate=%d ", __FUNCTION__,INF_CCL_STATE);
+                continue;
+            }*/
+        //if (g_DllGlobalCfg.auStunFlag == NAS_KILL_FLAG || g_DllGlobalCfg.auKillFlag == NAS_KILL_FLAG)// 返回状态标志
+
         switch (CcCmd->CcSmsSig.SharedHead.SigType)
         {
             case SIG_PTT_CMD:  // 中心下达PTT命令
             {
+                #if 0
                 if ((INF_CCL_IDLE != g_CclState ) && (CENTER_VOICE_DL != g_CclState))
                 {
                     LOG_ERROR(s_LogMsgId, "[CCL][%s] Rcv Cc Sig Busy,CclState=%s", __FUNCTION__, GetCclStateByStr(g_CclState, CclStateBuf));
-                    PttCmdResult = false;
+                    PttCmdResult=false;
                     IDP_GenPttOnAck(SendBuf, &u4Datalen, PttCmdResult);
                     break;
                 }
-
+               #endif
                 if (CMD_PTT_ON == CcCmd->CcPttCmd.PttStat)  // 压手台命令
                 {
-                    if (p_DllFpgaShm->FollowEn)
+                    //if(NAS_VOICE_UL == INF_CCL_STATE || p_DllFpgaShm->FollowEn)
+                    if(p_DllFpgaShm->FollowEn)
                     {
                         PttCmdResult = false;
                         LOG_WARNING(s_LogMsgId,"[CCL][%s] Rcv Cc Sig,CclState=%s,FollowEn=%d", __FUNCTION__, GetCclStateByStr(g_CclState, CclStateBuf), p_DllFpgaShm->FollowEn);
+                    }
+                    else if (CENTER_VOICE_DL == g_CclState)
+                    {
+                        PttCmdResult = false;
+                        LOG_WARNING(s_LogMsgId,"[CCL][%s] Rcv Cc Sig,CclState=%s", __FUNCTION__, GetCclStateByStr(g_CclState, CclStateBuf));
                     }
                     else
                     {
                         PttCmdResult = true;
                         ODP_GenLcHeader(RecSigBuf, SendBuf, &u4Datalen);    // 封LC语音头
-                        sendto(s_tSendToDllSocket, SendBuf, u4Datalen, 0, (struct sockaddr *)&s_tSendToDllAddr, sizeof(s_tSendToDllAddr));
+                        sendto(s_tSendToDllSocket, SendBuf, u4Datalen, 0,(struct sockaddr *)&s_tSendToDllAddr,sizeof(s_tSendToDllAddr));
                         g_CclState = CENTER_VOICE_DL;
+                        TimeCount=0;
                     }
-
                     IDP_GenPttOnAck(SendBuf, &u4Datalen, PttCmdResult);
                     sendto(s_tCclSigUlSockfd, SendBuf, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));   //(struct sockaddr *)&address
                 }
@@ -939,15 +960,21 @@ void *ODP_CcSigTask(void *arg)
                     if (CENTER_VOICE_DL == g_CclState )
                     {
                         s_bRcvPttOffFlg = 1;
-                        // 补帧
-                        if (0 != s_tFramType % 6)
+                        if(0 != s_tFramType % 6)
                         {
                             s_tFramType++;
-                            for (i = s_tFramType; i <= FT_VOICE_F; i++)
+                            for(i = s_tFramType; i <= FT_VOICE_F; i++)
                             {
                                 //delay(45);    // 45ms 延时
-                                TimeCount = 0;
-                                ODP_GenSilentFrm((unsigned  char*)s_au2AmbeEraData, SendBuf, i, &u4Datalen);
+                                TimeCount = 0;//继续有数据下发，防止计数超时
+                                if(g_DllGlobalCfg.auVoiceType==AMBE)
+                                {
+                                	ODP_GenSilentFrm((unsigned  char*)s_au2AmbeEraData, SendBuf, i, &u4Datalen);//没发送完成一个超帧，要补充静音帧 
+                                }
+								else
+								{
+									ODP_GenSilentFrm((unsigned  char*)s_auNvocEraData, SendBuf, i, &u4Datalen);//没发送完成一个超帧，要补充静音帧  
+								}
                                 sendto(s_tSendToDllSocket, SendBuf, u4Datalen, 0, (struct sockaddr *)&s_tSendToDllAddr, sizeof(s_tSendToDllAddr));
                             }
                         }
@@ -1007,7 +1034,7 @@ void *ODP_CcSigTask(void *arg)
 * @since
 * @bug
 */
-void IDP_MsgDataHandle(unsigned char *pvDllData, unsigned char *ptCenterData)
+void IDP_MsgDataHandle(unsigned char *pvDllData, unsigned char *ptCcData)  // SND => RCV
 {
     char CclStateBuf[50];
     int u4Datalen;
@@ -1030,36 +1057,36 @@ void IDP_MsgDataHandle(unsigned char *pvDllData, unsigned char *ptCenterData)
             s_LastRelayFlg = 0;
             s_NasStopRelayFlg = 0;
 
-            if (s_SndPttOnFlg)
+            if (s_SndPttOnFlg)//之前本地中心成功处理上行PTTON的标志位,说明当前处在上行语音的过程中，状态为NAS_VOICE_UL
             {
-                IDP_GenPttCmd(pvDllData, ptCenterData, CMD_PTT_OFF, &u4Datalen);
-                sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));
+                IDP_GenPttCmd(pvDllData, ptCcData, CMD_PTT_OFF, &u4Datalen);
+                sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));
                 s_SndPttOnFlg = 0;
             }
             g_CclState = INF_CCL_IDLE;    // 无法收到 LC 终结帧  要设置超时自恢复状态
             break;
         }
 
-       case CT_GPS_EMB_VOICE:    // GPS语音内嵌
+       case CT_VOICE_EMB_GPS:    // GPS语音内嵌
         {
-            IDP_GenGpsData(ptDllData->DataType, pvDllData, ptCenterData, &u4Datalen, s_aCCcvNetId);
-            sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));
+            IDP_GenGpsData(CT_VOICE_EMB_GPS, pvDllData, ptCcData, &u4Datalen, s_aucCCcvNetId);
+            sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));
             break;
         }
     
         case CT_PACKET_DATA:    // 短消息
         {
-            IDP_GenSmsPacket(pvDllData,ptCenterData,&u4sendlen);
-            sendto(s_tCclSigUlSockfd, ptCenterData, u4sendlen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
+            IDP_GenSmsPacket(pvDllData, ptCcData, &u4sendlen);
+            sendto(s_tCclSigUlSockfd, ptCcData, u4sendlen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
             break;
         }
-        case CT_GPS_REPORT_ACK_MS:    // MS GPS上拉
+        case CT_GPS_REPORT_ACK_MS:  // MS GPS上拉
         {
             if(Wait_Gps_Ms_Ack == g_CclState)
             {
-                IDP_GenGpsData(CT_GPS_REPORT_ACK_MS, pvDllData, ptCenterData, &u4Datalen,s_aCCcvNetId);
-                sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
-                g_CclState=INF_CCL_IDLE;
+                IDP_GenGpsData(CT_GPS_REPORT_ACK_MS, pvDllData, ptCcData, &u4Datalen, s_aucCCcvNetId);
+                sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
+                g_CclState = INF_CCL_IDLE;
             }
             else
             {
@@ -1071,8 +1098,8 @@ void IDP_MsgDataHandle(unsigned char *pvDllData, unsigned char *ptCenterData)
         {
             if (Wait_Stun_Ms_Ack == g_CclState)
             {
-                IDP_GenMsAckData(STUN_REQ_MS_ACK, pvDllData, ptCenterData, &u4Datalen, s_aCCcvNetId);
-                sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));
+                IDP_GenMsAckData(STUN_REQ_MS_ACK, pvDllData, ptCcData, &u4Datalen, s_aucCCcvNetId);
+                sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));
                 g_CclState=INF_CCL_IDLE;
             }
             else
@@ -1086,8 +1113,8 @@ void IDP_MsgDataHandle(unsigned char *pvDllData, unsigned char *ptCenterData)
         {
             if(Wait_Reviv_MS_Ack == g_CclState)
             {
-                IDP_GenMsAckData(REVIVE_REQ_MS_ACK,pvDllData,ptCenterData,&u4Datalen,s_aCCcvNetId);
-                sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
+                IDP_GenMsAckData(REVIVE_REQ_MS_ACK,pvDllData,ptCcData,&u4Datalen,s_aucCCcvNetId);
+                sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
                 g_CclState=INF_CCL_IDLE;
             }
             else
@@ -1098,24 +1125,22 @@ void IDP_MsgDataHandle(unsigned char *pvDllData, unsigned char *ptCenterData)
         }
         case CT_DISCON_ALARM:
         {
-            IDP_GenAlarm_ClearData(DISCON_ALARM, pvDllData,ptCenterData,&u4Datalen);
-            sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
+            IDP_GenAlarm_ClearData(DISCON_ALARM, pvDllData,ptCcData,&u4Datalen);
+            sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
             break;
         }
         case CT_ALARM_REQ_MS:   // 终端告警
         {
-            IDP_GenAlarm_ClearData(MS_ALARM, pvDllData,ptCenterData, &u4Datalen);
-            sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
+            IDP_GenAlarm_ClearData(MS_ALARM, pvDllData,ptCcData, &u4Datalen);
+            sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
             break;
         }
         case CT_DISCON_ALARM_CLEAR:   // 告警清除
         {
-            IDP_GenAlarm_ClearData(MS_ALARM_CLEAR, pvDllData,ptCenterData,&u4Datalen);
-            sendto(s_tCclSigUlSockfd, ptCenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
+            IDP_GenAlarm_ClearData(MS_ALARM_CLEAR, pvDllData,ptCcData,&u4Datalen);
+            sendto(s_tCclSigUlSockfd, ptCcData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
             break;
         }
-
-        
         default:
         {
             LOG_ERROR(s_LogMsgId,"[CCL][%s] CCL STAT ERROR  stata=%d", __FUNCTION__,g_CclState);
@@ -1135,7 +1160,7 @@ void IDP_MsgDataHandle(unsigned char *pvDllData, unsigned char *ptCenterData)
 */
 void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
 {
-    char CclStateBuf[50];
+    //char CclStateBuf[50];
     int u4Datalen;
     int u4sendlen;
     DLL_CCL_UL_T * ptDllData=(DLL_CCL_UL_T *)pvDllData;
@@ -1145,16 +1170,16 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
         LOG_DEBUG(s_LogMsgId,"[CCL][%s] FT_VOICE ERROR ", __FUNCTION__);
         return ;
     }
-
+    #if 0
     if ((INF_CCL_IDLE != g_CclState) && (NAS_VOICE_UL != g_CclState))
     {
         LOG_DEBUG(s_LogMsgId,"[CCL][%s] ccl is busy, g_CclState=%s", __FUNCTION__, GetCclStateByStr(g_CclState, CclStateBuf));
         return;
     }
-
-    if (1 == s_RcvLcHdrFlg)
+    #endif
+    if (1 == s_RcvLcHdrFlg)//LC Header上来过，才转语音
     {
-        if (0 == s_SndPttOnFlg)   // 补充LC_Hdr
+        if (0 == s_SndPttOnFlg)   // 语音开始,无PTT_ON_ACK,刚开始语音丢弃，为了解决手咪收到8个LCHEAD响8次问题
         {
             memset(CenterData, 0, sizeof(CenterData));
             IDP_GenPttCmd(pvDllData, CenterData, CMD_PTT_ON, &u4Datalen);
@@ -1166,7 +1191,7 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
                 LOG_DEBUG(s_LogMsgId,"[CCL][%s] Snd PttOn To Cc, s_RcvLcHdrFlg=%d, s_SndPttOnFlg=%d", __FUNCTION__, s_RcvLcHdrFlg, s_SndPttOnFlg);
             }
 
-            if (1 == s_NasStopRelayFlg)
+            if (1 == s_NasStopRelayFlg)//FPGA停止转发标记状态发生变化时，通知给本地中心当前转发状态，只在上行语音进行上报
             {
                 memset(CenterData,0,sizeof(CenterData));
                 IDP_GenNasStatePack(s_LastRelayFlg, CenterData, &u4Datalen);
@@ -1187,7 +1212,7 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
             {
                 LOG_ERROR(s_LogMsgId,"[CCL][%s] Snd UP VOICE ERROR  LEN=%d", __FUNCTION__,u4sendlen);
             }
-            if (FT_VOICE_F == ptDllData->FrmType)       // 发送超帧方差平均值
+            if (FT_VOICE_F == ptDllData->FrmType)      // 发送超帧方差平均值,单独以短消息方式传送一个超帧的方差平均值
             {
                 IDP_GenThrethHoldData(pvDllData, CenterData, &u4Datalen);
                 sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
@@ -1208,7 +1233,7 @@ void IDP_MsgVoiceHandle(unsigned char *pvDllData, unsigned char *CenterData)
     }
     else
     {
-        LOG_DEBUG(s_LogMsgId,"[CCL][%s] Call Err s_RcvLcHdrFlg=%d" , __FUNCTION__, s_RcvLcHdrFlg);
+        LOG_DEBUG(s_LogMsgId,"[CCL][%s]  s_RcvLcHdrFlg=%d:Not Rcv LC_HEADER,but Now Rcv Voice[Frm_type=%d],Throw" , __FUNCTION__, s_RcvLcHdrFlg,ptDllData->FrmType);
     }
 }
 
@@ -1245,7 +1270,7 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
 //            if( (Wait_Gps_Nas_Ack == g_CclState) || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
             if( (Wait_Gps_Nas_Ack == g_CclState) || IDP_IsLocalNasAck(ptDllData))
             {
-                IDP_GenGpsData(CT_GPS_REPORT_ACK_NAS,pvDllData,CenterData,&u4Datalen,s_aCCcvNetId);
+                IDP_GenGpsData(CT_GPS_REPORT_ACK_NAS,pvDllData,CenterData,&u4Datalen,s_aucCCcvNetId);
                 //g_CclState=INF_CCL_IDLE;
                 sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
                 if(Wait_Gps_Nas_Ack == g_CclState)
@@ -1297,7 +1322,7 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
             }
             break;
         }
-        case CT_ENABLE_ACK_NAS:
+        case CT_ENABLE_ACK_NAS://非本地节点的ACK+本地节点ACK回复
         {
 //            if( (Wait_Reviv_NAS_Ack == g_CclState)  || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
             if( (Wait_Reviv_NAS_Ack == g_CclState)  || IDP_IsLocalNasAck(ptDllData))
@@ -1322,7 +1347,7 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
 //            if(( Wait_NEGHR_Nas_Ack == g_CclState)  || (ptDllData->SrcId[0] == g_DllGlobalCfg.auNodeId && ptDllData->SrcId[1] == 0 && ptDllData->SrcId[2] == 0))
             if(( Wait_NEGHR_Nas_Ack == g_CclState)  || IDP_IsLocalNasAck(ptDllData))
             {
-                IDP_GenNearData(NEAR_REPORT_PASSIVE,pvDllData,CenterData,&u4Datalen,s_aCCcvNetId);
+                IDP_GenNearData(NEAR_REPORT_PASSIVE,pvDllData,CenterData,&u4Datalen,s_aucCCcvNetId);
                 sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
                 if(Wait_NEGHR_Nas_Ack==g_CclState)
                 {
@@ -1337,7 +1362,7 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
         }
         case CT_NEGHR_REPORT:
         {
-            IDP_GenNearData(NEAR_REPORT_ACTIVE,pvDllData,CenterData,&u4Datalen,s_aCCcvNetId);
+            IDP_GenNearData(NEAR_REPORT_ACTIVE,pvDllData,CenterData,&u4Datalen, s_aucCCcvNetId);
             sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
             break;
         }
@@ -1354,7 +1379,7 @@ void IDP_MsgWluHandle(unsigned char *pvDllData, unsigned char *CenterData)
             sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0,(struct sockaddr *)&s_tCclSigUlAddr,sizeof(s_tCclSigUlAddr));  //(struct sockaddr *)&address
             break;*/
             //回复忙状态 ????
-        case CT_STUN_RPT_NAS:
+        case CT_STUN_RPT_NAS://本地节点被其他节点遥晕，上报CT_STUN_RPT_NAS
         {
             IDP_GenNasSigAckData(CT_STUN_RPT_NAS, pvDllData, CenterData, &u4Datalen);
             sendto(s_tCclSigUlSockfd, CenterData, u4Datalen, 0, (struct sockaddr *)&s_tCclSigUlAddr, sizeof(s_tCclSigUlAddr));
@@ -1425,7 +1450,7 @@ void *IDP_DllMsgTask(void *arg)
         ptDllData = (DLL_CCL_UL_T *)uRecSigBuf;
         if (1 == tcclPrint->DllUp)
         {
-            IDP_DllDataPrint((unsigned char *)ptDllData);
+            IDP_DllDataPrint((unsigned char *)ptDllData);  // 打印 Msg, Data, 和ID
         }
 
         switch (ptDllData->MsgType)
@@ -1480,7 +1505,6 @@ void * CclTimerTask(void * arg)
     int u4Datalen;
     unsigned char SendBuf[768] = {0};
     int  udatalen;
-
     while(1)
     {
         delay(30);
@@ -1549,8 +1573,11 @@ void * CclTimerTask(void * arg)
                     s_RcvLcHdrFlg = 0;
                     s_SndPttOnFlg = 0;
                     s_LastRelayFlg = 0;
-                    s_NasStopRelayFlg = 0;
-                    TimeCount = 0;
+                    s_NasStopRelayFlg=0;
+                    TimeCount=0;
+				    auPiFlag=0;
+				    auLastPiFlag=0;
+				    //清除秘钥相关信息，处理和Lc_Terminitor一致
                 }
                 break;
             }
@@ -1616,7 +1643,7 @@ int thread_create(void)
         LOG_DEBUG(s_LogMsgId, "[CCL][%s]Thread HandleCenterSig create", __FUNCTION__);
     }
 
-    if ((res = pthread_create(&s_tRecFrmDllthread, NULL, IDP_DllMsgTask, NULL) != 0))
+    if ((res = pthread_create(&s_tRecFrmDllthread, NULL, IDP_DllMsgTask, NULL) != 0))   //上行语音信令使用同一个接口
     {
         LOG_ERROR(s_LogMsgId,"[CCL][%s]Thread RecFrmDllthread create failed", __FUNCTION__);
         return res ;
@@ -1638,3 +1665,36 @@ int thread_create(void)
 
     return res ;
 }
+
+/*void  main()
+{
+int i;
+     CCL_init();
+    i= set_ticker(TIMER_INTERVAL);                                  //设置定时时间
+    printf("set_ticker=%d  \n", i);
+     signal(SIGALRM, timercallback);    //定时回调函数
+     thread_create();
+    pthread_join(s_tHandleCenterViocethread,NULL);
+    pthread_join(s_tHandleCenterSigthread,NULL);
+    pthread_join(s_tHandletimerthread,NULL);
+   // while(1)  s_tHandletimerthread
+   // ;
+}  */
+
+
+
+/*void CCL_sendtodll(void *arg)
+{
+
+
+}*/
+
+
+/*void  TIMER_ProcesTask(void *arg)
+{
+
+
+}
+
+*/
+

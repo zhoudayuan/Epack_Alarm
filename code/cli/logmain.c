@@ -343,7 +343,7 @@ static void *LOG_NetSendTask(void * p)
 int main()
 {
 	key_t msqKey;
-	
+	int creat_return;
 	if ((msqKey = ftok("/", LOG_MSG_ID)) == -1)
 	{
 		printf("[Log_Init] Creat msqKey Error\n");
@@ -383,7 +383,12 @@ int main()
 	pLogTxtFd = fopen("./LOG.txt","r+");
 	if(NULL == pLogTxtFd)
 	{
-		creat("./LOG.txt", S_IRUSR | S_IWUSR);
+		creat_return=creat("./LOG.txt", S_IRUSR | S_IWUSR);
+        if(-1==creat_return)
+        {
+            printf("[LOG] creat Log.txt fail!!!\n");
+			exit(1);
+        }
 		pLogTxtFd = fopen("./LOG.txt","r+");
 		if(NULL == pLogTxtFd)
 		{

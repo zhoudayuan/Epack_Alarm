@@ -10,7 +10,7 @@
  */
 /*
  *   函数列表
- *   1. ODP_GenSilentFrm       封装CCL下行静音帧数据包
+ *   1. ODP_GenSilentFrm             封装CCL下行静音帧数据包
  *   2. ODP_GenVoicePacket           封装CCL下行语音包
  *   3. ODP_GenSmsDataPacket         封装CCL层下行短信帧
  *   4. ODP_GenLcHeader              封装语音LC头

@@ -9,7 +9,7 @@
 
 /*
  *   函数列表
- *   1. ODP_GenSilentFrm         封装CCL下行静音帧数据包
+ *   1. ODP_GenSilentFrm               封装CCL下行静音帧数据包
  *   2. ODP_GenVoicePacket             封装CCL下行语音包
  *   3. ODP_GenSmsDataPacket           封装CCL层下行短信帧
  *   4. ODP_GenLcHeader                封装语音LC头
@@ -29,15 +29,7 @@
 #include "dll.h"
 #include "ccl_fun.h"
 #include "print_debug.h"
-
-
-
-
-
-
-
-
-
+#include "EncDec.h"
 
 /******************************************************************************
  *   类型定义
@@ -127,17 +119,31 @@ void ODP_GenLcHeader(unsigned char * pvCenterData, unsigned  char *pvDllData, in
     ptDllPayLoad->Reserved = 0;
     ptDllPayLoad->ProtectFlg = 0;
     ptDllPayLoad->CtrOpcode = 0x00;  // FLCO: 0X00代表起始帧OR结束帧
-    ptDllPayLoad->FeatureId = 0x00;
-    ptDllPayLoad->ServiceOpt = 0x00;  
- 
-
-
-     
-
-
-
-
-
+	if(g_DllGlobalCfg.auPI==1)
+	{
+	
+		if(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_DMRA)
+		{
+			ptDllPayLoad->ServiceOpt = 0x40;
+			ptDllPayLoad->FeatureId = MFID;
+		}
+		else if((g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_BASE)||(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_ENHA))
+		{
+			ptDllPayLoad->ServiceOpt = 0x40;
+			ptDllPayLoad->FeatureId = HFID;
+		}
+		else
+		{
+			LOG_ERROR(s_LogMsgId,"[CCL][%s] PI=1,But Encry_Type=%d", __FUNCTION__, g_DllGlobalCfg.auEncryption_Type);
+			ptDllPayLoad->FeatureId = 0x00;
+			ptDllPayLoad->ServiceOpt = 0x00;
+		}
+	}
+	else
+	{
+		ptDllPayLoad->FeatureId = 0x00;
+		ptDllPayLoad->ServiceOpt = 0x00;
+	}
     ptDllPayLoad->GroupAddr[0] = ptCenterData->CalledNum[0];
     ptDllPayLoad->GroupAddr[1] = ptCenterData->CalledNum[1];
     ptDllPayLoad->GroupAddr[2] = ptCenterData->CalledNum[2];
@@ -174,6 +180,7 @@ void ODP_GenVoicePacket(unsigned char *pvCenterData, unsigned char *pvDllData, u
     ptDllData->MsgType = DI_MSG_VOICE;
     ptDllData->FrmType = FrmType;
     ptDllData->DataType = CT_JUNK_DATA;
+	ptDllData->SilenceFrame=0;
 
     if (1 == tcclPrint->CclDown)
     {
@@ -223,10 +230,11 @@ void ODP_GenVoicePacket(unsigned char *pvCenterData, unsigned char *pvDllData, u
 */
 void ODP_GenSilentFrm(unsigned char *pvSilentData, unsigned char *pvDllData, unsigned char FrmType ,int *Len)
 {
-    DLL_CCL_UL_T *ptDllData = (DLL_CCL_UL_T *)pvDllData;
+    CCL_DLL_DL_T *ptDllData = (CCL_DLL_DL_T *)pvDllData;
     ptDllData->MsgType = DI_MSG_VOICE;
     ptDllData->FrmType = FrmType;
     ptDllData->DataType = CT_JUNK_DATA;
+	ptDllData->SilenceFrame=1;//表明此帧是补的静音帧
     ptDllData->DataLen = CENTER_VOICE_DL_PAYLOADLEN;
     *Len = SILENT_FRAME_DATA_LEN + DLL_CCL_MSG_HEADLEN;
     memcpy(ptDllData->PayLoad, pvSilentData, CENTER_VOICE_DL_PAYLOADLEN);
@@ -305,13 +313,14 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
             g_CclState = Wait_Stun_Ms_Ack;
             break;
         }
-        case GPS_REPOTR_MS:   // 终端GPS上拉
+
+        case GPS_REPOTR_MS:   // 终端GPS上拉，属于状态消息，非短消息
         {
             CallId++;
             ptDllData->MsgType = DI_MSG_DATA;
             ptDllData->DataType = CT_GPS_REPORT_REQ_MS;
             memcpy(ptDllData->PayLoad, (unsigned char *)&CallId, 4);
-            if (CC_CCL_MSGPSRPT_PAYLODDLEN < ptCenterData->ValidLength)
+            if (CC_CCL_MSGPSRPT_PAYLODDLEN < ptCenterData->ValidLength)//终端GPS上拉数据业务最大长度是4
             {
                 LOG_WARNING(s_LogMsgId, "[CCL][%s]CC_GPS_RPT_MS LOAD ERR LEN=%d", __FUNCTION__, ptCenterData->ValidLength);
                 ptCenterData->ValidLength = CC_CCL_MSGPSRPT_PAYLODDLEN;
@@ -351,7 +360,7 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
         {
             ptDllData->MsgType=DI_MSG_DATA;
             ptDllData->DataType=CT_PACKET_DATA;
-            SMS_CCL_DLL=(SMS_CCL_DLL_EN *)ptDllData->PayLoad;
+            SMS_CCL_DLL=(SMS_CCL_DLL_EN *)ptDllData->PayLoad;//Payload 头5字节按照指定格式填充
             SMS_CCL_DLL->Identification=0x0000;
             SMS_CCL_DLL->SrcIpId=0x0;
             SMS_CCL_DLL->DestIpId=0x2;
@@ -359,16 +368,16 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
             SMS_CCL_DLL->SrcPortId=1;
             SMS_CCL_DLL->CmpresOpcode2=0;
             SMS_CCL_DLL->DestPortId=1;
-            if(DLL_CCL_SMS_PAYLOADLEN <=ptCenterData->ValidLength)
+            if (DLL_CCL_SMS_PAYLOADLEN <=ptCenterData->ValidLength)
             {
                 ptCenterData->ValidLength=DLL_CCL_SMS_PAYLOADLEN;
             }
-            LitToBigSmsData(SMS_CCL_DLL->SmsPayLoad,ptCenterData->SmsData,ptCenterData->ValidLength);
-            ptDllData->DataLen=ptCenterData->ValidLength +5;
+            LitToBigSmsData(SMS_CCL_DLL->SmsPayLoad,ptCenterData->SmsData,ptCenterData->ValidLength);//大小端转序
+            ptDllData->DataLen=ptCenterData->ValidLength +5;//5是固定的IP压缩头个数00 00 02 01 01  后接实际的负载数据
             *Len=ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
             break;
         }
-        case MS_ALARM:   // 现行告警
+        case MS_ALARM:   //现行告警，终端告警不需要回复，所以不需要ACK.
         {
             ptDllData->MsgType  = DI_MSG_DATA;
             ptDllData->DataType = CT_ALARM_REQ_MS;
@@ -376,12 +385,13 @@ void ODP_GenSigCtrlDataPacket(unsigned char *pvCenterData, unsigned char *pvDllD
             *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
             break;
         }
-        case MS_ALARM_CLEAR:  // 告警清除
+
+        case MS_ALARM_CLEAR:   //告警清除
         {
             ptDllData->MsgType  = DI_MSG_DATA;
             ptDllData->DataType = CT_ALARM_ACK_MS;
             ptDllData->DataLen  = 0;
-            *Len = ptDllData->DataLen + DLL_CCL_MSG_HEADLEN;
+            *Len = ptDllData->DataLen+DLL_CCL_MSG_HEADLEN;
             break;
         }
         default:
@@ -415,8 +425,31 @@ void ODP_GenTerminatorPacket(unsigned char * pvCenterData, unsigned  char *pvDll
     ptDllPayLoad->Reserved = 0;
     ptDllPayLoad->ProtectFlg = 0;
     ptDllPayLoad->CtrOpcode = 0x00;
-    ptDllPayLoad->FeatureId = 0x00;
-    ptDllPayLoad->ServiceOpt = 0x00;
+	if(g_DllGlobalCfg.auPI==1)
+	{
+	
+		if(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_DMRA)
+		{
+			ptDllPayLoad->ServiceOpt = 0x40;
+			ptDllPayLoad->FeatureId = MFID;
+		}
+		else if((g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_BASE)||(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_ENHA))
+		{
+			ptDllPayLoad->ServiceOpt = 0x40;//Hytera高级加密 LC_H  LC_Ter此位置为0x40
+			ptDllPayLoad->FeatureId = HFID;//Hytera高级加密 LC_H  LC_Ter此位置为0x68
+		}
+		else
+		{
+			LOG_ERROR(s_LogMsgId,"[CCL][%s] PI=1,But Encry_Type=%d", __FUNCTION__, g_DllGlobalCfg.auEncryption_Type);
+			ptDllPayLoad->FeatureId = 0x00;
+			ptDllPayLoad->ServiceOpt = 0x00;
+		}
+	}
+	else
+	{
+		ptDllPayLoad->FeatureId = 0x00;
+		ptDllPayLoad->ServiceOpt = 0x00;
+	}
     ptDllPayLoad->GroupAddr[0] = ptCenterData->CalledNum[0];
     ptDllPayLoad->GroupAddr[1] = ptCenterData->CalledNum[1];
     ptDllPayLoad->GroupAddr[2] = ptCenterData->CalledNum[2];
@@ -448,9 +481,9 @@ void SavCcIDNetData(unsigned char *pvCenterData, unsigned char *CCcvNetid)
 {
     SMS_CENTER_CCL_DL *ptCenterData = (SMS_CENTER_CCL_DL *)pvCenterData;
     CC_CVID_SUBNET_DATA *ptCVNetid = (CC_CVID_SUBNET_DATA *)CCcvNetid;
-    ptCVNetid->CallId  = ptCenterData->CallId;
-    ptCVNetid->VoiceId = ptCenterData->VoiceId;
-    ptCVNetid->SubNet  = ptCenterData->SmsData[0];
+    ptCVNetid->CallId    = ptCenterData->CallId;
+    ptCVNetid->VoiceId   = ptCenterData->VoiceId;
+    ptCVNetid->SubNet    = ptCenterData->SmsData[0];
     ptCVNetid->srcid[0]  = ptCenterData->SenderNum[0];
     ptCVNetid->srcid[1]  = ptCenterData->SenderNum[1];
     ptCVNetid->srcid[2]  = ptCenterData->SenderNum[2];
@@ -476,7 +509,7 @@ void ODP_PrintLc(unsigned char * pvDllData)
 {
     char IdBuf[100];
     const char *pcDataType;
-    DLL_CCL_UL_T * ptDllData = (DLL_CCL_UL_T *)pvDllData;
+    CCL_DLL_DL_T * ptDllData=(CCL_DLL_DL_T * )pvDllData;
     SetIdDec2buf(ptDllData->SrcId, ptDllData->DstId, IdBuf, sizeof(IdBuf));
 
     if (ptDllData->DataType == CT_LC_HEADER)
@@ -490,7 +523,6 @@ void ODP_PrintLc(unsigned char * pvDllData)
     else
     {
         pcDataType = "Err";
-
     }
         
     LOG_DEBUG(s_LogMsgId,"[CCL][%s] LC:%s MsgType=%d DataType=%d FrmType=%d DataLen=%d %s", __FUNCTION__, pcDataType, ptDllData->MsgType, ptDllData->DataType, ptDllData->FrmType, ptDllData->DataLen, IdBuf);

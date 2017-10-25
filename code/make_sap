@@ -11,13 +11,13 @@ gcc_path=/opt/arm-cortexa9-linux-gnueabihf/gcc-4.7.3-glibc-2.16.0-binutils-2.22-
 svn_ver="1234"
 
 
-Time=\"$(date '+%Y-%m-%d %H:%M:%S')\"  
-Output="#define BUILD_TIMER     ${Time}"     
+Time=\"$(date '+%Y-%m-%d %H:%M:%S')\"
+Output="#define BUILD_TIMER     ${Time}"
 echo "/* This is generate by the shell*/" > ${path_version}
 echo "#ifndef __SVN_VERSION__"   >> ${path_version}
 echo "#define __SVN_VERSION__    1"   >> ${path_version}
 echo "#define BUILD_SVN_VERSION    ${svn_ver}" >> ${path_version}
-echo "${Output}" >> ${path_version}  
+echo "${Output}" >> ${path_version}
 echo "#endif" >> ${path_version}
 
 
@@ -31,26 +31,29 @@ echo "#endif" >> ${path_version}
 cd $Protocol_Path
 pwd
 $gcc_path/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o sap \
-                                sap.c \
-                                dll.c \
-                                dll_algrthm.c \
-                                dll_idp.c \
-                                dll_odp.c \
-                                dll_interleave.c \
-                                ccl_dl.c \
-                                ccl_ul.c \
-                                ccl_thread.c \
-                                ccl_fun.c \
-                                print_debug.c \
-                                viterbi_decode.c\
-                                -I ../inc -lpthread
+													sap.c               \
+													dll.c               \
+													dll_algrthm.c       \
+													dll_idp.c           \
+													dll_odp.c           \
+													dll_interleave.c    \
+													ccl_dl.c            \
+													ccl_ul.c            \
+													ccl_thread.c        \
+													ccl_fun.c           \
+													print_debug.c       \
+													viterbi_decode.c    \
+													AMBE_FEC.c          \
+													NVOC_FEC.c          \
+													EncDec.c            \
+													GetStealBit.c       \
+													libencryption.a     \
+													-I ../inc -lpthread
 
 if [ -e sap ]
 then
-    
+
     cp sap $Result_Path
     rm sap
     echo "~~~sap~ok~~~~"
 fi
-
-

@@ -63,8 +63,6 @@ typedef enum _CCL_DATA_TYPE_E
     CT_LC_TERMINATOR        = 0x03,                      ///< LC终结帧标识
     CT_PACKET_DATA          = 0x04,                      ///< 短消息
 
-    
-
     CT_GPS_REPORT_REQ_MS    = 0x11,                      ///< 手台GPS上拉
     CT_GPS_REPORT_ACK_MS    = 0x12,                      ///< 手台GPS上拉
     CT_DISABLE_REQ_MS       = 0x13,                      ///< 摇晕
@@ -94,7 +92,7 @@ typedef enum _CCL_DATA_TYPE_E
     CT_DISCON_ALARM_CLEAR   = 0x35,                      ///< 断链告警清除
 
     // 语音内嵌
-    CT_GPS_EMB_VOICE        = 0x40,                      ///< 语音内嵌GPS
+    CT_VOICE_EMB_GPS        = 0x40,                      ///< 语音内嵌GPS
 } CCL_DATA_TYPE_E;
 
 /**
@@ -108,7 +106,8 @@ typedef struct _CCL_DLL_DL_T
     UINT8 DataType;         ///< 数据类型
     UINT8 SrcId[3];         ///< 源ID
     UINT8 DstId[3];         ///< 目的ID
-    UINT8 uRev0[10];        ///< 预留0
+    UINT8 SilenceFrame;        ///< 预留0
+    UINT8 uRev0[9];        ///< 预留0
     UINT8 DataLen;          ///< 负载长度
     UINT8 PayLoad[500];     ///< 负载数据
 

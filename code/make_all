@@ -18,18 +18,19 @@ ADAPTER_PATH=`pwd`/adapter
 cd $PROTOCOL_PATH
 # 11个C文件 11个H文件
 $GCC_PATH/arm-cortexa9-linux-gnueabihf-g++  -O2 -Wall -DLINUX -o sap \
-                                sap.c \
-                                dll.c \
-                                dll_algrthm.c \
-                                dll_idp.c \
-                                dll_odp.c \
-                                dll_interleave.c \
-                                ccl_dl.c \
-                                ccl_ul.c \
-                                ccl_thread.c \
-                                ccl_fun.c \
-                                print_debug.c \
-                                -I ../inc -lpthread
+														ccl_dl.c \
+														ccl_fun.c \
+														ccl_thread.c \
+														ccl_ul.c \
+														dll_algrthm.c \
+														dll.c \
+														dll_idp.c \
+														dll_interleave.c \
+														dll_odp.c \
+														print_debug.c \
+														sap.c \
+														viterbi_decode.c \
+														-I ../inc -lpthread
 if [ -e sap ]
 then
     cp sap $RESULT_PATH

@@ -36,8 +36,10 @@
 #include <sys/mman.h>
 #include <arpa/inet.h>	  //inet_addr(); inet_ntoa()
 #include <pthread.h>
+#include "ccl_interface.h"
 #include "daemon.h"
 #include "mgr_public_func.h"
+
 
 #include <signal.h>
 #include <errno.h>
@@ -78,6 +80,7 @@ pthread_t tid_pwr_key_det;
 pthread_t tid_wd_wg;
 
 
+
 /**
 * @var s_tCclSigUlSockfd
 * @brief 呼叫控制层信令上行套接字
@@ -88,6 +91,64 @@ pthread_t tid_wd_wg;
 * @brief 呼叫控制层信令上行地址
 */
 static  struct sockaddr_in  s_tToCcSigAddr;
+
+/******************************************/
+#define BUFFERSIZE 4096
+#define MD5_LEN 32
+#define FILE_INFO_LEN 128
+
+#define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
+#define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
+#define H(x, y, z) ((x) ^ (y) ^ (z))
+#define I(x, y, z) ((y) ^ ((x) | (~z)))
+#define RL(x, y) (((x) << (y)) | ((x) >> (32 - (y))))
+#define PP(x) (x<<24)|((x<<8)&0xff0000)|((x>>8)&0xff00)|(x>>24)
+#define FF(a, b, c, d, x, s, ac) a = b + (RL((a + F(b,c,d) + x + ac),s))
+#define GG(a, b, c, d, x, s, ac) a = b + (RL((a + G(b,c,d) + x + ac),s))
+#define HH(a, b, c, d, x, s, ac) a = b + (RL((a + H(b,c,d) + x + ac),s))
+#define II(a, b, c, d, x, s, ac) a = b + (RL((a + I(b,c,d) + x + ac),s))
+
+unsigned int A,B,C,D,a,b,c,d,flen[2],x[16];
+int i, len;
+char filename[200];
+FILE *fp;
+
+
+/**
+ * @var md5_sum_in_bin
+ * @brief 从bin文件中提取的md5校验码
+ */
+char md5_sum_in_bin[MD5_LEN + 1] = {0};
+
+/**
+ * @var md5_sum
+ * @brief 计算的md5校验码
+ */
+char md5_sum[MD5_LEN + 1] = {0};
+
+/************************************************/
+
+
+
+/**
+ * @brief   加载fpga
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
+
+void load_fpga(void)
+{
+	printf("start load FPGA\n");
+	system("echo 0 > /sys/class/fpga-bridge/fpga2hps/enable;echo 0 > /sys/class/fpga-bridge/hps2fpga/enable;echo 0 > /sys/class/fpga-bridge/lwhps2fpga/enable");
+	system("dd if=/home/soc_system.rbf of=/dev/fpga0 bs=1M");
+	system("echo 1 > /sys/class/fpga-bridge/fpga2hps/enable;echo 1 > /sys/class/fpga-bridge/hps2fpga/enable;echo 1 > /sys/class/fpga-bridge/lwhps2fpga/enable");
+}
+
+
+
 int main()
 {	
 	CHILD_TASK sub[TASK_NUM] = {
@@ -104,7 +165,15 @@ int main()
 	system("echo 0 > /proc/sys/kernel/printk");
 
     GetCompileTime();
-	load_fpga();
+    
+    if(verify_fpga() == -1)
+    {
+        printf("verify fpga fail\n");
+        version_back_operation();
+        return -1;
+    }
+    
+    load_fpga();
 
 	if (-1 == shm_nm_create())
 	{
@@ -123,7 +192,6 @@ int main()
 		printf("shm_ipc_create err\n");
 		return -1;
 	}
-	
 	fill_shm_cfg_default();
 	
 	fill_shm_ipc_default();
@@ -206,6 +274,16 @@ int main()
 
 
 
+
+/**
+ * @brief   初始化告警列表
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
+
 int init_alarm_table(void)
 {
 	int i = 0;
@@ -238,6 +316,15 @@ int init_alarm_table(void)
 	return 0;
 }
 
+
+/**
+ * @brief   启动子进程
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 int start_child_task(CHILD_TASK * sub)
 {
 	pid_t pid;
@@ -343,6 +430,16 @@ int start_child_task(CHILD_TASK * sub)
 }
 
 
+
+/**
+ * @brief   监控子进程，重启10次切换分区
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
+
 int monitor_child_task(CHILD_TASK * sub)
 {
 	int fd;
@@ -412,7 +509,6 @@ int monitor_child_task(CHILD_TASK * sub)
 		if (fd == -1)
 		{
 			printf("open /tmp/snmpd_daemon.txt fail\n");
-            close(fd);
 			return -1;
 		}
 		lseek(fd, 0, SEEK_SET);
@@ -468,7 +564,6 @@ int monitor_child_task(CHILD_TASK * sub)
 		if (fd == -1)
 		{
 			printf("open /tmp/boa_daemon.txt fail\n");
-            close(fd);
 			return -1;
 		}
 		lseek(fd, 0, SEEK_SET);
@@ -516,6 +611,14 @@ int monitor_child_task(CHILD_TASK * sub)
 	return 0;
 }
 
+/**
+ * @brief   初始化共享内存
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 
 void fill_shm_cfg_default(void)
 {
@@ -645,13 +748,13 @@ void fill_shm_cfg_default(void)
 
 
 	shm_cfg_addr->scan_mode.id= 0x19;
-	memcpy(shm_cfg_addr->scan_mode.name, "scan_mode", 20);
+	memcpy(shm_cfg_addr->scan_mode.name, "scanMode", 20);
 	shm_cfg_addr->scan_mode.len = 4;
 	shm_cfg_addr->scan_mode.val=DEFAULT_SCAN_MODE;
 
 	
 	shm_cfg_addr->freq_offset.id= 0x1a;
-    memcpy(shm_cfg_addr->freq_offset.name, "freq_offset", 20);
+    memcpy(shm_cfg_addr->freq_offset.name, "freqMoffset", 20);
     shm_cfg_addr->freq_offset.len = 4;
 	shm_cfg_addr->freq_offset.val=DEFAULT_FREQ_OFFSET;
 
@@ -704,9 +807,33 @@ void fill_shm_cfg_default(void)
     memcpy(shm_cfg_addr->web_user.name, "web_user", 20);
     shm_cfg_addr->web_user.len = 50;
 	memcpy(shm_cfg_addr->web_user.buf, DEFAULT_WEB_USER, sizeof(shm_cfg_addr->web_user.buf));
+
+    shm_cfg_addr->stop_tans.id= 0x25;
+    memcpy(shm_cfg_addr->stop_tans.name, "stoptrans", 20);
+    shm_cfg_addr->stop_tans.len = 4;
+	shm_cfg_addr->stop_tans.val=DEFAULT_STOP_TRANSMIT;
+
+    shm_cfg_addr->boot_mode.id= 0x26;
+    memcpy(shm_cfg_addr->boot_mode.name, "boot_mode", 20);
+    shm_cfg_addr->boot_mode.len = 4;
+	shm_cfg_addr->boot_mode.val=DEFAULT_BOOT_MODE;
+
+
+    shm_cfg_addr->reboot_strategy.id= 0x27;
+    memcpy(shm_cfg_addr->reboot_strategy.name, "reboot_method", 20);
+    shm_cfg_addr->reboot_strategy.len = 4;
+	shm_cfg_addr->reboot_strategy.val=DEFAULT_REBOOT_STRATEGY;
 	sem_cfg_v();
 }
 
+/**
+ * @brief   初始化进程间通信共享内存
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 
 void fill_shm_ipc_default(void)
 {
@@ -716,6 +843,14 @@ void fill_shm_ipc_default(void)
 	sem_ipc_v();
 }
 
+/**
+ * @brief   初始化网管区共享内存
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 
 void fill_shm_nm_default(void)
 {
@@ -725,6 +860,15 @@ void fill_shm_nm_default(void)
 }
 
 
+
+/**
+ * @brief   将配置文件中的信息导入共享内存
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 void cover_cfg_info(void)
 {
 	int fd;	
@@ -748,6 +892,7 @@ void cover_cfg_info(void)
 	if(-1==read(fd, src_buf, sizeof(src_buf)))
     {
         reload_cfg_flag |= 0x04;
+        close(fd);
 		return;
     }   
 	close(fd);
@@ -800,8 +945,18 @@ void cover_cfg_info(void)
 }
 
 
+
+/**
+ * @brief   创建线程
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 int daemon_pthread_create(void)
 {
+
 	if (pthread_create(&tid_run_led, NULL, pthread_run_led, NULL)) 
 	{
 		printf("pthread_create tid_run_led err\n");
@@ -921,6 +1076,15 @@ void IDP_PowerDown_Info(unsigned char *pvCenterData, int *Len)
 }
 
 
+
+/**
+ * @brief   运行灯线程
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 void * pthread_run_led(void *arg)
 { 
 	struct sigaction act, oldact;
@@ -972,6 +1136,15 @@ int check_status(int status)
 }
 
 
+
+/**
+ * @brief   关机操作处理函数
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 void stop_srv(void)
 {
     int status;
@@ -1010,6 +1183,16 @@ void stop_srv(void)
     exit(0);
 }
 
+
+/**
+ * @brief   检测关机按键线程
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
+
 void * pthread_pwr_key_det(void *arg)
 {
 	int ret = 0;
@@ -1044,29 +1227,41 @@ void * pthread_pwr_key_det(void *arg)
 	{
 		usleep(500000);
 
-		ret = gpio_read(fd_pwr_key_det);
-		if (0 == ret)
-		{
-			cnt++;
-		}
-		else
-		{
-			cnt = 0;
-		}
+        if(shm_cfg_addr->boot_mode.val == DEFAULT_BOOT_MODE)  //按键开机正常检测
+        {
+            ret = gpio_read(fd_pwr_key_det);
+		    if (0 == ret)
+		    {
+			    cnt++;
+		    }
+		    else
+		    {
+			    cnt = 0;
+		    }
 		
-		if (cnt == 5)
-		{
-			printf("start power down!\n");
-			gpio_write(fd_mcu_pwr_ctrl, 1);
-			//灭运行灯、杀业务线程 关看门狗
-			stop_srv();
-		}
+		    if (cnt == 5)
+		    {
+			    printf("start power down!\n");
+			    gpio_write(fd_mcu_pwr_ctrl, 1);
+			    //灭运行灯、杀业务线程 关看门狗
+			    stop_srv();
+		    }
+        }
+		
+		
 	}
 	pthread_exit(NULL);
 }
 
 
-
+/**
+ * @brief   喂狗线程
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 void * pthread_wd_wg(void *arg)
 {	
 	fd_wd_wg = gpio_init(GPIO_WD_WG, 1);
@@ -1083,32 +1278,40 @@ void * pthread_wd_wg(void *arg)
 	pthread_exit(NULL);
 }
 
-
+/**
+ * @brief   版本回退函数
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 void version_back_operation()
 {
     printf("process application version back operation\n");
     unsigned int size;
     pid_t status;
-
-    FILE *fp,*fd;
+    FILE *fb,*fd;
     char buffer[30]= {0};
     char buffer_active[]="active\n";
     char buffer_error[]="error\n";
 	char buffer_back[]="back\n";
 
-    fp=fopen("/loadapp/loadflag","wb");
+    fb=fopen("/loadapp/loadflag","wb");
 
-    if(fp == NULL)
+    if(fb == NULL)
     {
         printf("open /loadapp/loadflag file failed!\n");
 		chdir("/loadapp");
+        SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+        sleep(2);
 		system("./reboot_epack");
         return;
     }
 
     size=strlen(buffer_error);
-    fwrite(buffer_error,size,1,fp);
-    fclose(fp);
+    fwrite(buffer_error,1,size,fb);
+    fclose(fb);
 
     fd = popen("/loadapp/mount.sh", "r");
 
@@ -1116,6 +1319,8 @@ void version_back_operation()
     {
         printf("open /loadapp/mount.sh file error!\n");
 		chdir("/loadapp");
+        SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+        sleep(2);
         system("./reboot_epack");
         return;
     }
@@ -1127,6 +1332,8 @@ void version_back_operation()
         printf("get mount point error!\n");
         pclose(fd);
 		chdir("/loadapp");
+        SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+        sleep(2);
         system("./reboot_epack");
         return;
     }
@@ -1157,6 +1364,8 @@ void version_back_operation()
     {
         printf("mount /dev/mtdblockx on /mnt failed!\n");
 		chdir("/loadapp");
+        SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+        sleep(2);
         status = system("./reboot_epack");
         return;
     }
@@ -1172,6 +1381,8 @@ void version_back_operation()
             {
                 printf("mount /dev/mtdblockx on /mnt WEXITSTATUS(status) failed!\n");
 				chdir("/loadapp");
+                SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+                sleep(2);
                 system("./reboot_epack");
                 return;
             }
@@ -1180,14 +1391,21 @@ void version_back_operation()
         {
             printf("mount /dev/mtdblockx on /mnt WIFEXITED(status) failed!\n");
 			chdir("/loadapp");
+            SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+            sleep(2);
             system("./reboot_epack");
             return;
         }
     }
 
-    fp=fopen("/mnt/loadflag","rb");
+    if(0 != access("/mnt/loadflag", F_OK))
+    {
+        printf("/mnt/loadflag not exist!\n");
+        goto exec;
+    }
+    fb=fopen("/mnt/loadflag","rb");
 
-    if(fp == NULL)
+    if(fb == NULL)
     {
         printf("open /mnt/loadflag file error!\n");
         goto exec;
@@ -1195,19 +1413,20 @@ void version_back_operation()
 
     memset(buffer,0,sizeof(buffer));
     size=sizeof(buffer);
-    if(0==fread(buffer,size,1,fp))
+    if(0==fread(buffer,1,sizeof(buffer),fb))
     {
         printf("fread /mnt/loadflag file error!\n");
+        fclose(fb);
         goto exec;
     }
-    fclose(fp);
+    fclose(fb);
 
     if(0 == strcmp(buffer_back, (char*)buffer))
     {
         printf("this is back application!\n");
-        fp=fopen("/mnt/loadflag","wb");
+        fb=fopen("/mnt/loadflag","wb");
 
-        if(fp == NULL)
+        if(fb == NULL)
         {
             printf("open /mnt/loadflag file error!\n");
             goto exec;
@@ -1215,29 +1434,30 @@ void version_back_operation()
         }
 
         size=strlen(buffer_active);
-        fwrite(buffer_active,size,1,fp);
-        fclose(fp);
+        fwrite(buffer_active,1,size,fb);
+        fclose(fb);
     }
 
 exec:
     chdir("/loadapp");
 	
     system("umount /mnt");
-
+    SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+    sleep(2);
     system("./reboot_epack");
 
     return;
 }
 
 
-void load_fpga(void)
-{
-	printf("start load FPGA\n");
-	system("echo 0 > /sys/class/fpga-bridge/fpga2hps/enable;echo 0 > /sys/class/fpga-bridge/hps2fpga/enable;echo 0 > /sys/class/fpga-bridge/lwhps2fpga/enable");
-	system("dd if=soc_system.rbf of=/dev/fpga0 bs=1M");
-	system("echo 1 > /sys/class/fpga-bridge/fpga2hps/enable;echo 1 > /sys/class/fpga-bridge/hps2fpga/enable;echo 1 > /sys/class/fpga-bridge/lwhps2fpga/enable");
-}
-
+/**
+ * @brief   获取程序编译时间
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 void GetCompileTime(void)
 {
 
@@ -1265,6 +1485,16 @@ void GetCompileTime(void)
      printf("[%s] Compile time: %d-%d-%d %d:%d:%d\n", TASK_NAME, year, month, day, hour, minutes, seconds); 
 }
 
+
+
+/**
+ * @brief   将应用程序版本号写入文件，供手咪使用
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
 
 int write_epack_version_to_file()
 {
@@ -1304,4 +1534,373 @@ int write_epack_version_to_file()
 	fclose(fp);
 	return 0;
 }
+
+
+
+void md5()
+{
+	a=A,b=B,c=C,d=D;
+
+	/**//* Round 1 */
+	FF (a, b, c, d, x[ 0], 7, 0xd76aa478); /**//* 1 */
+	FF (d, a, b, c, x[ 1], 12, 0xe8c7b756); /**//* 2 */
+	FF (c, d, a, b, x[ 2], 17, 0x242070db); /**//* 3 */
+	FF (b, c, d, a, x[ 3], 22, 0xc1bdceee); /**//* 4 */
+	FF (a, b, c, d, x[ 4], 7, 0xf57c0faf); /**//* 5 */
+	FF (d, a, b, c, x[ 5], 12, 0x4787c62a); /**//* 6 */
+	FF (c, d, a, b, x[ 6], 17, 0xa8304613); /**//* 7 */
+	FF (b, c, d, a, x[ 7], 22, 0xfd469501); /**//* 8 */
+	FF (a, b, c, d, x[ 8], 7, 0x698098d8); /**//* 9 */
+	FF (d, a, b, c, x[ 9], 12, 0x8b44f7af); /**//* 10 */
+	FF (c, d, a, b, x[10], 17, 0xffff5bb1); /**//* 11 */
+	FF (b, c, d, a, x[11], 22, 0x895cd7be); /**//* 12 */
+	FF (a, b, c, d, x[12], 7, 0x6b901122); /**//* 13 */
+	FF (d, a, b, c, x[13], 12, 0xfd987193); /**//* 14 */
+	FF (c, d, a, b, x[14], 17, 0xa679438e); /**//* 15 */
+	FF (b, c, d, a, x[15], 22, 0x49b40821); /**//* 16 */
+
+	/**//* Round 2 */
+	GG (a, b, c, d, x[ 1], 5, 0xf61e2562); /**//* 17 */
+	GG (d, a, b, c, x[ 6], 9, 0xc040b340); /**//* 18 */
+	GG (c, d, a, b, x[11], 14, 0x265e5a51); /**//* 19 */
+	GG (b, c, d, a, x[ 0], 20, 0xe9b6c7aa); /**//* 20 */
+	GG (a, b, c, d, x[ 5], 5, 0xd62f105d); /**//* 21 */
+	GG (d, a, b, c, x[10], 9, 0x02441453); /**//* 22 */
+	GG (c, d, a, b, x[15], 14, 0xd8a1e681); /**//* 23 */
+	GG (b, c, d, a, x[ 4], 20, 0xe7d3fbc8); /**//* 24 */
+	GG (a, b, c, d, x[ 9], 5, 0x21e1cde6); /**//* 25 */
+	GG (d, a, b, c, x[14], 9, 0xc33707d6); /**//* 26 */
+	GG (c, d, a, b, x[ 3], 14, 0xf4d50d87); /**//* 27 */
+	GG (b, c, d, a, x[ 8], 20, 0x455a14ed); /**//* 28 */
+	GG (a, b, c, d, x[13], 5, 0xa9e3e905); /**//* 29 */
+	GG (d, a, b, c, x[ 2], 9, 0xfcefa3f8); /**//* 30 */
+	GG (c, d, a, b, x[ 7], 14, 0x676f02d9); /**//* 31 */
+	GG (b, c, d, a, x[12], 20, 0x8d2a4c8a); /**//* 32 */
+
+	/**//* Round 3 */
+	HH (a, b, c, d, x[ 5], 4, 0xfffa3942); /**//* 33 */
+	HH (d, a, b, c, x[ 8], 11, 0x8771f681); /**//* 34 */
+	HH (c, d, a, b, x[11], 16, 0x6d9d6122); /**//* 35 */
+	HH (b, c, d, a, x[14], 23, 0xfde5380c); /**//* 36 */
+	HH (a, b, c, d, x[ 1], 4, 0xa4beea44); /**//* 37 */
+	HH (d, a, b, c, x[ 4], 11, 0x4bdecfa9); /**//* 38 */
+	HH (c, d, a, b, x[ 7], 16, 0xf6bb4b60); /**//* 39 */
+	HH (b, c, d, a, x[10], 23, 0xbebfbc70); /**//* 40 */
+	HH (a, b, c, d, x[13], 4, 0x289b7ec6); /**//* 41 */
+	HH (d, a, b, c, x[ 0], 11, 0xeaa127fa); /**//* 42 */
+	HH (c, d, a, b, x[ 3], 16, 0xd4ef3085); /**//* 43 */
+	HH (b, c, d, a, x[ 6], 23, 0x04881d05); /**//* 44 */
+	HH (a, b, c, d, x[ 9], 4, 0xd9d4d039); /**//* 45 */
+	HH (d, a, b, c, x[12], 11, 0xe6db99e5); /**//* 46 */
+	HH (c, d, a, b, x[15], 16, 0x1fa27cf8); /**//* 47 */
+	HH (b, c, d, a, x[ 2], 23, 0xc4ac5665); /**//* 48 */
+
+	/**//* Round 4 */
+	II (a, b, c, d, x[ 0], 6, 0xf4292244); /**//* 49 */
+	II (d, a, b, c, x[ 7], 10, 0x432aff97); /**//* 50 */
+	II (c, d, a, b, x[14], 15, 0xab9423a7); /**//* 51 */
+	II (b, c, d, a, x[ 5], 21, 0xfc93a039); /**//* 52 */
+	II (a, b, c, d, x[12], 6, 0x655b59c3); /**//* 53 */
+	II (d, a, b, c, x[ 3], 10, 0x8f0ccc92); /**//* 54 */
+	II (c, d, a, b, x[10], 15, 0xffeff47d); /**//* 55 */
+	II (b, c, d, a, x[ 1], 21, 0x85845dd1); /**//* 56 */
+	II (a, b, c, d, x[ 8], 6, 0x6fa87e4f); /**//* 57 */
+	II (d, a, b, c, x[15], 10, 0xfe2ce6e0); /**//* 58 */
+	II (c, d, a, b, x[ 6], 15, 0xa3014314); /**//* 59 */
+	II (b, c, d, a, x[13], 21, 0x4e0811a1); /**//* 60 */
+	II (a, b, c, d, x[ 4], 6, 0xf7537e82); /**//* 61 */
+	II (d, a, b, c, x[11], 10, 0xbd3af235); /**//* 62 */
+	II (c, d, a, b, x[ 2], 15, 0x2ad7d2bb); /**//* 63 */
+	II (b, c, d, a, x[ 9], 21, 0xeb86d391); /**//* 64 */
+
+	A += a;
+	B += b;
+	C += c;
+	D += d;
+}
+
+
+int CalcFileMD5(char *filename, char *md5_sum)
+{
+	if (filename[0]==34) 
+	{
+		filename[strlen(filename)-1]=0;
+		strcpy(filename,filename+1);
+	}
+	
+	if (!strcmp(filename,"exit")) 
+	{
+		exit(0);
+	}
+	
+	if (!(fp=fopen(filename,"rb"))) //
+	{
+		printf("Can not open this file!\n");
+		return 0;
+	}
+
+	fseek(fp, 0, SEEK_END);
+
+	if((len=ftell(fp))==-1)
+	{
+		printf("Sorry! Can not calculate files which larger than 2 GB!\n");
+		fclose(fp);
+		return 0;
+	}
+
+	rewind(fp);
+
+	A=0x67452301,B=0xefcdab89,C=0x98badcfe,D=0x10325476;
+
+	flen[1]=len/0x20000000;
+
+	flen[0]=(len%0x20000000)*8;
+
+	memset(x,0,64);
+
+	fread(&x,4,16,fp);
+
+	for(i=0; i<len/64; i++)
+	{
+		md5();
+		memset(x,0,64);
+		fread(&x,4,16,fp);
+	}
+
+	((char*)x)[len%64]=128;
+
+	if(len%64>55) 
+	{
+		md5();
+		memset(x,0,64);
+	}
+
+	memcpy(x+14,flen,8);
+
+	md5();
+
+	fclose(fp);
+
+	sprintf(md5_sum,"%08x%08x%08x%08x",PP(A),PP(B),PP(C),PP(D));
+
+	return 1;
+}
+
+
+/**
+ * @brief   将BIN文件转化为tar.bz2文件
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
+int bin_to_bz2(char * bin_name, char * bz2_name)
+{
+	FILE * bin_file;
+	FILE * bz2_file;
+	unsigned int bin_name_len = 0;
+	unsigned int bin_file_len;
+    unsigned int suffixation_len = strlen(".bin");
+	unsigned int i_loop = 0;
+	unsigned int loop_cnt;
+	int remainder;
+	char buf[BUFFERSIZE];
+
+	bin_name_len = strlen(bin_name);
+	if (50 < bin_name_len)
+	{
+		printf("name too long!\n");
+		return -1;
+	}
+
+	if (0 != strcmp(".bin", bin_name + bin_name_len - suffixation_len))
+	{
+		printf("err file!\n");
+		return -1;
+	}
+	else
+	{
+		strncpy(bz2_name, bin_name, bin_name_len - suffixation_len);
+		strcat(bz2_name, ".tar.bz2");
+		//printf("%s\n", bz2_name);
+	    bz2_file = fopen(bz2_name, "wb+");
+		if (NULL == bz2_file)
+		{
+			printf("bz2_file fopen err\n");
+			return -1;
+		}
+		bin_file = fopen(bin_name, "rb");
+		if (NULL == bin_file)
+		{
+			printf("bin_file fopen err\n");
+            fclose(bz2_file);
+			return -1;
+		}
+
+		if (MD5_LEN != (int)fread(md5_sum_in_bin, sizeof(char), MD5_LEN, bin_file))
+		{
+			printf("fread md5 err\n");
+			fclose(bz2_file);
+			fclose(bin_file);
+			return -1;
+		}
+
+		fseek(bin_file, 0, SEEK_END);
+		bin_file_len = ftell(bin_file);
+		fseek(bin_file, FILE_INFO_LEN, SEEK_SET);
+        loop_cnt = (bin_file_len - FILE_INFO_LEN) / BUFFERSIZE;
+		remainder = (bin_file_len - FILE_INFO_LEN) % BUFFERSIZE;
+		
+		for (i_loop = 0; i_loop < loop_cnt; i_loop++)
+		{
+			if (BUFFERSIZE != fread(buf, sizeof(char), BUFFERSIZE, bin_file))
+			{
+				printf("fread err\n");
+				fclose(bz2_file);
+				fclose(bin_file);
+				return -1;
+			}
+			else 
+			{
+				if (BUFFERSIZE != fwrite(buf, sizeof(char), BUFFERSIZE, bz2_file))
+				{
+					printf("fwrite err\n");
+					fclose(bz2_file);
+					fclose(bin_file);
+					return -1;
+				}
+			}
+		}
+
+		if (remainder != (int)fread(buf, sizeof(char), remainder, bin_file))
+		{
+			printf("fread remainder err\n");
+			fclose(bz2_file);
+			fclose(bin_file);
+			return -1;
+		}
+		else 
+		{
+			if (remainder != (int)fwrite(buf, sizeof(char), remainder, bz2_file))
+			{
+				printf("fwrite remainder err\n");
+				fclose(bz2_file);
+				fclose(bin_file);
+				return -1;
+			}
+		}
+
+		fclose(bz2_file);
+		fclose(bin_file);
+		
+		if(!CalcFileMD5(bz2_name, md5_sum))
+		{
+			printf("call CalcFileMD5 err\n");
+			return -1;
+		}
+
+		if (0 != strncmp(md5_sum, md5_sum_in_bin, MD5_LEN))
+		{
+			printf("invalid update file\n");
+			return -1;
+		}
+    }
+
+	return 0;
+}
+
+
+
+/**
+ * @brief   验证system执行命令结果
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
+int test_code(int status)
+{
+    if (-1 == status) 
+    { 
+        printf("system return failed!\n");
+		return -1;
+			
+	}
+	else
+    {
+        if (WIFEXITED(status))
+		{
+		    if(0 == WEXITSTATUS(status))
+			{
+		        return 0;
+			}
+			else
+			{
+			    printf(" WEXITSTATUS(status) failed!\n");	   
+		   		return -1;
+			}
+		}
+		else  
+		{  
+		    printf("WIFEXITED(status) failed!\n");
+			return -1;
+		   	
+		}
+	}
+}
+
+
+
+/**
+ * @brief   验证fpga，文件无效切换分区
+ *
+ * @param[in] 
+ *
+ * @return
+ * @bug
+ */
+
+int verify_fpga()
+{
+    int status=0;
+    char code[200]={0};
+    char file_name[50]={0};
+    char soc_system[50]="soc_system_rbf.bin";
+    
+    if (-1 == access(soc_system, F_OK))
+    {
+        printf(" soc_system_rbf.bin not exist\n"); 
+        return -1;
+    }
+
+    sprintf(code, "cp %s /home", soc_system);
+    status=system((const char *)code);
+    if(test_code(status))
+	{
+		printf(" cp soc_system_rbf.bin fail\n"); 
+        return -1;
+	}
+
+    chdir("/home");
+
+    if (0 != bin_to_bz2( soc_system,file_name))
+    {
+		printf(" bin_to_bz2 failed!\n");
+        return -1;
+    }
+   memset(code, 0, sizeof(code));
+   sprintf(code, "tar -jxf %s", file_name);
+   status = system((const char *)code);
+   if(test_code(status))
+   {
+        printf("tar file fail\n"); 
+        return -1;
+   }
+   chdir("/loadapp");
+   return 0;
+    
+}
+
 

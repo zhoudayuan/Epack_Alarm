@@ -52,7 +52,7 @@
 #include <sys/ioctl.h>
 #include "mgr_local_handle.h"
 #include "mgr_public_func.h"
-
+#include "ccl_interface.h"
 #undef TASK_NAME
 #define TASK_NAME	"MGR_LOCAL_HANDLE"
 
@@ -68,7 +68,7 @@ unsigned int iq_switch_open_count = 0;  // 记录网管工具 [接收数据采集] 开启按钮 
 int iq_excess_volumn_flag = 0;          // 异常标识:     0-正常; 非0-异常(包括挂载\打开文件\写入SD超过60M失败)
 unsigned int iq_switch_status = 0;      // 标识FPGA状态: 1-打开 0-关闭
 unsigned int iq_mount_sd_flag = 0;      // sd卡挂载标志: 1-挂载 0-卸载
-unsigned int OpenIqfd;
+int OpenIqfd;
 #define BUF_SIZE                DATA_LENGTH
 #define READ_IQDATA_FILE        "/dev/axiram-iqdata"  // FPGA通知驱动后数据写入的文件
 #define WRITE_IQDATA_FILE       "/mnt/iqdata.txt"     // /dev/mmcblk0p1-挂载后的文件，即最终的写入位置
@@ -127,6 +127,8 @@ pthread_t tid_alarm_send;
 pthread_t tid_kill_monitor;
 pthread_t tid_stun_monitor;
 pthread_t tid_center_print_monitor;
+pthread_t tid_transmit_data_error_monitor;
+
 
 
 struct sockaddr_in sockaddr_mgra_mgrh;
@@ -210,7 +212,7 @@ void * fpga_mem_nm_start = NULL;
 MGRH_FPGA_MSG * fpga_mem_nm_w = NULL;
 MGRH_FPGA_MSG * fpga_mem_nm_r = NULL;
 INIT_FPGA_PARAM * fpga_mem_nm_param = NULL;
-unsigned char * fpga_mem_nm_share = NULL;
+FPGA_SHARE_MEM_STRUCT * fpga_mem_nm_share = NULL;
 FPGA_ALARM_STRUCT *  fpga_mem_nm_alarm = NULL;
 FPGA_DEBUG_PRINT * fpga_mem_nm_debug = NULL;
 
@@ -286,8 +288,6 @@ UINT8 ALARM_LOCAL_SEND_NUM = 0;
  */
 UINT8 CENTER_QUERY_ALARM_NUM = 0;
 
-
-char buffer[30]= {0};///存放挂载点
 /**
  * @var db_convert
  * @brief 存放场强转换规则
@@ -408,6 +408,17 @@ void MGR_Alarm_Set()
 
 	return;
 }
+
+/**
+* @brief   更新告警状态
+*
+* @param[in]		
+*
+* @return		void
+* @author		wdz
+* @bug
+*/
+
 
 void MGR_Local_AlarmTable_Update_Send(ALARM_SEND_ITEM_PAYLOAD *pAlarm,int index,UINT8 uStatus)
 {
@@ -1038,9 +1049,11 @@ void * MGR_Get_Shm(int id, size_t size)
  return shmaddr;
 }
 
+
+
 int  main(void)
 {
-	key_t msqKey;
+	key_t msqKey;  
 	//log写文件
 	pLogTxtFd = fopen("./LOG.txt","r+");
 	if(NULL == pLogTxtFd)
@@ -1142,7 +1155,7 @@ void read_fpga_version(void)
 {
     sem_cfg_p();
 	memset(shm_cfg_addr->fpga_version.buf,0,sizeof(shm_cfg_addr->fpga_version.buf));
-	snprintf(shm_cfg_addr->fpga_version.buf,sizeof(shm_cfg_addr->fpga_version.buf),"V%d.%d.%02d.%03d",fpga_mem_nm_share[0],fpga_mem_nm_share[1],fpga_mem_nm_share[2],fpga_mem_nm_share[3]);
+	snprintf(shm_cfg_addr->fpga_version.buf,sizeof(shm_cfg_addr->fpga_version.buf),"V%d.%d.%02d.%03d",fpga_mem_nm_share->fpga_version[0],fpga_mem_nm_share->fpga_version[1],fpga_mem_nm_share->fpga_version[2],fpga_mem_nm_share->fpga_version[3]);
 	sem_cfg_v();
 	sleep(1);
 	printf("**************** VERSION INFO ****************\n");
@@ -1438,7 +1451,7 @@ int init_fpga_mem_nm(void)
 	fpga_mem_nm_w = (MGRH_FPGA_MSG *)fpga_mem_nm_start;
 	fpga_mem_nm_r = (MGRH_FPGA_MSG *)((unsigned char *)fpga_mem_nm_start + 512);
 	fpga_mem_nm_param = (INIT_FPGA_PARAM *)((unsigned char *)fpga_mem_nm_start + 1024);
-	fpga_mem_nm_share = (unsigned char *)fpga_mem_nm_start + 2048;
+	fpga_mem_nm_share = (FPGA_SHARE_MEM_STRUCT *)((unsigned char *)fpga_mem_nm_start + 2048);  //前4字节fpga版本号    5-8字节 启动策略异常值
 	fpga_mem_nm_alarm = (FPGA_ALARM_STRUCT *)((unsigned char *)fpga_mem_nm_start + 2048 + 256);
 	fpga_mem_nm_debug = (FPGA_DEBUG_PRINT *)((unsigned char *)fpga_mem_nm_start + 3072);
 
@@ -1607,9 +1620,145 @@ int mgrh_pthread_create(void)
 	}
 	pthread_detach(tid_center_print_monitor);
 
+    if (pthread_create(&tid_transmit_data_error_monitor, NULL, pthread_func_transmit_data_error_monitor, NULL)) 
+	{
+		printf("pthread_func_transmit_data_error_monitor err\n");
+		return -1;
+	}
+	pthread_detach(tid_transmit_data_error_monitor);
+
 	return 0;
 }
 
+
+void * pthread_func_transmit_data_error_monitor(void *arg)
+{
+    unsigned int error_cnt_1=0;
+    unsigned int error_cnt_2=0;
+    unsigned int reboot_strategy_error_cnt=0;
+    unsigned int write_data_error_cnt=0;
+    char buffer[50]={0};
+    char error_buffer[]="error\n";
+    FILE * error_fp=NULL;
+    int status=0;
+    unsigned int size=0;
+    while(1)
+    {
+        sleep(3);
+     //   printf("reboot_strategy_flag =0x%x\n",fpga_mem_nm_share->transmit_error_value);
+        if(shm_cfg_addr->reboot_strategy.val ==0) //FPGA快速复位策略
+        {
+            if(TRANSMIT_ERROR_FLAG1 == fpga_mem_nm_share->transmit_error_value)
+            {
+                 error_cnt_1++;
+                 if(error_cnt_1 > 1000000)
+                 {
+                    error_cnt_1=1000000;
+                 }
+                 
+                 if(3>write_data_error_cnt)
+                 {
+                    printf("/****************reboot_strategy***************/\n");
+                    printf("reboot_strategy_value=%u\n",shm_cfg_addr->reboot_strategy.val);
+                    printf("reboot_strategy_flag =0x%x\n",fpga_mem_nm_share->transmit_error_value);
+                    printf("error_cnt =%u\n",error_cnt_1);
+                    status = system("mount /dev/mmcblk0p1 /mnt");  //挂载sd
+                    if(test_code(status) ==0 ) //挂载sd成功
+                    {
+                        chdir("/mnt");
+                        if ((error_fp = fopen(REBOOT_STRATEGY_FILE_NAME, "wb")) == NULL)
+                        {
+                            printf("fopen file error\n");
+                            write_data_error_cnt++;
+                        }
+                        else
+                        {
+                            snprintf(buffer,sizeof(buffer),"error_cnt: %u",error_cnt_1);
+                            size=strlen(buffer);
+                            if(size!=fwrite(buffer,sizeof(char),size,error_fp))
+                            {
+                                printf("fwrite file error\n");
+                                write_data_error_cnt++;
+                            }
+                            fclose(error_fp);
+                         }
+                         chdir("/loadapp");
+                         system("umount   /mnt");
+                      }  
+                      else
+                      {
+                        write_data_error_cnt++;
+                      }
+                    printf("/**********************************************/\n");
+                 }
+                 fpga_mem_nm_share->transmit_error_value=0;
+                 
+            }
+        }
+        else if(shm_cfg_addr->reboot_strategy.val == 1) //全功能复位策略
+        {
+            if(TRANSMIT_ERROR_FLAG2 == fpga_mem_nm_share->transmit_error_value)
+            {
+                error_cnt_2++;
+            }
+            else
+            {
+                error_cnt_2=0;
+            }
+
+            if(3==error_cnt_2)
+            {
+                error_cnt_2=0;
+                printf("/****************reboot_strategy***************/\n");
+                printf("reboot_strategy_value=%u\n",shm_cfg_addr->reboot_strategy.val);
+                printf("reboot_strategy_flag =0x%x\n",fpga_mem_nm_share->transmit_error_value);
+                status = system("mount /dev/mmcblk0p1 /mnt");  //挂载sd
+                if(test_code(status) ==0 ) //挂载sd成功
+                {
+                    chdir("/mnt");
+                    if ((error_fp = fopen(REBOOT_STRATEGY_FILE_NAME, "wb")) == NULL)
+                    {
+                        printf("fopen file error\n");
+                    }
+                    else
+                    {
+                        size=strlen(error_buffer);
+                        if(size!=fwrite(error_buffer,sizeof(char),size,error_fp))
+                        {
+                            printf("fwrite file error\n");
+                        }
+                        
+                        fclose(error_fp);
+                    }
+                    chdir("/loadapp");
+                    system("umount   /mnt");
+                }
+                printf("/**********************************************/\n");
+                chdir("/loadapp");
+                SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+                sleep(2);
+                system("./reboot_epack");
+            }
+        }
+        else
+        {
+            if(3>reboot_strategy_error_cnt)
+            {
+                printf("/****************reboot_strategy***************/\n");
+                printf("reboot_strategy_value=%u error \n ",shm_cfg_addr->reboot_strategy.val);
+                printf("/**********************************************/\n");
+            }
+            else
+            {
+                reboot_strategy_error_cnt++;
+            }
+        }
+        
+    }
+
+    pthread_exit(NULL);
+
+}
 
 void * pthread_mgra_mgrh_recv(void *arg)
 {
@@ -1831,11 +1980,6 @@ void * pthread_msg_handle(void *arg)
 	NM_COMBINED_DATA combined_data;
 	CENTER_DATA  center_data;
 	char tmp_ip[50];
-	unsigned int scan_mode=0;
-	unsigned int freq_offset=0;
-	unsigned char scan[8]={0};
-	unsigned char scan_tran[2]={0};
-	unsigned int scan_flag=0;
 	unsigned int save_data_switch=0;
     unsigned char tmp_eeprom_version[]="Hytera1993-1";
 	FILE * fd;
@@ -1883,17 +2027,37 @@ void * pthread_msg_handle(void *arg)
 					if (q_msg.ipc_msg.op_code == OP_CODE_SET)
 					{
 						memcpy((unsigned char *)&tmp_freq, q_msg.ipc_msg.payload, sizeof(unsigned int));
-						tmp_val = tmp_freq * 2;
-						memcpy(fpga_mem_nm_w->payload, (unsigned char *)&tmp_val, sizeof(unsigned int));
-						if(1==shm_cfg_addr->scan_mode.val)
+						if(shm_ipc_addr->freq_channel==350)
 						{
-							tmp_val = tmp_freq + 73336250 + 12500;
+							if((tmp_freq<350000000)||(tmp_freq>400000000))
+							{
+								printf("set freq=%d not in 350000000~400000000\n",tmp_freq);
+								break;
+							}  
+						}
+						else if(shm_ipc_addr->freq_channel==410)
+						{
+							if((tmp_freq<410000000)||(tmp_freq>470000000))
+							{
+								printf("set freq=%d not in 410000000~470000000\n",tmp_freq);
+								break;
+							}  
 						}
 						else
 						{
-							tmp_val = tmp_freq + 73336250 + 25000;
+							printf("freq_channel=%u",shm_ipc_addr->freq_channel);
+							break;
 						}
-
+						tmp_val = tmp_freq * 2;
+						memcpy(fpga_mem_nm_w->payload, (unsigned char *)&tmp_val, sizeof(unsigned int));
+                        if(shm_ipc_addr->freq_channel == 350)
+                        {
+                            tmp_val = tmp_freq + 73336250 + 25000;
+                        }
+                        else if(shm_ipc_addr->freq_channel == 410)
+                        {
+                             tmp_val = tmp_freq + 73336250 + 15300;
+                        }
 						memcpy(fpga_mem_nm_w->payload + sizeof(unsigned int), (unsigned char *)&tmp_val, sizeof(unsigned int));
 					}
 					notify_fpga();
@@ -2116,6 +2280,76 @@ void * pthread_msg_handle(void *arg)
 					{
 						printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
 					}
+				}
+				break;
+            case CMD_CODE_BIG_POWER_TRANSMIT:
+                
+				fpga_mem_nm_r->flag = FLAG_CLR;
+				fpga_mem_nm_w->flag = FLAG_OK;
+				fpga_mem_nm_w->cmd_code = q_msg.ipc_msg.cmd_code;
+				fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code;
+				if (q_msg.ipc_msg.op_code == OP_CODE_SET)
+				{
+					memcpy(fpga_mem_nm_w->payload, q_msg.ipc_msg.payload, sizeof(unsigned int));
+				}
+				notify_fpga();
+					
+				for (i = 0; i < timeout_cnt; i++)
+				{
+					delay.tv_sec = 0;
+					delay.tv_usec = POLLING_INTERVA;
+					select(0, NULL, NULL, NULL, &delay);
+					if (FLAG_OK == fpga_mem_nm_r->flag)
+					{
+						if (shm_ipc_addr->mgr_printf[1])
+						{
+							LOG_DEBUG(s_i4LogMsgId,\
+									"\n |%s||%s||%d|\n"
+									"\r read fpga - flag	 : 0x%X\n"
+									"\r read fpga - cmd_code : 0x%X\n"
+									"\r read fpga - op_code  : 0x%X\n",\
+									__FILE__, __FUNCTION__, __LINE__,\
+									fpga_mem_nm_r->flag, fpga_mem_nm_r->cmd_code, fpga_mem_nm_r->op_code);
+						}
+						if (q_msg.ipc_msg.src_id == local_dev_id)
+						{
+							if (q_msg.ipc_msg.op_code == OP_CODE_GET)
+							{
+							   // memcpy((unsigned char *)&tmp_val, fpga_mem_nm_r->payload, sizeof(unsigned int));
+                               // printf("%u\n",tmp_val);
+								send_local_nm_get_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type, fpga_mem_nm_r->payload);
+							}
+							else
+							{
+								memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
+								if (shm_cfg_addr->stop_tans.val != tmp_val)
+								{
+									sem_cfg_p();
+									shm_cfg_addr->stop_tans.val = tmp_val;
+									sem_cfg_v();
+									save_ini_file();
+										
+									if (shm_ipc_addr->mgr_printf[1])
+									{
+										LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| save stop_transmt = %u\n", __FILE__, __FUNCTION__, __LINE__, shm_cfg_addr->stop_tans.val);
+									}
+								}
+								else
+								{
+									if (shm_ipc_addr->mgr_printf[1])
+									{
+										LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| the same value in config file, don't need save\n", __FILE__, __FUNCTION__, __LINE__);
+									}
+								}
+								send_local_nm_set_ack(q_msg.ipc_msg.cmd_code, q_msg.ipc_msg.nm_type);
+							}
+						}
+						break;
+					}
+				}
+				if (i == timeout_cnt)
+				{
+					printf("<%s> <%s> <%d> timeout\n", __FILE__, __FUNCTION__, __LINE__);
 				}
 				break;
 			case CMD_CODE_START_NEIGHBOR:
@@ -2405,14 +2639,18 @@ void * pthread_msg_handle(void *arg)
 				        fpga_mem_nm_w->op_code = q_msg.ipc_msg.op_code; 
 						tmp_val = combined_data.freq * 2; 
 						memcpy(fpga_mem_nm_w->payload, (unsigned char *)&tmp_val, sizeof(unsigned int));
-						if(shm_cfg_addr->scan_mode.val==1)
-						{
-							tmp_val = combined_data.freq + 73336250 + 12500;
-						}
-						else
-						{
-							tmp_val = combined_data.freq + 73336250 + 25000;
-						}
+                        if(shm_ipc_addr->freq_channel == 350)
+                        {
+                            tmp_val = combined_data.freq + 73336250 + 25000;
+                        }
+                        else if(shm_ipc_addr->freq_channel == 410)
+                        {
+                             tmp_val = combined_data.freq + 73336250 + 15300;
+                        }
+                        else
+                        {
+                            printf("shm_ipc_addr->freq_channel = %u  error\n",shm_ipc_addr->freq_channel);
+                        }
 						memcpy(fpga_mem_nm_w->payload + sizeof(unsigned int), (unsigned char *)&tmp_val, sizeof(unsigned int));
 						tmp_val = combined_data.power;
 						memcpy(fpga_mem_nm_w->payload + 2 * sizeof(unsigned int), (unsigned char *)&tmp_val, sizeof(unsigned int));
@@ -2725,14 +2963,7 @@ void * pthread_msg_handle(void *arg)
 					{
 						LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| send center half_variance_threshold=%d\n", __FILE__, __FUNCTION__, __LINE__,shm_cfg_addr->half_variance_threshold.val);
 					}
-                    if(shm_cfg_addr->half_variance_threshold.val == 1200)
-                    {
-                        tmp_val=1500;
-                    }
-                    else
-                    {
-                        tmp_val=shm_cfg_addr->half_variance_threshold.val;
-                    }
+                    tmp_val=shm_cfg_addr->half_variance_threshold.val;
 					send_cc_get_response_cmd(q_msg.ipc_msg.cmd_code,(unsigned char *)&tmp_val);
 				}
 				else
@@ -2744,14 +2975,7 @@ void * pthread_msg_handle(void *arg)
 					if (q_msg.ipc_msg.op_code == OP_CODE_SET)
 					{
 					    memcpy((unsigned char *)&tmp_val, q_msg.ipc_msg.payload, sizeof(unsigned int));
-                        if(tmp_val==1500)
-                        {
-                             tmp=1200;
-                        }
-                        else
-                        {
-                            tmp=tmp_val;
-                        }
+                        tmp=tmp_val;
 						memcpy(fpga_mem_nm_w->payload, (unsigned char *)&tmp, sizeof(unsigned int));
 					}
 					notify_fpga();
@@ -2807,10 +3031,6 @@ void * pthread_msg_handle(void *arg)
 								   {
 									   LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| send center half_variance_threshold=%d\n", __FILE__, __FUNCTION__, __LINE__,shm_cfg_addr->half_variance_threshold.val);
 								   }
-                                   if(tmp_val==1200)
-                                   {    
-                                       tmp_val=1500;
-                                   }
 								   send_cc_set_cmd(q_msg.ipc_msg.cmd_code,(unsigned char *)&tmp_val);
 							   }
 							}
@@ -3301,7 +3521,7 @@ void * pthread_msg_handle(void *arg)
 			case CMD_CODE_FPGA_VERSION:
 				if (q_msg.ipc_msg.op_code == OP_CODE_GET)
 				{
-					snprintf(fpga_version,sizeof(fpga_version),"V%d.%d.%02d.%03d",fpga_mem_nm_share[0],fpga_mem_nm_share[1],fpga_mem_nm_share[2],fpga_mem_nm_share[3]);
+					snprintf(fpga_version,sizeof(fpga_version),"V%d.%d.%02d.%03d",fpga_mem_nm_share->fpga_version[0],fpga_mem_nm_share->fpga_version[1],fpga_mem_nm_share->fpga_version[2],fpga_mem_nm_share->fpga_version[3]);
 					if (shm_ipc_addr->mgr_printf[1])
 					{
 						LOG_DEBUG(s_i4LogMsgId, "|%s||%s||%d| fpga_version : %s\n", __FILE__, __FUNCTION__, __LINE__, fpga_version);
@@ -3538,14 +3758,19 @@ void * pthread_msg_handle(void *arg)
 					memcpy((unsigned char *)&tmp_freq, q_msg.ipc_msg.payload, sizeof(unsigned int));
 					tmp_val = tmp_freq * 2;
 					memcpy(fpga_mem_nm_w->payload, (unsigned char *)&tmp_val, sizeof(unsigned int));
-					if(shm_cfg_addr->scan_mode.val==1)
-					{
-						tmp_val = tmp_freq + 73336250 + 12500;
-					}
-					else
-					{
-						tmp_val = tmp_freq + 73336250 + 25000;
-					}
+                    if(shm_ipc_addr->freq_channel == 350)
+                    {
+                       tmp_val = tmp_freq + 73336250 + 25000;
+                    }
+                    else if(shm_ipc_addr->freq_channel == 410)
+                    {
+                       tmp_val = tmp_freq + 73336250 + 15300;
+                    }
+                    else
+                    {
+                       printf("shm_ipc_addr->freq_channel = %u  error\n",shm_ipc_addr->freq_channel);
+                    }
+                    
 					memcpy(fpga_mem_nm_w->payload + sizeof(unsigned int), (unsigned char *)&tmp_val, sizeof(unsigned int));
 				}
 				notify_fpga();
@@ -4037,7 +4262,8 @@ void * pthread_msg_handle(void *arg)
 				    LOG_DEBUG(s_i4LogMsgId, \
 						     "start reboot \n");
 				}
-                sleep(3);
+                SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+                sleep(2);
 				system("./reboot_epack");
 				break;
 
@@ -4758,79 +4984,6 @@ void * pthread_msg_handle(void *arg)
                     send_remote_query_alarm_ack(q_msg.ipc_msg.cmd_code,q_msg.ipc_msg.nm_type, q_msg.ipc_msg.dst_id, q_msg.ipc_msg.src_id, (unsigned char *)center_query_alarmtable);
                 }
                 break;
-            case CMD_CODE_UPDATE_LOADAPP:
-                if(update_loadapp())
-                {
-                    sem_ipc_p();
-                    shm_ipc_addr->update_flag=-1;
-                    sem_ipc_v();
-                    break;
-                }
-				sem_ipc_p();
-                shm_ipc_addr->update_flag=1;
-				sem_ipc_v();
-                break;
-            case CMD_CODE_UPDATE_DTB:
-                if(update_dtb())
-                {
-                    sem_ipc_p();
-                    shm_ipc_addr->update_flag=-1;
-                    sem_ipc_v();
-                    break;
-                }
-				sem_ipc_p();
-                shm_ipc_addr->update_flag=1;
-				sem_ipc_v();
-                break;
-            case CMD_CODE_UPDATE_UBOOT:
-                if(update_uboot())
-                {
-                    sem_ipc_p();
-                    shm_ipc_addr->update_flag=-1;
-                    sem_ipc_v();
-                    break;
-                }
-				sem_ipc_p();
-                shm_ipc_addr->update_flag=1;
-				sem_ipc_v();
-                break;
-            case CMD_CODE_UPDATE_FILE_SYSTEM:
-                if(update_file_system())
-                {
-                    sem_ipc_p();
-                    shm_ipc_addr->update_flag=-1;
-                    sem_ipc_v();
-                    break;
-                }
-				sem_ipc_p();
-                shm_ipc_addr->update_flag=1;
-				sem_ipc_v();
-                break;
-            case CMD_CODE_UPDATE_RBF:
-                if(update_rbf())
-                {
-                    sem_ipc_p();
-                    shm_ipc_addr->update_flag=-1;
-                    sem_ipc_v();
-                    break;
-                }
-				sem_ipc_p();
-                shm_ipc_addr->update_flag=1;
-				sem_ipc_v();
-                break;
-             case CMD_CODE_UPDATE_ZIMAGE:
-                if(update_zimage())
-                {
-                    sem_ipc_p();
-                    shm_ipc_addr->update_flag=-1;
-                    sem_ipc_v();
-                    break;
-                }
-				sem_ipc_p();
-                shm_ipc_addr->update_flag=1;
-				sem_ipc_v();
-                break;
-            
             case CMD_CODE_FREQ_CHANNEL:
                 memset((unsigned char *)&new_eeprom_fpga_param, 0, sizeof(NEW_EEPROM_FPGA_PARAM));
                 memset(eeprom_version, 0, sizeof(eeprom_version));
@@ -5067,7 +5220,10 @@ void * pthread_func_kill_monitor(void *arg)
 					{
 						printf("killing process...\n");
 						system("flash_eraseall /dev/mtd1");
-						system("reboot");
+                        chdir("/loadapp");
+                        SentSysOptSig(CT_DEVICE_REBOOT_EPACK);
+                        sleep(2);
+						system("./reboot_epack");
 					}
 				}
 			}
@@ -5093,16 +5249,24 @@ void * pthread_func_stun_monitor(void *arg)
 }
 
 
-
+/**
+* @brief  发往中心时隙、方差、场强信息
+*
+* @return		void
+* @author		wdz
+* @bug
+*/
 void * pthread_func_center_print_monitor(void *arg)
 {
     unsigned char freq_slot=0;
 	unsigned short half=0;
-	unsigned char info[3]={0};
+    unsigned short rssi=0;
+	unsigned char info[5]={0};
 	while (1)
 	{	
 		if (center_print_flag == 1)
 		{
+		   rssi=rssi_convert_db(fpga_mem_nm_debug->u_half_rssi);
 		   if(fpga_mem_nm_debug->f1s1 ==1)
 		   {
 		       freq_slot=1;
@@ -5127,17 +5291,25 @@ void * pthread_func_center_print_monitor(void *arg)
 		   {
 			    freq_slot=0;
 				half=0;
+                rssi=0;
 		   }
 			info[0]=freq_slot;
 			memcpy(info+1,(unsigned char *)&half,sizeof(short));
+            memcpy(info+3,(unsigned char *)&rssi,sizeof(short));
 			send_cc_set_cmd(CMD_CODE_CENTER_INFO,info);
 		}
-		sleep(2);
+		sleep(1);
 	}
 	pthread_exit(NULL);
 }
 
-
+/**
+* @brief  打印fpga相关信息
+*
+* @return		void
+* @author		wdz
+* @bug
+*/
 void * pthread_fpga_debug(void *arg)
 {	
     TEMPERATE_STRUCT temp;
@@ -5146,6 +5318,7 @@ void * pthread_fpga_debug(void *arg)
 		sleep(shm_ipc_addr->fpga_debug_sleep);
 		if (shm_ipc_addr->mgr_printf[2] == 2)
 		{
+		    
 			LOG_DEBUG(s_i4LogMsgId,\
 				"\n *****************************************************************************\n"
 				"\r LockFlag:0x%x   ProhibitTranFlag:0x%x     HalfRssi:%u  rssi_to_db:%d\n"
@@ -5155,9 +5328,11 @@ void * pthread_fpga_debug(void *arg)
 				fpga_mem_nm_debug->lock_flag,fpga_mem_nm_debug->prohibit_transmit_flag,fpga_mem_nm_debug->u_half_rssi,rssi_convert_db(fpga_mem_nm_debug->u_half_rssi),\
 				fpga_mem_nm_debug->f1s1, fpga_mem_nm_debug->f1s2, fpga_mem_nm_debug->f2s1, fpga_mem_nm_debug->f2s2,\
 				fpga_mem_nm_debug->f1s1_half, fpga_mem_nm_debug->f1s2_half, fpga_mem_nm_debug->f2s1_half, fpga_mem_nm_debug->f2s2_half,shm_ipc_addr->freq_channel);
+            
 		}
 		else if (shm_ipc_addr->mgr_printf[2] == 1)
 		{
+		    
 		    memset((unsigned char *)&temp,0,sizeof(temp));
             memcpy((unsigned char *)&temp,(unsigned char *)(&(shm_ipc_addr->alarm_struct[25].value)),sizeof(temp));
 			LOG_DEBUG(s_i4LogMsgId,\
@@ -5175,12 +5350,42 @@ void * pthread_fpga_debug(void *arg)
 			LOG_DEBUG(s_i4LogMsgId,\
 				"\n ***************************************\n"
 				"\r prohibit_transmit_flag         : 0x%X\n"
-                "\r cnt_rst_pos                    : 0x%X\n"
-                "\r cnt_rst_neg                    : 0x%X\n"
-                "\r data3                          : 0x%X\n"
-                "\r data4                          : 0x%X\n"
-                "\r data5                          : 0x%X\n"
-                "\r data6                          : 0x%X\n"
+                "\r fpga_pa_info                   : 0x%X\n"
+                "\r board_version                  : 0x%X\n"
+                "\r reboot_strategy_low            : 0x%X\n"
+                "\r reboot_strategy_high           : 0x%X\n"
+                "\r cs_vco_fsm                     : 0x%X\n"
+                "\r cs_webmaster                   : 0x%X\n"
+                "\r cs_Operation_Config            : 0x%X\n"
+                "\r cs_UpStreamPort                : 0x%X\n"
+                "\r cs_DownStreamPort              : 0x%X\n"
+                "\r en_debug_mode                  : 0x%X\n"
+                "\r moto_mode                      : 0x%X\n"
+                "\r follow_en                      : 0x%X\n"
+                "\r system_init                    : 0x%X\n"
+                "\r d_timestap                     : 0x%X\n"
+                "\r up_timestap                    : 0x%X\n"
+				"\r ***************************************\n",\
+				fpga_mem_nm_debug->prohibit_transmit_flag,\	
+                fpga_mem_nm_debug->fpga_pa_info,\
+                fpga_mem_nm_debug->board_version,\
+                fpga_mem_nm_debug->reboot_strategy_low,\
+                fpga_mem_nm_debug->reboot_strategy_high,\
+                fpga_mem_nm_debug->cs_vco_fsm,\
+                fpga_mem_nm_debug->cs_webmaster,\
+                fpga_mem_nm_debug->cs_Operation_Config,\
+                fpga_mem_nm_debug->cs_UpStreamPort,\
+                fpga_mem_nm_debug->cs_DownStreamPort,\
+                fpga_mem_nm_debug->en_debug_mode,\
+                fpga_mem_nm_debug->moto_mode,\
+                fpga_mem_nm_debug->follow_en,\
+                fpga_mem_nm_debug->system_init,\
+                fpga_mem_nm_debug->d_timestap,\
+                fpga_mem_nm_debug->up_timestap);
+
+
+            LOG_DEBUG(s_i4LogMsgId,\
+				"\n ***************************************\n"
 				"\r vari_threshold    : 0x%X\n"
 				"\r lock_flag         : 0x%x\n"
 				"\r f1s1              : 0x%X\n"
@@ -5201,13 +5406,6 @@ void * pthread_fpga_debug(void *arg)
 				"\r alarm_4_status    : %u\n"
 				"\r alarm_5_status    : %u\n"
 				"\r ***************************************\n",\
-				fpga_mem_nm_debug->prohibit_transmit_flag,\	
-                fpga_mem_nm_debug->cnt_rst_pos,\
-                fpga_mem_nm_debug->cnt_rst_neg,\
-                fpga_mem_nm_debug->data3,\
-                fpga_mem_nm_debug->data4,\
-                fpga_mem_nm_debug->data5,\
-                fpga_mem_nm_debug->data6,\
 				fpga_mem_nm_debug->vari_threshold,\
 				fpga_mem_nm_debug->lock_flag,\
 				fpga_mem_nm_debug->f1s1,\
@@ -5299,12 +5497,20 @@ void * pthread_fpga_debug(void *arg)
 				fpga_mem_nm_debug->fpga_send_data_vld,\
 				fpga_mem_nm_debug->fpga_tx_pwr_ctrl_vld,\
 				fpga_mem_nm_debug->arm_send_data_vld);
-		}
+			
+		}   
 	}
 	pthread_exit(NULL);
 }
 
-
+/**
+* @brief  远端网管查询响应
+*
+* @param[in]		cmd_code:命令字  nm_type:网管类型  src_id:源  dst_id:目的  data:负载
+* @return		void
+* @author		wdz
+* @bug
+*/
 void send_remote_nm_get_ack(unsigned short cmd_code, unsigned char nm_type, unsigned char src_id, unsigned char dst_id, unsigned char * data)
 {
 	NAS_AI_PAYLOAD nas_ai_payload;
@@ -5369,6 +5575,15 @@ void send_remote_nm_get_ack(unsigned short cmd_code, unsigned char nm_type, unsi
     sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in)); 
 }
 
+
+/**
+* @brief  远端网管查询告警信息响应
+*
+* @param[in]		cmd_code:命令字  nm_type:网管类型  src_id:源  dst_id:目的  data:负载
+* @return		void
+* @author		wdz
+* @bug
+*/
 void send_remote_query_alarm_ack(unsigned short cmd_code, unsigned char nm_type, unsigned char src_id, unsigned char dst_id, unsigned char * data)
 {
 	NAS_AI_PAYLOAD nas_ai_payload;
@@ -5431,6 +5646,16 @@ void send_remote_query_alarm_ack(unsigned short cmd_code, unsigned char nm_type,
     sendto(sock_ipc, &nm_ai_msg, sizeof(NAS_INF_DL_T), 0, (struct sockaddr *)(&sockaddr_mgrh_adp), sizeof(struct sockaddr_in)); 
 }
 
+
+
+/**
+* @brief  远端网管设置响应
+*
+* @param[in]		cmd_code:命令字  nm_type:网管类型  src_id:源  dst_id:目的
+* @return		void
+* @author		wdz
+* @bug
+*/
 void send_remote_nm_set_ack(unsigned short cmd_code, unsigned char nm_type, unsigned char src_id, unsigned char dst_id)
 {
 	NAS_AI_PAYLOAD nas_ai_payload;
@@ -5494,6 +5719,16 @@ void send_remote_nm_set_ack(unsigned short cmd_code, unsigned char nm_type, unsi
 }
 
 
+
+/**
+* @brief  本地网管查询响应
+*
+* @param[in]		cmd_code:命令字  nm_type:网管类型  data:负载
+* @return		void
+* @author		wdz
+* @bug
+*/
+
 void send_local_nm_get_ack(unsigned short cmd_code, unsigned char nm_type, unsigned char * data)
 {
 	NM_IPC_MSG nm_ipc_msg;
@@ -5522,6 +5757,15 @@ void send_local_nm_get_ack(unsigned short cmd_code, unsigned char nm_type, unsig
 }
 
 
+
+/**
+* @brief  本地网管设置响应
+*
+* @param[in]		cmd_code:命令字  nm_type:网管类型
+* @return		void
+* @author		wdz
+* @bug
+*/
 void send_local_nm_set_ack(unsigned short cmd_code, unsigned char nm_type)
 {
 	NM_IPC_MSG nm_ipc_msg;
@@ -5548,6 +5792,17 @@ void send_local_nm_set_ack(unsigned short cmd_code, unsigned char nm_type)
 	sendto(sock_ipc, &nm_ipc_msg, sizeof(NM_IPC_MSG), 0, (struct sockaddr *)(&sockaddr_mgrh_mgra), sizeof(struct sockaddr_in)); 
 }
 
+
+
+
+/**
+* @brief  发往中心配置命令
+*
+* @param[in]		cmd_code:命令字  payload:负载
+* @return		void
+* @author		wdz
+* @bug
+*/
 void send_cc_set_cmd(unsigned short cmd_code, unsigned char * payload)
 {
 	NM_IPC_MSG nm_ipc_msg;
@@ -5575,6 +5830,14 @@ void send_cc_set_cmd(unsigned short cmd_code, unsigned char * payload)
 	sendto(sock_ipc, &nm_ipc_msg, sizeof(NM_IPC_MSG), 0, (struct sockaddr *)(&sockaddr_mgra_cc), sizeof(struct sockaddr_in)); 
 }
 
+
+/**
+* @brief  初始化本地参数
+*
+* @return		void
+* @author		wdz
+* @bug
+*/
 void init_local_val(void)
 {
 	sem_cfg_p();
@@ -5586,6 +5849,13 @@ void init_local_val(void)
 }
 
 
+/**
+* @brief  触发中断，通知fpga获取参数
+*
+* @return		void
+* @author		wdz
+* @bug
+*/
 void notify_fpga(void)
 {
     unsigned char gpio_value = 0;
@@ -5597,6 +5867,14 @@ void notify_fpga(void)
 }
 
 
+/**
+* @brief  中心查询响应
+*
+* @param[in]		cmd_code:命令字  payload:查询负载
+* @return		void
+* @author		wdz
+* @bug
+*/
 void send_cc_get_response_cmd(unsigned short cmd_code, unsigned char * payload)
 {
 	NM_IPC_MSG nm_ipc_msg;
@@ -5624,7 +5902,13 @@ void send_cc_get_response_cmd(unsigned short cmd_code, unsigned char * payload)
 	sendto(sock_ipc, &nm_ipc_msg, sizeof(NM_IPC_MSG), 0, (struct sockaddr *)(&sockaddr_mgra_cc), sizeof(struct sockaddr_in)); 
 }
 
-
+/**
+* @brief  开机平铺fpga参数
+*
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
 int init_fpga_param(void)
 {
     
@@ -5671,8 +5955,8 @@ int init_fpga_param(void)
 	shm_ipc_addr->freq_channel=fpga_mem_nm_param->calibration_param.freq_channel_flag;
 	
 
-	printf("nm_memory_scan_mode = %u\n",  shm_cfg_addr->scan_mode.val);
-	printf("nm_memory_freq_offset = %u\n",  shm_cfg_addr->freq_offset.val);
+	printf("nm_memory_stop_transmit = %u\n",  shm_cfg_addr->stop_tans.val);
+	printf("nm_memory_pdt_dmr = %u\n",  shm_cfg_addr->protocol_mode.val);
 	printf("nm_memory_freq = %u\n",  shm_cfg_addr->freq.val);
 	printf("nm_memory_power = %u\n", shm_cfg_addr->power.val);
 	printf("nm_memory_open_close_loop = %u\n",shm_cfg_addr->open_close_loop.val);
@@ -5684,9 +5968,12 @@ int init_fpga_param(void)
     printf("nm_memory_resume_transmit_threshold.val  = 0x%x\n", shm_cfg_addr->resume_transmit_threshold.val);
     printf("nm_memory_tempratue_alarm_start_threshold  =0x%x\n", shm_cfg_addr->tempratue_alarm_start_threshold.val);
     printf("nm_memory_tempratue_alarm_close_threshold  = 0x%x\n", shm_cfg_addr->tempratue_alarm_close_threshold.val);
+    printf("nm_memory_moto_mode_switch  = %u\n", shm_cfg_addr->moto_mode_switch.val);
+    printf("nm_memory_threshold_opt_switch  = %u\n", shm_cfg_addr->threshold_opt_switch.val);
+    printf("nm_memory_reboot_strategy_switch  = %u\n", shm_cfg_addr->reboot_strategy.val);
 
-	fpga_mem_nm_param->scan_mode= shm_cfg_addr->scan_mode.val;
-	fpga_mem_nm_param->freq_offset= shm_cfg_addr->freq_offset.val*1000;
+	fpga_mem_nm_param->stop_transmit= shm_cfg_addr->stop_tans.val;
+	fpga_mem_nm_param->pdt_dmr= shm_cfg_addr->protocol_mode.val;
 	fpga_mem_nm_param->freq = shm_cfg_addr->freq.val * 2;
 	fpga_mem_nm_param->power = shm_cfg_addr->power.val;
 	fpga_mem_nm_param->open_close_loop = shm_cfg_addr->open_close_loop.val;
@@ -5708,6 +5995,7 @@ int init_fpga_param(void)
     fpga_mem_nm_param->tempratue_alarm_close_threshold=(unsigned int)((shm_cfg_addr->tempratue_alarm_close_threshold.val*6.25+424)*1023/2500);
     fpga_mem_nm_param->moto_mode_switch=shm_cfg_addr->moto_mode_switch.val;
     fpga_mem_nm_param->threshold_opt_switch=shm_cfg_addr->threshold_opt_switch.val;
+    fpga_mem_nm_param->reboot_strategy_switch=shm_cfg_addr->reboot_strategy.val;
 	fpga_mem_nm_w->flag = FLAG_PARAM;
 
     usleep(500000);
@@ -5738,8 +6026,8 @@ int init_fpga_param(void)
         printf("/****************************************/\n");
 	}
 
-    printf("scan_mode = %u\n", fpga_mem_nm_param->scan_mode);
-	printf("freq_offset = %u\n", fpga_mem_nm_param->freq_offset);
+    printf("stop_transmit = %u\n", fpga_mem_nm_param->stop_transmit);
+	printf("pdt_dmr = %u\n", fpga_mem_nm_param->pdt_dmr);
 	printf("freq = %u\n", fpga_mem_nm_param->freq);
 	printf("power = %u\n", fpga_mem_nm_param->power);
 	printf("open_close_loop = %u\n", fpga_mem_nm_param->open_close_loop);
@@ -5752,10 +6040,18 @@ int init_fpga_param(void)
     printf("tempratue_alarm_close_threshold = %u\n", fpga_mem_nm_param->tempratue_alarm_close_threshold);
     printf("moto_mode_switch = %u\n", fpga_mem_nm_param->moto_mode_switch);
     printf("threshold_opt_switch = %u\n", fpga_mem_nm_param->threshold_opt_switch);
+    printf("reboot_strategy_switch = %u\n", fpga_mem_nm_param->reboot_strategy_switch);
 	return 0;
 }
 
 
+/**
+* @brief  将fpga参数保存到eeprom
+*
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
 
 int write_fpga_param_to_eeprom(void)
 {
@@ -5775,6 +6071,15 @@ int write_fpga_param_to_eeprom(void)
 	close(eeprom_fd);
 	return 0;
 }
+
+/**
+* @brief  eeprom中写版本号
+*
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
+
 int write_vertion_to_eeprom(void)
 {
 	if (init_eeprom())
@@ -5794,6 +6099,13 @@ int write_vertion_to_eeprom(void)
 	return 0;
 }
 
+/**
+* @brief  从eeprom中读取版本号，用于确认eeprom版本
+*
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
 
 int read_vertion_from_eeprom(void)
 {
@@ -5813,6 +6125,13 @@ int read_vertion_from_eeprom(void)
 	return 0;
 }
 
+/**
+* @brief  从老版本eeprom中读取fpga参数
+*
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
 
 int read_fpga_param_from_eeprom(void)
 {
@@ -5831,6 +6150,16 @@ int read_fpga_param_from_eeprom(void)
 	printf("eeprom_read fpga param ok\n");
 	return 0;
 }
+
+
+/**
+* @brief  检测system执行结果
+*
+* @param[in]		status:命令执行状态
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
 
 int read_old_fpga_param_from_eeprom(void)
 {
@@ -5851,7 +6180,13 @@ int read_old_fpga_param_from_eeprom(void)
 }
 
 
-
+/**
+* @brief  写mac地址
+*
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
 int write_esn_param_to_eeprom(void)
 {
 	if (init_eeprom())
@@ -5870,7 +6205,13 @@ int write_esn_param_to_eeprom(void)
 	return 0;
 }
 
-
+/**
+* @brief  读取mac地址
+*
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
 int read_esn_param_from_eeprom(void)
 {
 	if (init_eeprom())
@@ -5933,6 +6274,16 @@ void net_config(void)
     return;
 }
 
+
+/**
+* @brief  检测system执行结果
+*
+* @param[in]		status:命令执行状态
+* @return		检测结果
+* @author		wdz
+* @bug
+*/
+
 int test_code(int status)
 {
     if (-1 == status) 
@@ -5965,6 +6316,11 @@ int test_code(int status)
 }
 
 
+/**
+* @brief  保存IQ数据，通知fpga关闭
+* @author		wdz
+* @bug
+*/
 // 通知FPGA关闭
 void send_iq_close_to_queque(int flag)
 {
@@ -5996,7 +6352,13 @@ void send_iq_close_to_queque(int flag)
 }
 
 
-
+/**
+* @brief  清除告警上报空口标志和告警恢复上报空口数目
+*
+* @return		void
+* @author		wdz
+* @bug
+*/
 void clear_report_ai_alarm_flag()
 {
    int i = 0;
@@ -6011,271 +6373,19 @@ void clear_report_ai_alarm_flag()
 	} 
 }
 
-
-
-
-
-int  confirm_mount_point()
-{
-    pid_t status;
-
-    FILE *fd;
-
-    fd = popen("/loadapp/mount.sh", "r");
-
-    if(fd==NULL)
-    {
-        printf("open /loadapp/mount.sh file error!\n");
-        return -1;
-    }
-
-    memset(buffer,0x00,sizeof(buffer));
-
-    if(fgets((char*)buffer, sizeof(buffer), fd)==NULL)
-    {
-        printf("get mount point error!\n");
-        pclose(fd);
-        return -1 ;
-    }
-
-    printf("current mount point %s on /loadapp\n",buffer);
-
-    pclose(fd);
-
-    if(strcmp((char*)buffer,"/dev/mtdblock6\n")==0)
-    {
-        status = system("mount -t jffs2 /dev/mtdblock7 /mnt");
-        printf("mount /dev/mtdblock7 on /mnt\n");
-    }
-    else
-    {
-        status = system("mount -t jffs2 /dev/mtdblock6 /mnt");
-        printf("mount /dev/mtdblock6 on /mnt\n");
-    }
-
-    if (-1 == status)
-    {
-        printf("mount /dev/mtdblockx on /mnt failed!\n");
-        return -1 ;
-    }
-    else
-    {
-        if (WIFEXITED(status))
-        {
-            if (0 == WEXITSTATUS(status))
-            {
-                	chdir("/mnt");
-	                return 0;
-            }
-            else
-            {
-                printf("mount /dev/mtdblockx on /mnt WEXITSTATUS(status) failed!\n");
-                return -1 ;
-            }
-        }
-        else
-        {
-            printf("mount /dev/mtdblockx on /mnt WIFEXITED(status) failed!\n");
-            return -1 ;
-        }
-    }
-
-}
-
-
-int update_loadapp()
-{
-	char buffer_active[]="active\n";
-	char buffer_back[]="back\n";
-	FILE * fd;
-	unsigned  int size;
-	int status=0;
-	if(confirm_mount_point())
-	{
-		printf("confirm_mount_point failed!\n");
-		return -1;	   
-	}
-	
-	status =system(" cp -rf /home/* /mnt");
-	if(test_code(status))
-	{
-		printf("system cp -rf * /mnt failed!\n");
-		printf("status = %d\n",status);
-		return -1;	
-	}
-	
-	fd=fopen("/mnt/loadflag","wb");
-		       
-	if(fd == NULL)
-	{
-		printf("open /mnt/loadflag file error!\n");
-		chdir("/");
-		system("umount /mnt");
-		return -1;
-		        
-	}
-	size=strlen(buffer_active);
-	fwrite(buffer_active,size,1,fd);
-	fclose(fd);
-	if(strcmp((char *)buffer,"/dev/mtdblock5\n")!=0)
-	{
-		               
-		fd=fopen("/loadapp/loadflag","wb");
-		       
-		if(fd == NULL)
-		{
-		    printf("open /loadapp/loadflag file failed!\n");
-		    chdir("/");
-		    system("umount /mnt");
-		    return -1;
-		}
-		size=strlen(buffer_back);
-		fwrite(buffer_back,size,1,fd);
-		fclose(fd); 
-	}
-    system("cp -rf /loadapp/nas_config.ini /mnt");
-    system("cp -rf /loadapp/ConfigFile     /mnt");
-    system("cp -rf /loadapp/config.ini /mnt");
-    chdir("/");
-	system("umount /mnt");
-    printf("update loadapp success\n");
-	return 0;  
-}
-
-
-int update_dtb()
-{
-    int status;
-    chdir("/home");
-    
-    status =system("flash_eraseall /dev/mtd2");
-    if(test_code(status))
-	{
-		printf("status=%d\n",status);
-		printf("flash_eraseall failed!\n");
-		return -1;   
-	}
-	else
-	{
-		status =system("flashcp soc_system.dtb /dev/mtd2");
-		if(test_code(status))
-		{
-			printf("flashcp failed!\n");
-		   	return -1;
-		}
-	}
-    printf("update dtb success\n");
-    return 0;
-}
-
-
-int update_uboot()
-{
-    int status;
-    chdir("/home");
-    
-    status =system("flash_eraseall /dev/mtd0");
-    if(test_code(status))
-    {
-        printf("flash_eraseall failed!\n");
-        return -1;   
-    }
-    else
-    {
-        status =system("flashcp bootloader /dev/mtd0");
-        if(test_code(status))
-        {
-            printf("flashcp failed!\n");
-            return -1;
-        }
-    }
-    printf("update uboot success\n");
-    return 0;
-}
-
-int update_file_system()
-{
-    int status;
-    chdir("/home");
-    
-    status =system("flash_eraseall /dev/mtd4");
-    if(test_code(status))
-    {
-        printf("flash_eraseall failed!\n");
-        return -1;   
-    }
-    else
-    {
-        status =system("flashcp ramdisk.image.gz /dev/mtd4");
-        if(test_code(status))
-        {
-            printf("flashcp failed!\n");
-            return -1;
-        }
-    }
-    printf("update file_system  success\n");
-    return 0;
-}
-
-
-int update_rbf()
-{
-    int status;
-    chdir("/home");
-    
-    status =system("flash_eraseall /dev/mtd1");
-    if(test_code(status))
-    {
-        printf("flash_eraseall failed!\n");
-        return -1;   
-    }
-    else
-    {
-        status =system("flashcp soc_system.rbf /dev/mtd1");
-        if(test_code(status))
-        {
-            printf("flashcp failed!\n");
-            return -1;
-        }
-    }
-    printf("update rbf  success\n");
-    return 0;
-}
-
-
-int update_zimage()
-{
-    int status;
-    chdir("/home");
-    
-    status =system("flash_eraseall /dev/mtd3");
-    if(test_code(status))
-    {
-        printf("flash_eraseall failed!\n");
-        return -1;   
-    }
-    else
-    {
-        status =system("flashcp zImage /dev/mtd3");
-        if(test_code(status))
-        {
-            printf("flashcp failed!\n");
-            return -1;
-        }
-    }
-    printf("update zimage success\n");
-    return 0;
-}
-
-
-
-
-
-unsigned int db_convert_rssi(int input_db)
+/**
+* @brief  DB值转化为对应场强值
+*
+* @param[in]		input_db:带转化db值
+* @return		场强值
+* @author		wdz
+* @bug
+*/
+unsigned int db_convert_rssi(unsigned int input_db)
 {
 	unsigned int convert_rssi;
 	float factor=0;
-	int i=0;
+	unsigned int i=0;
 	int index=0;
 	int diff=0;
 	for(i=0;i<(sizeof(rssi_db)/4)-1;i++)
@@ -6320,7 +6430,15 @@ unsigned int db_convert_rssi(int input_db)
 	
 }
 
-
+/**
+* @brief  根据rssi在rssi_table中的位置转化为DB
+*
+* @param[in]		index:rssi_table中的位置；rssi:待转化场强值
+* @param[out]       convert_db:转化后db值
+* @return		void
+* @author		wdz
+* @bug
+*/
 void find_db_table(int index,int *convert_db ,unsigned int rssi)
 {
    float factor=0;
@@ -6379,6 +6497,16 @@ void find_db_table(int index,int *convert_db ,unsigned int rssi)
     return ;
 }
 
+
+/**
+* @brief  将32位场强值转化为db
+*
+* @param[in]		rssi场强值
+*
+* @return		db值
+* @author		wdz
+* @bug
+*/
 int rssi_convert_db(unsigned int rssi)
 {
     int convert_db;
@@ -6414,5 +6542,6 @@ int rssi_convert_db(unsigned int rssi)
 	}
     return convert_db;
 }
+
 
 

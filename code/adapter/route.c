@@ -520,22 +520,24 @@ UINT32 Route_Is_Alarm_Emergecy(UINT8 *pInData)
 	INT8 iIndex = -1;
 
 	type = Route_Get_F1F2_Status(pInData,&num,&iIndex);
+	NAS_AI_PAYLOAD *tNas_ai_payload_F1 = (NAS_AI_PAYLOAD *)(ptTemp->tDataLink[0].PayLoad);
+	NAS_AI_PAYLOAD *tNas_ai_payload_F2 = (NAS_AI_PAYLOAD *)(ptTemp->tDataLink[1].PayLoad);
 
 	switch(type)
 	{
 		case ROUTE_RECV_F1F2_F1_TYPE:
-			if(OP_CODE_E_ALARM == ((NAS_AI_PAYLOAD *)(ptTemp->tDataLink[0].PayLoad))->op_code)
+			if(OP_CODE_E_ALARM == tNas_ai_payload_F1->op_code)
 				return 1;
 			break;
 		case ROUTE_RECV_F1F2_F2_TYPE:
-			if(OP_CODE_E_ALARM == ((NAS_AI_PAYLOAD *)(ptTemp->tDataLink[1].PayLoad))->op_code)
+			if(OP_CODE_E_ALARM == tNas_ai_payload_F2->op_code)
 				return 1;
 			break;
 		case ROUTE_RECV_F1F2_ALL_TYPE:
 			LOG_WARNING(s_i4LogMsgId,"[Route_Is_Alarm_Emergecy][f1f2]");
-			if(OP_CODE_E_ALARM == ((NAS_AI_PAYLOAD *)(ptTemp->tDataLink[0].PayLoad))->op_code)
+			if(OP_CODE_E_ALARM == tNas_ai_payload_F1->op_code)
 				return 1;
-			if(OP_CODE_E_ALARM == ((NAS_AI_PAYLOAD *)(ptTemp->tDataLink[1].PayLoad))->op_code)
+			if(OP_CODE_E_ALARM == tNas_ai_payload_F2->op_code)
 				return 1;
 			break;
 		case ROUTE_RECV_F1F2_NO_TYPE:
@@ -763,7 +765,7 @@ ROUTE_AI_RECV_TYPE_E Route_AI_Recv_Parse(UINT8 *pInData,UINT32 u4RouteLen)
 
 	if(ptRoutePrintf->uAIUp)
 	{
-		LOG_DEBUG(s_i4LogMsgId,"[AI_U]TimeStamp=%x,slotnum=%d,RxFreq1=%d,RxFreq2=%d,recvlen=%d",pAIData->TimeStamp,pAIData->SlotNum,pAIData->RxFreq1,pAIData->RxFreq2,u4RouteLen);
+		LOG_DEBUG(s_i4LogMsgId,"[AI_U]TimeStamp=%lu,slotnum=%d,RxFreq1=%d,RxFreq2=%d,recvlen=%lu",pAIData->TimeStamp,pAIData->SlotNum,pAIData->RxFreq1,pAIData->RxFreq2,u4RouteLen);
 		LOG_DEBUG(s_i4LogMsgId,"[AI_U]ValidNum=%d,Index=%d",i4ValidNum,iIndex);
 		Route_F1F2_Debug(f1f2type,pAIData);
 	}

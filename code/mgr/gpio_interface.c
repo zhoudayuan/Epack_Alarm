@@ -136,7 +136,6 @@ gpio_init(int portnum, int direction)
 	}
 	  		
 	gpio_set_direction(fd_dir,direction);	
-    close(fd_dir);
 	fd_value =gpio_get_value_fd(portnum,value);
 	return fd_value;  
 }

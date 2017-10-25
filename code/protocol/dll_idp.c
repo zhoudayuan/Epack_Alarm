@@ -22,8 +22,17 @@
 #include "dll_fun.h"
 #include "print_debug.h"
 #include "string.h"
+#include "EncDec.h"
 
+//---------类型定义--------------------
+typedef struct _T_HdrID {
+    unsigned char ucEnableFlg;  // 本次通话是否接收到Header, 如果接收到为1， 未接收到为0
+    unsigned char aucCallingID[3];  // 主叫ID, 手台或链路机ID
+    unsigned char aucCalledID[3];  // 被叫ID, 正确情景为组号
+} T_HdrID;
 
+T_HdrID tHdrID;
+T_HdrID *ptHdrID = &tHdrID;
 
 /******************************************************************************
  *   全局变量定义
@@ -33,6 +42,16 @@
  * @brief 上一次LCSS标记
  */
 UINT8 auLastLcss;
+/**
+ * @var  auPiFlag
+ * @brief 加密的迟入标记 值为1说明已上行PI,并初始过加密向量
+ */
+UINT8 auPiFlag=0;
+/**
+ * @var  auPiFlag
+ * @brief 解决Hytera高级加密E帧上报错误数据问题
+ */
+UINT8 auLastPiFlag=0;
 /**
  * @var  auGpsRetryCnt
  * @brief GPS重传次数 最多一次
@@ -56,7 +75,6 @@ UINT8 uSndSlot[2];
  * @brief 上行分组数据缓存
  */
 PDP_UT g_PdpUBuf = {0};
-
 
 /** @defgroup 上下行socket变量 */
 /** @{ */
@@ -172,14 +190,12 @@ extern UINT8 g_discon_state;
  */
 extern UINT8 g_DisconCnt;
 
-
 extern UINT8 g_DisconRecoverPrintFlg;
-
 /**
- * @fun set_alarm_discon_switch
+ * @fun SetDisconAlarm
  * @brief 设置当前邻点锻炼告警开关状态
  */
-extern void set_alarm_discon_switch(int AlarmSwitch);
+extern void SetDisconAlarm(int AlarmSwitch);
 
 /**
  * @funr get_alarm_discon
@@ -187,23 +203,34 @@ extern void set_alarm_discon_switch(int AlarmSwitch);
  */
 extern int get_alarm_discon();
 
+extern UINT32 uWaitVoiceTimes;
+
+UINT8 dmra_voice_tmp[BUFFSIZE]={0};
 
 /**
- * @funr g_CcRightFlg
- * @brief CC 正确性标识
+ * @funr Later_PI_temp
+ * @brief DMRA加密模式下迟入存储的E帧PI信息
  */
-int g_CcRightFlg = 0;
+DMRA_PI_PDU Later_PI_temp;
 /**
- * @funr CC_ERR_COUNT
+ * @funr g_bCcRightFrmRcvFlg
+ * @brief CC 正确性标识,
+ * 容错机制,  允许出现误码，允许出现N个超帧
+ * 当 g_bCcRightFrmRcvFlg = 1, 说明收到正确语音帧
+ * 当 g_bCcRightFrmRcvFlg = 0, 说明尚未收到正确语音帧
+ */
+int g_bCcRightFrmRcvFlg = 0;
+/**
+ * @funr g_iCcErrFrmCnt
  * @brief CC 错误次数
  */
-int CC_ERR_COUNT = 0;
+int g_iCcErrFrmCnt = 0;
 
 /**
- * @funr CCERR_SUPERFRM_COUNT
+ * @funr g_iCcErrSuperFrmCnt
  * @brief CC超帧 错误次数
  */
-int CCERR_SUPERFRM_COUNT = 0;
+int g_iCcErrSuperFrmCnt = 0;
 /**
  * @funr CCERR_FRM_MAX
  * @brief CC 错误帧最大次数
@@ -211,23 +238,26 @@ int CCERR_SUPERFRM_COUNT = 0;
 int CCERR_SUPERFRM_MAX = 3;
 
 
-const char *g_acpLatStr[2] = {"NORTH", "SOUTH"};
-const char *g_acpLonStr[2] = {"EAST",  "WEST"};
-
-
-
-
-
-
-
-
-
-
+const char *g_apcLatStr[2] = {"NORTH", "SOUTH"};
+const char *g_apcLonStr[2] = {"EAST",  "WEST"};
 
 
 /******************************************************************************
  *   内部函数实现
  *   *************************************************************************/
+UINT8 _PI_CheckSum(DLL_ENCLIB_VOICE* pInput)
+{
+    UINT16 uCheckSum = 0;
+
+    uCheckSum = pInput->PIInfo[0] + pInput->PIInfo[1] +
+                pInput->PIInfo[2] + pInput->PIInfo[3] +
+                pInput->PIInfo[4] + pInput->PIInfo[5] +
+                pInput->PIInfo[6] + pInput->PIInfo[7] +
+                pInput->PIInfo[8];
+    uCheckSum &= 0xFF;
+    uCheckSum = ~uCheckSum + 1;
+    return (UINT8)(uCheckSum & 0x00FF);
+}
 /**
  * @brief  等待FPGA跟随标记延迟处理
  *
@@ -270,11 +300,52 @@ void WaitFollowEnable(UINT16 WaitMaxTime)
  */
 void R34DataAnalyze(UINT8 *r34Data, UINT8 DataLen)
 {
-    GPS_AI_DATA_T *pGpsData = (GPS_AI_DATA_T *)r34Data;
+    GPS_AI_DATA_T *pGpsData = (GPS_AI_DATA_T *)r34Data;//32字节结构体
     GPS_AI_DATA_T GpsAiData;
     GPS_NAS_DATA_T GpsNasData;
 
-    if (pGpsData->MsgHdr == 0x08 && pGpsData->Opcode == ntohs(0xa001))
+    DLL_ENCLIB_DATA Decry_Data;
+    memset(&Decry_Data, 0x00, sizeof(DLL_ENCLIB_DATA));
+
+    //解密处理
+    LOG_WARNING(s_LogMsgId,"[DLL][%s][Before][Admin Data:]", _F_);
+    LOG_PrintM(s_LogMsgId,g_PdpUBuf.auData,(UINT8)(sizeof(GPS_AI_DATA_T)));
+
+    if(g_DllGlobalCfg.auPI==1)// ip压缩头5字节不加密
+    {
+        if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
+        {
+            if (pGpsData->CmpsHdr[0]== 0x00 && pGpsData->CmpsHdr[1]== 0x98)//下行的3/4分组数据
+            {
+                Decry_Data.Data=r34Data+sizeof(IPv4_COMPRESS_HEADER_T);
+                Decry_Data.DataLen=sizeof(MS_GPS_REQ_T)-sizeof(IPv4_COMPRESS_HEADER_T);
+            }
+            else //MS上行的GPS数据
+            {
+                Decry_Data.Data=r34Data+sizeof(IPv4_COMPRESS_HEADER_T);
+                Decry_Data.DataLen=sizeof(GPS_AI_DATA_T)-sizeof(IPv4_COMPRESS_HEADER_T);
+            }
+        }
+        else
+        {
+            Decry_Data.Data=r34Data;
+            Decry_Data.DataLen=sizeof(GPS_AI_DATA_T);
+        }
+        Decry_Data.Type= TYPE_DATA;
+        int ret=DecryptFunc_Data(&Decry_Data);
+        if(ret==0)
+        {
+            LOG_WARNING(s_LogMsgId,"[DLL][%s][After][Len=%d][Admin Data:]", _F_,Decry_Data.DataLen);
+            LOG_PrintM(s_LogMsgId,g_PdpUBuf.auData,(UINT8)(sizeof(GPS_AI_DATA_T)));
+        }
+        else
+        {
+            LOG_WARNING(s_LogMsgId,"[DLL][%s]Data Decryption Fail", _F_);
+            return ;
+        }
+    }
+
+    if (pGpsData->MsgHdr == 0x08 && pGpsData->Opcode == ntohs(0xa001))//下行的3/4分组数据
     {
         g_PdpDBuf.uDPF         =  g_PdpUBuf.uDPF;
         g_PdpDBuf.uSAP         =  g_PdpUBuf.uSAP;
@@ -283,6 +354,7 @@ void R34DataAnalyze(UINT8 *r34Data, UINT8 DataLen)
         g_PdpDBuf.uDEI         =  g_PdpUBuf.uDEI;
         g_PdpDBuf.uNS          =  g_PdpUBuf.uNS;
         g_PdpDBuf.uTdLcCnt     =  g_PdpUBuf.uTdLcCnt;
+        g_PdpDBuf.uEHeadNum    =  g_PdpUBuf.uEHeadNum;
 
         memcpy(g_PdpDBuf.uSrcId, g_PdpUBuf.uSrcId, 3);
         memcpy(g_PdpDBuf.uDstId, g_PdpUBuf.uDstId, 3);
@@ -290,14 +362,13 @@ void R34DataAnalyze(UINT8 *r34Data, UINT8 DataLen)
 
         uGpsFlag = GPS_RLY;
     }
-    else if (pGpsData->MsgHdr == 0x01 && pGpsData->Opcode == ntohs(0xa002))
+    else if (pGpsData->MsgHdr == 0x01 && pGpsData->Opcode == ntohs(0xa002))//MS上行的GPS数据
     {
         if (DataLen != sizeof(GPS_AI_DATA_T))
         {
             LOG_WARNING(s_LogMsgId,"[DLL][%s] Gps data len err[%d:%d]", _F_, DataLen, sizeof(GPS_AI_DATA_T));
             return;
         }
-
         memcpy(&GpsAiData, g_PdpUBuf.auData, sizeof(GPS_AI_DATA_T));
         IDP_GpsAiToNas(&GpsAiData, &GpsNasData);
         if (tDllPrint->AIUp == 1)
@@ -322,62 +393,17 @@ void R34DataAnalyze(UINT8 *r34Data, UINT8 DataLen)
 
 
 
-
-
-
-
-void GpsParseLon_a(GPS_NAS_DATA_T *ptGpsData, UINT32 GpsEmb)
-{
-    double tmp;
-    double GpsEmbPrint;
-    int iDegree;
-    int iMinLarge;
-    int iMinLittle;
-
-    // D.D -> DDFF.FFFF => [度.度 -> 度.分分(0~59).分分分分(0~9999)]
-    tmp = (GpsEmb) /LON_RATIO;  // 去掉符号位计算
-    GpsEmbPrint = tmp;  //  打印暂存
-
-    if ((tmp = 180.0 - tmp) >= 0)
-    {
-        ptGpsData->EW = EAST;
-    }
-    else
-    {
-        ptGpsData->EW = WEST;
-//        tmp *= -1;
-    }
-
-    iDegree = (int)tmp;
-    tmp = (tmp - iDegree)*60.0;
-    iMinLarge = (int)tmp;
-    tmp = (tmp - iMinLarge)*10000.0;
-    iMinLittle = (int)tmp;
-
-//    ptGpsData->EW = ((GpsEmb & (1<<24)) == 0)? EAST: WEST;  //<1bit 经度指示 0:EAST 1:WEST
-    ptGpsData->EDEG = iDegree;        //<8bit 经度     0~179
-    ptGpsData->EMINmm = iMinLarge;    //<6bit 经分的整数部分 0~59
-    ptGpsData->EMINF = iMinLittle;    //<14bit 经分的小数部分 0~9999
-//    LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lon(%lu-%f): EW=%d, EDEG=%d, EMINmm=%d, EMINF=%d", _F_, GpsEmb, GpsEmbPrint, ptGpsData->EW, ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
-    printf("[DLL][%s] Lon(%lu-%f): EW=%d, EDEG=%d, EMINmm=%d, EMINF=%d\n", _F_, GpsEmb, GpsEmbPrint, ptGpsData->EW, ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
-
-
-
-}
-
-
-
 void GpsParseLon(GPS_NAS_DATA_T *ptGpsData, UINT32 GpsEmb)
 {
     double tmp;
-    double GpsEmbPrint;
+    double dGpsEmbPrint;
     int iDegree;
     int iMinLarge;
     int iMinLittle;
 
     // D.D -> DDFF.FFFF => [度.度 -> 度.分分(0~59).分分分分(0~9999)]
     tmp = (GpsEmb & ~(1<<24)) /LON_RATIO;  // 去掉符号位计算
-    GpsEmbPrint = tmp;  //  打印暂存
+    dGpsEmbPrint = tmp;  //  打印暂存
     iDegree = (int)tmp;
     tmp = (tmp - iDegree)*60.0;
     iMinLarge = (int)tmp;
@@ -388,8 +414,8 @@ void GpsParseLon(GPS_NAS_DATA_T *ptGpsData, UINT32 GpsEmb)
     ptGpsData->EDEG = iDegree;        //<8bit 经度     0~179
     ptGpsData->EMINmm = iMinLarge;    //<6bit 经分的整数部分 0~59
     ptGpsData->EMINF = iMinLittle;    //<14bit 经分的小数部分 0~9999
-//    LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lon(%lu-%f): EW=%d, EDEG=%d, EMINmm=%d, EMINF=%d", _F_, GpsEmb, GpsEmbPrint, ptGpsData->EW, ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
-    printf("[DLL][%s] Lon(%lu-%f): EW=%d, EDEG=%d, EMINmm=%d, EMINF=%d\n", _F_, GpsEmb, GpsEmbPrint, ptGpsData->EW, ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
+//    LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lon(%lu-%f): EW=%d, EDEG=%d, EMINmm=%d, EMINF=%d", _F_, GpsEmb, dGpsEmbPrint, ptGpsData->EW, ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
+    printf("[DLL][%s] Lon(%lu-%f): EW=%d, EDEG=%d, EMINmm=%d, EMINF=%d\n", _F_, GpsEmb, dGpsEmbPrint, ptGpsData->EW, ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
 }
 
 
@@ -402,14 +428,14 @@ void GpsParseLon(GPS_NAS_DATA_T *ptGpsData, UINT32 GpsEmb)
 void GpsParseLat(GPS_NAS_DATA_T *ptGpsData, UINT32 GpsEmb)
 {
     double tmp;
-    double GpsEmbPrint;
+    double dGpsEmbPrint;
     int iDegree;
     int iMinLarge;
     int iMinLittle;
 
     // D.D -> DDFF.FFFF => [度.度 -> 度.分分(0~59).分分分分(0~9999)]
     tmp = (GpsEmb & ~(1<<23)) /LAT_RATIO;  // 去掉符号位计算
-    GpsEmbPrint = tmp;
+    dGpsEmbPrint = tmp;
     iDegree = (int)tmp;
     tmp = (tmp - iDegree)*60.0;
     iMinLarge = (int)tmp;
@@ -420,52 +446,9 @@ void GpsParseLat(GPS_NAS_DATA_T *ptGpsData, UINT32 GpsEmb)
     ptGpsData->NDEG = iDegree;        // 度
     ptGpsData->NMINmm = iMinLarge;    // 0~59
     ptGpsData->NMINF = iMinLittle;    // 0~9999
-//    LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lat(%lu-%f): NS=%d, NDEG=%d, NMINmm=%d, NMINF=%d", _F_, GpsEmb, GpsEmbPrint, ptGpsData->NS, ptGpsData->NDEG, ptGpsData->NMINmm, ptGpsData->NMINF);
-    printf("[DLL][%s] Lat(%lu-%f): NS=%d, NDEG=%d, NMINmm=%d, NMINF=%d\n", _F_, GpsEmb, GpsEmbPrint, ptGpsData->NS, ptGpsData->NDEG, ptGpsData->NMINmm, ptGpsData->NMINF);
+//    LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lat(%lu-%f): NS=%d, NDEG=%d, NMINmm=%d, NMINF=%d", _F_, GpsEmb, dGpsEmbPrint, ptGpsData->NS, ptGpsData->NDEG, ptGpsData->NMINmm, ptGpsData->NMINF);
+    printf("[DLL][%s] Lat(%lu-%f): NS=%d, NDEG=%d, NMINmm=%d, NMINF=%d\n", _F_, GpsEmb, dGpsEmbPrint, ptGpsData->NS, ptGpsData->NDEG, ptGpsData->NMINmm, ptGpsData->NMINF);
 }
-
-
-
-
-void LongitudeToInt_0(GPS_NAS_DATA_T *ptGpsData, UINT32 GpsEmb)
-{
-    double GpsDegree;
-
-    int GpsDegreeInteger;
-    int GpsDegreeDecimals;
-    int GpsDegreeDecimalsLarge;
-    int GpsDegreeDecimalsLiite;
-    int GpsDegreeDecimalsLiite_0;
-
-
-
-
-    ptGpsData->EW = ((GpsEmb & (1<<24)) == 0)? EAST: WEST;
-    GpsDegree = GpsEmb/LON_RATIO;  // 得出当前多少度(浮点型)
-
-    if (GpsDegree < 0)
-    {
-        GpsDegree *= -1;    // 转化为正数
-    }
-
-    GpsDegreeInteger = (int)GpsDegree; // 取整数
-    GpsDegreeDecimals = (int)((GpsDegree-GpsDegreeInteger)*(60*(10*1000))); // 取小数, 将小数部分转换为度，再放大(10*1000)倍
-    GpsDegreeDecimalsLarge = GpsDegreeDecimals/(10*1000);       // 取 0~60
-//    GpsDegreeDecimalsLiite = (GpsDegreeDecimals%(10*1000))/60;  // 取 0~9999
-    GpsDegreeDecimalsLiite = (GpsDegreeDecimals%(10*1000))/60;  // 取 0~9999
-    GpsDegreeDecimalsLiite_0 = (GpsDegreeDecimals-GpsDegreeDecimalsLarge*10*1000)/60;
-
-
-//    ptGpsData->EDEG = atoi(EDEG);
-//    ptGpsData->EMINmm = atoi(EMINmm);
-//    ptGpsData->EMINF = atoi(EMINF);
-
-
-    LOG_DEBUG(s_LogMsgId,"[DLL][%s] ptGpsData->EW=%d, GpsDegreeInteger=%d, Large=%d, Liite=%d, Liite_0=%d ", _F_,
-    ptGpsData->EW,  GpsDegreeInteger, GpsDegreeDecimalsLarge, GpsDegreeDecimalsLiite, GpsDegreeDecimalsLiite_0);
-
-}
-
 
 
 /**
@@ -487,16 +470,13 @@ void LongitudeToInt(GPS_NAS_DATA_T *ptGpsData, UINT32 *code)
     char EMINF[5] = {0};
 
     temp_long = *code;
-
-    // if the value is negative,we need to make sure the new value is negative too
+    //if the value is negative,we need to make sure the new value is negative too
     if((temp_long & 0x01000000) != 0)
     {
         temp_long |= 0xFF000000;  // 问题-1  为什么要FF           ptGpsData->EW = 0;  为什么不放在这里?
     }
-
     //the 93206.76 is from 1/(360/(2^25))
     temp1 = temp_long / 93206.76;
-
     LOG_DEBUG(s_LogMsgId,"[DLL][%s] temp1=%f", _F_, temp1);
     if (temp1 >= 0)
     {
@@ -609,7 +589,7 @@ int EnableNasGrep(NAS_INF_UL_T *pvInfData)
 
     if (pvInfData->tDataLink[Frq].MsgType == DI_MSG_WLU && pvInfData->tDataLink[Frq].CC == g_DllGlobalCfg.auWLUCC)
     {
-        pNasAiData = (NAS_AI_PAYLOAD *)(pvInfData->tDataLink[Frq].PayLoad);
+        pNasAiData = (NAS_AI_PAYLOAD *)(pvInfData->tDataLink[Frq].PayLoad);//链路机数据业务结构
 
         if (pNasAiData->cmd_code == CMD_CODE_ENABLE || pNasAiData->cmd_code == CMD_CODE_STUN || pNasAiData->cmd_code == CMD_CODE_KILL)
         {
@@ -739,8 +719,10 @@ int DetectEndPattern(PDP_UT *PdpBuf, UINT8 *Len)
  * @since   trunk.00001
  * @bug
  */
-void GenVoiceCclData(DLL_CCL_UL_T *pData, DATA_LINK_T *pDataLink)
+int GenVoiceCclData(DLL_CCL_UL_T *pData, DATA_LINK_T *pDataLink)
 {
+    int ret;
+
     memset(pData, 0, sizeof(DLL_CCL_UL_T));
     pData->MsgType = pDataLink->MsgType;
     pData->FrmType = pDataLink->FrmType;
@@ -753,7 +735,50 @@ void GenVoiceCclData(DLL_CCL_UL_T *pData, DATA_LINK_T *pDataLink)
     pData->Prohibit = pDataLink->Prohibit;
     memcpy(pData->DstId, &g_DllGlobalCfg.auUploadLC[3], 3);
     memcpy(pData->SrcId, &g_DllGlobalCfg.auUploadLC[6], 3);
-    memcpy(pData->PayLoad, pDataLink->PayLoad, pDataLink->DataLen);
+
+    if(g_DllGlobalCfg.auPI==1)//加密
+    {
+        if(((auPiFlag==1)&&(g_DllGlobalCfg.auEncryption_Type != ENCRYPT_HYT_BASE))||(g_DllGlobalCfg.auEncryption_Type == ENCRYPT_HYT_BASE))
+        {
+            //加密结构初始化
+            DLL_ENCLIB_VOICE Encryp_str;
+            memset(&Encryp_str, 0x00, sizeof(DLL_ENCLIB_VOICE));
+            memcpy(Encryp_str.Payload,pDataLink->PayLoad,pDataLink->DataLen);
+            Encryp_str.FrameNum = pData->FrmType;
+            Encryp_str.ValidFlag = VALID;
+
+            ret=DecryptFunc_Voice(&Encryp_str);//语音解密
+
+            //LOG_DEBUG(s_LogMsgId,"[DLL][%s] DeEncryption Result: FrmType=%d", _F_,pData->FrmType);
+            //LOG_PrintM(s_LogMsgId, Encryp_str.Payload, pDataLink->DataLen);
+
+            if(ret==0)//解密成功
+            {
+                memcpy(pData->PayLoad, Encryp_str.Payload, pDataLink->DataLen);
+                if((g_DllGlobalCfg.auEncryption_Type == ENCRYPT_HYT_ENHA)&&(auLastPiFlag==0)&&(pData->FrmType==FT_VOICE_E))//Hytera高级加密的第一个E帧丢弃，不上到本地中心
+                {
+                    LOG_DEBUG(s_LogMsgId,"[DLL][%s] [Hytera hight Encryption][Enter Later][Throw First Frame_E]", _F_);
+                    return ERR;
+                }
+            }
+            else//解密失败
+            {
+                LOG_WARNING(s_LogMsgId,"[DLL][%s] DeEncryption error FrmType=%d,Encryption_Type=%d", _F_,pData->FrmType,g_DllGlobalCfg.auEncryption_Type);
+                return ERR;
+            }
+        }
+        else
+        {
+            LOG_WARNING(s_LogMsgId,"[DLL][%s] Hight Level Encryption Vector Uninit. FrmType=%d,Encryption_Type=%d,auPiFlag=%d", _F_,pData->FrmType,g_DllGlobalCfg.auEncryption_Type,auPiFlag);
+            return ERR;
+        }
+    }
+    else
+    {
+        memcpy(pData->PayLoad, pDataLink->PayLoad, pDataLink->DataLen);
+    }
+    return NO_ERR;
+
 }
 
 
@@ -803,8 +828,6 @@ void IDP_SendCclData(DLL_CCL_UL_T * ptCclData)
 }
 
 
-
-
 /**
  * @brief  上行数据打印
  *
@@ -815,24 +838,25 @@ void IDP_SendCclData(DLL_CCL_UL_T * ptCclData)
  */
 void IDP_AiPrintf(NAS_INF_UL_T * pvInfData)
 {
-    char Buf[20];
+    char acAiItemBuf[20];
     UINT8 Frq;
     if (1 == pvInfData->RxFreq1)
     {
         Frq = 0;
         if (tDllPrint->PrintLv == PRINT_DEBUG || tDllPrint->PrintLv == PRINT_ALL)
         {
-            GetAiItemStr(&pvInfData->tDataLink[Frq], Buf, sizeof(Buf));
-            LOG_DEBUG(s_LogMsgId,"[DLL][IDP] TimS:%ld F1S%d MsgT_%d FrmT_%d CC_%d DataT_%d Vari_%d Rssi_%d StopFg_%d[%s]",
+            GetAiItemStr(&pvInfData->tDataLink[Frq], acAiItemBuf, sizeof(acAiItemBuf));
+            LOG_DEBUG(s_LogMsgId,"[DLL][IDP] TimS:%ld F1S%d MsgT_%d FrmT_%d CC_%d DataT_%d PI_%d Vari_%d Rssi_%d StopFg_%d[%s]",
                     pvInfData->TimeStamp,
                     (pvInfData->SlotNum+1),
                     pvInfData->tDataLink[Frq].MsgType,
                     pvInfData->tDataLink[Frq].FrmType,
                     pvInfData->tDataLink[Frq].CC,
                     pvInfData->tDataLink[Frq].DataType,
+                    pvInfData->tDataLink[Frq].PI,
                     (UINT16)(pvInfData->tDataLink[Frq].Vari[0] << 8) | pvInfData->tDataLink[Frq].Vari[1],
                     (UINT16)(pvInfData->tDataLink[Frq].Rssi[0] << 8) | pvInfData->tDataLink[Frq].Rssi[1],
-                    pvInfData->tDataLink[Frq].Prohibit, Buf);
+                    pvInfData->tDataLink[Frq].Prohibit, acAiItemBuf);
         }
 
         if ((tDllPrint->PrintLv == PRINT_MEMRY || tDllPrint->PrintLv == PRINT_ALL) && pvInfData->tDataLink[Frq].DataLen < 35)
@@ -848,17 +872,18 @@ void IDP_AiPrintf(NAS_INF_UL_T * pvInfData)
 
         if (tDllPrint->PrintLv == PRINT_DEBUG || tDllPrint->PrintLv == PRINT_ALL)
         {
-            GetAiItemStr(&pvInfData->tDataLink[Frq], Buf, sizeof(Buf));
-            LOG_DEBUG(s_LogMsgId,"[DLL][IDP] TimS_%ld F2S%d MsgT_%d FrmT_%d CC_%d DataT_%d Vari_%d Rssi_%d StopFg_%d[%s]",
+            GetAiItemStr(&pvInfData->tDataLink[Frq], acAiItemBuf, sizeof(acAiItemBuf));
+            LOG_DEBUG(s_LogMsgId,"[DLL][IDP] TimS_%ld F2S%d MsgT_%d FrmT_%d CC_%d DataT_%d PI_%d Vari_%d Rssi_%d StopFg_%d[%s]",
                     pvInfData->TimeStamp,
                     (pvInfData->SlotNum+1),
                     pvInfData->tDataLink[Frq].MsgType,
                     pvInfData->tDataLink[Frq].FrmType,
                     pvInfData->tDataLink[Frq].CC,
                     pvInfData->tDataLink[Frq].DataType,
+                    pvInfData->tDataLink[Frq].PI,
                     (UINT16)(pvInfData->tDataLink[Frq].Vari[0] << 8) | pvInfData->tDataLink[Frq].Vari[1],
                     (UINT16)(pvInfData->tDataLink[Frq].Rssi[0] << 8) | pvInfData->tDataLink[Frq].Rssi[1],
-                    pvInfData->tDataLink[Frq].Prohibit, Buf);
+                    pvInfData->tDataLink[Frq].Prohibit, acAiItemBuf);
         }
 
         if ((tDllPrint->PrintLv == PRINT_MEMRY || tDllPrint->PrintLv == PRINT_ALL) && pvInfData->tDataLink[Frq].DataLen < 35)
@@ -890,7 +915,6 @@ void IDP_CclPrintf(DLL_CCL_UL_T * ptCclData)
                 ptCclData->DataLen,
                 ptCclData->Prohibit);
     }
-
     if (tDllPrint->PrintLv == PRINT_MEMRY || tDllPrint->PrintLv == PRINT_ALL)
     {
         LOG_PrintM(s_LogMsgId, ptCclData->PayLoad, ptCclData->DataLen);
@@ -1127,11 +1151,11 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
     PDT_RE_HEAD_PDU_DT p_ReHdrPdu;
     DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
 
-    if (GPS_RLY == uGpsFlag)
+    if (GPS_RLY == uGpsFlag)//下行GPS的TD_LC
     {
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         ptInfData->ResFrqSlot = 0xff;
-        ptInfData->TimeStamp = pvInfData->TimeStamp%2880000 +2;
+        ptInfData->TimeStamp = pvInfData->TimeStamp%2880000 + 2;
         ptInfData->SlotNum = uSndSlot[RevFrqNo];
 
         if (F_1 == SndFrq)
@@ -1152,7 +1176,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         DLL_SetTimer(CALL_DATA_D, 4000);        //定时4s
 
     }
-    else if (GPS_OK == uGpsFlag)
+    else if (GPS_OK == uGpsFlag)//上行终端的TD_LC
     {
         if (1 == pTdLcPdu->uA)  // 响应请求标识
         {
@@ -1161,7 +1185,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
             memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
             ptInfData->TimeStamp = pvInfData->TimeStamp+2;
             ptInfData->SlotNum = pvInfData->SlotNum;
-            ptInfData->TxFreq1 = pvInfData->RxFreq1;
+            ptInfData->TxFreq1 = pvInfData->RxFreq1;//RE HEAD 响应不交换频点时隙，不需要中转，只递增时间戳
             ptInfData->TxFreq2 = pvInfData->RxFreq2;
             ptInfData->tDataLink[RevFrqNo].MsgType = DI_MSG_DATA;
             ptInfData->tDataLink[RevFrqNo].FrmType = FT_VOICE_NO;
@@ -1215,7 +1239,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         }
         else
         {
-            FrqSlt = (0x01 << 4) | (pvInfData->SlotNum & 0x0f);
+            FrqSlt = (0x01 << 4) | (pvInfData->SlotNum & 0x0f);//自己生成的ACK与上行的TD_LC频点时隙相同，时间戳增大
         }
 
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
@@ -1228,6 +1252,7 @@ void IDP_TD_LCFun(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo, TD_LC_PDU_T *pTdLcPdu
         ODP_SendInfData(ptInfData, S_GPS_ACK);    // send Ms Gps Ack
         CallingShootData((pvInfData->TimeStamp+24), FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (CSBK_LEN+2), (UINT8 *)&NasAiData);
         ODP_SendInfData(ptInfData, S_GPS_ACK);    // send Ms Gps Ack
+        DLL_ClearTimer();
     }
     else
     {
@@ -1257,6 +1282,7 @@ int IDP_LcHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
     memcpy(auULC, pDataLink->PayLoad, (FLC_LEN+3));
 
+    // 区分PDT/DMR
     if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
     {
         pdt_head_fulllc_dec(auULC, &ReStatus);
@@ -1265,23 +1291,24 @@ int IDP_LcHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     {
         dmr_head_fulllc_dec(auULC, &ReStatus);
     }
-
     if (NO_ERR != ReStatus)
     {
         LOG_WARNING(s_LogMsgId,"[DLL][%s] Lc_Header fulllc_dec error", _F_);
         return ERR;
     }
 
-    if (memcmp(t_NasPreLc->auTADDR, CheckId, 3) == 0)
+    // ID不为0都接收
+    if (memcmp(t_NasPreLc->auTADDR, CheckId, 3) == 0)  // 目的地址不为0
     {
         LOG_WARNING(s_LogMsgId,"[DLL][%s] Lc_Header error(TADDR:0)", _F_);
-        return NO_ERR;
+        return ERR;
     }
-    // uFLCO
-    if (t_NasPreLc->uFLCO == 0x30 || t_NasPreLc->uPF == 1)
+
+    // FLCO_TDLC即为结束帧
+    if (t_NasPreLc->uFLCO == FLCO_TDLC || t_NasPreLc->uPF == 1)
     {
         LOG_WARNING(s_LogMsgId,"[DLL][%s] Lc_Header error(FLCO:%d,PF:%d)", _F_, t_NasPreLc->uFLCO, t_NasPreLc->uPF);
-        return NO_ERR;
+        return ERR;
     }
 
     memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
@@ -1296,14 +1323,84 @@ int IDP_LcHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     ptCclData->Prohibit = pDataLink->Prohibit;
     memcpy(ptCclData->SrcId, t_NasPreLc->auSADDR, 3);
     memcpy(ptCclData->DstId, t_NasPreLc->auTADDR, 3);
+    /*
+    ** GPS语音内嵌，保存本次通话ID
+    */
+    memcpy(ptHdrID->aucCallingID, t_NasPreLc->auSADDR, sizeof(t_NasPreLc->auSADDR));
+    memcpy(ptHdrID->aucCalledID, t_NasPreLc->auTADDR, sizeof(t_NasPreLc->auTADDR));
+    ptHdrID->ucEnableFlg = 1;
     memcpy(ptCclData->PayLoad, pDataLink->PayLoad, FLC_LEN);
     memcpy(g_DllGlobalCfg.auUploadLC, pDataLink->PayLoad, FLC_LEN);
-    EmbeddedEnc(g_DllGlobalCfg.auUploadLC, g_DllGlobalCfg.auEmbInfo);
+    EmbeddedEnc(g_DllGlobalCfg.auUploadLC, g_DllGlobalCfg.auEmbInfo);  // auUploadLC ==> auEmbInfo
     memcpy(p_DllFpgaShm->EmbInfo, g_DllGlobalCfg.auEmbInfo, 16);
     IDP_SendCclData(ptCclData);
     return NO_ERR;
 }
 
+
+/**
+ * @brief  上行PI_header处理函数 高级加密才进入此流程
+ *
+ * @param [in] pvInfData       上行接口层数据
+ * @param [in] RevFrqNo       接收频率号
+ *
+ * @return  int         0:成功1:失败
+ * @author  whl
+ * @since   trunk.00001
+ * @bug
+ */
+int IDP_PiHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
+{
+    //UINT16 ReStatus = NO_ERR;
+    //UINT16 auUPI[6] = {0};
+    UINT16 u2CRC = 0;
+    UINT16 AirCRC = 0;
+
+    DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
+    PI_PDU *pSupsCsbk = (PI_PDU *)(pDataLink->PayLoad);
+
+    u2CRC = ALG_Crc16(pDataLink->PayLoad, PI_LEN);
+
+    if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
+    {
+        u2CRC = u2CRC ^ PDT_CRC_MASK_PI;
+    }
+    else
+    {
+        u2CRC = u2CRC ^ DMR_CRC_MASK_PI;
+    }
+
+    AirCRC = ((UINT16)(pSupsCsbk->dmraPiData.auCRC[0]) << 8) | pSupsCsbk->dmraPiData.auCRC[1];
+
+    if(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_DMRA)
+    {
+        LOG_WARNING(s_LogMsgId,"[DLL][%s] ALG_ID=%d,KEYID=%d", _F_,pSupsCsbk->dmraPiData.uAlgId,pSupsCsbk->dmraPiData.uKeyID);
+    }
+
+    if (u2CRC != AirCRC)
+    {
+        LOG_WARNING(s_LogMsgId,"[DLL][%s] Pi_Header fulllc_dec error", _F_);
+        return ERR;
+    }
+
+    memcpy(g_DllGlobalCfg.auUploadPI, pDataLink->PayLoad, PI_LEN);
+
+    DLL_ENCLIB_VOICE Encryp_str;
+    memset(&Encryp_str, 0x00, sizeof(DLL_ENCLIB_VOICE));
+    memcpy(Encryp_str.PIInfo,&(pSupsCsbk->dmraPiData),PI_LEN);
+    Encryp_str.FrameNum = VOICE_PI_FRAME;
+    Encryp_str.ValidFlag = VALID;
+    if(auPiFlag==0)//防止多个PI重复初始化向量函数
+    {
+        DecryptFunc_Voice(&Encryp_str);//PI调用解码初始化向量函数
+        auPiFlag=1;
+        //LOG_DEBUG(s_LogMsgId,"[DLL][%s] Rcv PI_Head,Init Encryption",_F_);
+    }
+
+    DLL_SetTimer(CALL_VOICE_U,360);//最后一个PI起定时
+
+    return NO_ERR;
+}
 
 /**
  * @brief  上行LC_Terminator处理函数
@@ -1324,7 +1421,10 @@ int IDP_LcTerminatorFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
 
     memcpy(auULC, pDataLink->PayLoad, (FLC_LEN+3));
-    LOG_PrintM(s_LogMsgId, pDataLink->PayLoad, 12);
+    if ((tDllPrint->PrintLv == PRINT_MEMRY) || (tDllPrint->PrintLv == PRINT_ALL))
+    {
+        LOG_PrintM(s_LogMsgId, pDataLink->PayLoad, 12);
+    }
     if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
     {
         pdt_term_fulllc_dec(auULC, &ReStatus);
@@ -1342,22 +1442,36 @@ int IDP_LcTerminatorFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
     GEN_LC_PDU_T *pGenLcPdu = (GEN_LC_PDU_T *)auULC;
 
-    if (0 == pGenLcPdu->uFLCO)          //LC_Terminiator
+    if (FLCO_TER == pGenLcPdu->uFLCO)  // LC_Terminiator
     {
-
         g_BurstCnt = 0;
-        g_CcRightFlg = 0;
-        CC_ERR_COUNT = 0;
-        CCERR_SUPERFRM_COUNT = 0;
+        g_bCcRightFrmRcvFlg = 0;
+        g_iCcErrFrmCnt = 0;
+        g_iCcErrSuperFrmCnt = 0;
 
+
+        //调用解密函数 清除秘钥及相关信息
+        if(g_DllGlobalCfg.auPI==1)
+        {
+            DLL_ENCLIB_VOICE Dencryp_str;
+            memset(&Dencryp_str, 0x00, sizeof(DLL_ENCLIB_VOICE));
+            memcpy(Dencryp_str.LCInfo,pDataLink->PayLoad,FLC_LEN);
+            Dencryp_str.FrameNum = VOICE_TERM_FRAME;
+            Dencryp_str.ValidFlag = VALID;
+            DecryptFunc_Voice(&Dencryp_str);//LC_Ter清除相关加密信息
+        }
         cmp = memcmp((char *)g_DllGlobalCfg.auUploadLC, (char *)pDataLink->PayLoad, FLC_LEN);
         if (0 != cmp)
         {
             LOG_WARNING(s_LogMsgId,"[DLL][%s] Lc_Termin data error", _F_);
+            LOG_PrintM(s_LogMsgId, (char *)g_DllGlobalCfg.auUploadLC, 12);
+            LOG_PrintM(s_LogMsgId, (char *)pDataLink->PayLoad, 12);
             return ERR;
         }
         memset(g_DllGlobalCfg.auUploadLC, 0xff, (FLC_LEN+3));
-        p_DllFpgaShm->WorkOver = WORK_STOP;  // 启动500ms计时
+
+        p_DllFpgaShm->WorkOver = WORK_STOP;
+
         memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
         ptCclData->MsgType = pDataLink->MsgType;
         ptCclData->FrmType = FT_VOICE_NO;
@@ -1371,18 +1485,21 @@ int IDP_LcTerminatorFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         memcpy(ptCclData->DstId, &pDataLink->PayLoad[3], 3);
         memcpy(ptCclData->SrcId, &pDataLink->PayLoad[6], 3);
         memcpy(ptCclData->PayLoad, pDataLink->PayLoad, FLC_LEN);
-        ErrRateVoiceTest(NULL, STATE_VOICE_TERMINATOR);
+        memset(ptHdrID, 0, sizeof(ptHdrID[0]));  // 清除本次通话ID, 保存ID在header处
+        if (ptErrPrint->Voice == 1)
+        {
+            ErrRateVoiceTest(NULL, SET_ERR_TER);
+        }
         IDP_SendCclData(ptCclData);
-
-
+        uCallState = CALL_IDLE;
     }
-    else if (48 == pGenLcPdu->uFLCO)            //TD_LC (DEC:48==HEX:0X30)
+    else if (FLCO_TDLC == pGenLcPdu->uFLCO)            //TD_LC (DEC:48==HEX:0X30)
     {
         TD_LC_PDU_T *pTdLcPdu = (TD_LC_PDU_T *)auULC;
 
         if (pTdLcPdu->auSADDR[0] == g_PdpDBuf.uSrcId[0] \
          && pTdLcPdu->auSADDR[1] == g_PdpDBuf.uSrcId[1] \
-         && pTdLcPdu->auSADDR[2] == g_PdpDBuf.uSrcId[2] && GPS_REQ== uGpsFlag)
+         && pTdLcPdu->auSADDR[2] == g_PdpDBuf.uSrcId[2] && GPS_REQ== uGpsFlag)//自己发出去的TD_LC?
         {
             if (tDllPrint->AIUp == 1)
             {
@@ -1443,17 +1560,17 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     }
 
     // standard
-    if (SFID == pSupsCsbk->uFID && PRE_CSBKO == pSupsCsbk->uCSBKO)
+    if (SFID == pSupsCsbk->uFID && PRE_CSBKO == pSupsCsbk->uCSBKO)//终端相关业务的预载波(上下行预载波)
     {
         if (0xff == uGpsFlag)
         {
-            IDP_RelayLinkData(pvInfData, RevFrqNo, S_CSBK_PRE);
+            IDP_RelayLinkData(pvInfData, RevFrqNo, S_CSBK_PRE);//上行终端GPS预载玻不进行转发，其余情况转发,预载波按照规则翻转频点时隙
         }
         else
         {
             if (tDllPrint->AIUp == 1)
             {
-                LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d] PRE_CSBK from [%#x:%#x:%#x] abandon", _F_, __LINE__, pSupsCsbk->auSADDR[0], pSupsCsbk->auSADDR[1], pSupsCsbk->auSADDR[2]);
+                LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d][Gps Ms Upload] PRE CSBK from [%#x:%#x:%#x] abandon", _F_, __LINE__, pSupsCsbk->auSADDR[0], pSupsCsbk->auSADDR[1], pSupsCsbk->auSADDR[2]);
             }
             return NO_ERR;
         }
@@ -1461,7 +1578,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     }
 
     // hytera
-    if (HFID == pSupsCsbk->uFID)
+    if (HFID == pSupsCsbk->uFID)//PDT
     {
         if (REQ_CSBKO == pSupsCsbk->uCSBKO)
         {
@@ -1479,7 +1596,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ptInfData->TxFreq2 = 1;
             }
 
-            memcpy(&(ptInfData->tDataLink[SndFrq]), &(pvInfData->tDataLink[RevFrqNo]), sizeof(DATA_LINK_T));
+            memcpy(&(ptInfData->tDataLink[SndFrq]), &(pvInfData->tDataLink[RevFrqNo]), sizeof(DATA_LINK_T));//请求按照规则翻转频率时隙
 
             if (tDllPrint->AIUp == 1)
             {
@@ -1513,7 +1630,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 NasAiData.src_id = 31;          //11111
                 NasAiData.dst_id = 31;          //11111
                 memcpy(NasAiData.data, pSupsCsbk->auSADDR, 3);
-                memcpy(&NasAiData.data[3], pSupsCsbk->auTADDR, 3);
+                memcpy(&NasAiData.data[3], pSupsCsbk->auTADDR, 3);//用于上行CCL解析具体哪个终端
                 NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
 //                WaitFollowEnable(3000);
 #if 0
@@ -1524,7 +1641,7 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ODP_GenNasPreCSBKFun(2, &DstId, &SrcId, 1);
                 ODP_GenNasPreCSBKFun(1, &DstId, &SrcId, 1);
 #endif
-                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));//主动生成的NAS格式的 MS_ACK不进行时隙频率翻转
                 CallingShootData((pvInfData->TimeStamp+18), tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
 //                ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
                 // by zhoudayuan
@@ -1576,11 +1693,133 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
         if (ALARM_CSBKO == pSupsCsbk->uCSBKO)
         {
-            if (0x0f > pSupsCsbk->uSSO)         //req
+            if (0x0f > pSupsCsbk->uSSO)         //req  过滤ALARM_ACK
             {
                 if (tDllPrint->AIUp == 1)
                 {
                     LOG_DEBUG(s_LogMsgId,"[DLL][%s][%d] PRE CSBK(ALARM) relay", _F_, __LINE__);
+                }
+                IDP_RelayLinkData(pvInfData, RevFrqNo, S_ALARM_REQ);
+
+                //紧急告警请求上报本地中心，  目的让EPACK进行告警
+                memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
+                ptCclData->MsgType = DI_MSG_DATA;
+                ptCclData->FrmType = FT_VOICE_NO;
+                memcpy(ptCclData->DstId, pSupsCsbk->auTADDR, sizeof(pSupsCsbk->auTADDR));
+                memcpy(ptCclData->SrcId, pSupsCsbk->auSADDR, sizeof(pSupsCsbk->auSADDR));
+                ptCclData->DataType = CT_ALARM_REQ_MS;
+                ptCclData->DataLen = CSBK_LEN;
+                IDP_SendCclData(ptCclData);
+            }
+            else        //ack
+            {
+            }
+        }
+    }
+    else if (MFID == pSupsCsbk->uFID) //DMR
+    {
+        if (REQ_CSBKO_DMR == pSupsCsbk->uCSBKO)//DMR遥毙/激活请求/响应
+        {
+            if((DIS_RADIO_REV_DMR == pSupsCsbk->uREV)||(EN_RADIO_REV_DMR == pSupsCsbk->uREV))//DMR遥毙请求/激活请求
+            {
+                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+                ptInfData->ResFrqSlot = (SndFrq+1)<<4 | (SndSlot+1);
+                ptInfData->TimeStamp = pvInfData->TimeStamp%2880000 +2;
+                ptInfData->SlotNum = uSndSlot[RevFrqNo];
+
+                if (F_1 == SndFrq)
+                {
+                    ptInfData->TxFreq1 = 1;
+                }
+                else
+                {
+                    ptInfData->TxFreq2 = 1;
+                }
+
+                memcpy(&(ptInfData->tDataLink[SndFrq]), &(pvInfData->tDataLink[RevFrqNo]), sizeof(DATA_LINK_T));
+
+                if (tDllPrint->AIUp == 1)
+                {
+                    LOG_DEBUG(s_LogMsgId,"[DLL][DMR][%s][%d] REQ CSBK relay: ResFrq %d ResSlot %d", _F_, __LINE__, (SndFrq+1), (SndSlot+1));
+                }
+
+                ODP_SendInfData(ptInfData, S_CSBK_REQ);
+            }
+            else if(EN_RADIO_REV_ACK_DMR == pSupsCsbk->uREV)//激活响应
+            {
+                memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
+                ptCclData->MsgType = DI_MSG_DATA;
+                ptCclData->FrmType = FT_VOICE_NO;
+                memcpy(ptCclData->DstId, pSupsCsbk->auTADDR, 3);
+                memcpy(ptCclData->SrcId, pSupsCsbk->auSADDR, 3);
+
+                ptCclData->DataType = CT_ENABLE_ACK_MS;
+                ptCclData->DataLen = 1;
+                ptCclData->PayLoad[0] = NO_ERR;
+                IDP_SendCclData(ptCclData);
+
+                //遥晕激活链路中转
+                memset(&NasAiData, 0, sizeof(NasAiData));
+                NasAiData.cmd_code = CMO_CODE_MS_ENABLE;
+                NasAiData.nm_type = NM_TYPE_CENTER;
+                NasAiData.op_code = OP_CODE_SET_ACK;
+                NasAiData.src_id = 31;          //11111
+                NasAiData.dst_id = 31;          //11111
+                memcpy(NasAiData.data, pSupsCsbk->auSADDR, 3);
+                memcpy(&NasAiData.data[3], pSupsCsbk->auTADDR, 3);
+                NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
+
+                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));//主动发的NAS     终端ACK 不翻转频点时隙
+                CallingShootData((pvInfData->TimeStamp+18), tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+                ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
+                // by zhoudayuan
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+            }
+            else if(DIS_RADIO_REV_ACK_DMR == pSupsCsbk->uREV)//遥毙响应
+            {
+                memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
+                ptCclData->MsgType = DI_MSG_DATA;
+                ptCclData->FrmType = FT_VOICE_NO;
+                memcpy(ptCclData->DstId, pSupsCsbk->auTADDR, 3);
+                memcpy(ptCclData->SrcId, pSupsCsbk->auSADDR, 3);
+
+                //遥晕激活应答上报本地中心
+                ptCclData->DataType = CT_DISABLE_ACK_MS;
+                ptCclData->DataLen = 1;
+                ptCclData->PayLoad[0] = NO_ERR;
+                IDP_SendCclData(ptCclData);
+
+                //遥晕激活链路中转
+                memset(&NasAiData, 0, sizeof(NasAiData));
+                NasAiData.cmd_code = CMO_CODE_MS_DISABlE;
+                NasAiData.nm_type = NM_TYPE_CENTER;
+                NasAiData.op_code = OP_CODE_SET_ACK;
+                NasAiData.src_id = 31;          //11111
+                NasAiData.dst_id = 31;          //11111
+                memcpy(NasAiData.data, pSupsCsbk->auSADDR, 3);
+                memcpy(&NasAiData.data[3], pSupsCsbk->auTADDR, 3);
+                NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
+
+                memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
+                CallingShootData((pvInfData->TimeStamp+18), tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
+                ODP_PrintNasCmdOpLog(&NasAiData);   //  打印Nas,cmd和op by zhoudayuan
+                // by zhoudayuan
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+                ODP_SendInfData(ptInfData, S_CSBK_ACK);
+            }
+        }
+        else if (ALARM_CSBKO_DMR == pSupsCsbk->uCSBKO)
+        {
+            if (DIGITAL_ALARM_SSO_DMR > pSupsCsbk->uSSO)         //req
+            {
+                if (tDllPrint->AIUp == 1)
+                {
+                    LOG_DEBUG(s_LogMsgId,"[DLL][DMR][%s][%d] PRE CSBK(ALARM) relay", _F_, __LINE__);
                 }
                 IDP_RelayLinkData(pvInfData, RevFrqNo, S_ALARM_REQ);
 
@@ -1593,9 +1832,6 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ptCclData->DataType = CT_ALARM_REQ_MS;
                 ptCclData->DataLen = CSBK_LEN;
                 IDP_SendCclData(ptCclData);
-            }
-            else        //ack
-            {
             }
         }
     }
@@ -1616,6 +1852,8 @@ int IDP_MsCSBKFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 int IDP_UCHeaderFun(UINT8 *puData)
 {
     PDP_HEAD_UU* puUPHdr = (PDP_HEAD_UU*)puData;
+    DLL_ENCLIB_DATA Decry_Data;
+    memset(&Decry_Data, 0x00, sizeof(DLL_ENCLIB_DATA));
 
     if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
     {
@@ -1624,7 +1862,7 @@ int IDP_UCHeaderFun(UINT8 *puData)
             g_PdpUBuf.uDPF      = puUPHdr->p_PdpNcHdr.uDPF;
             g_PdpUBuf.uBF       = puUPHdr->p_PdpNcHdr.uBF;
             g_PdpUBuf.uSAP      = puUPHdr->p_PdpNcHdr.uSAP;
-            g_PdpUBuf.uBLOCKNum = puUPHdr->p_PdpNcHdr.uBF;
+            g_PdpUBuf.uBLOCKNum = puUPHdr->p_PdpNcHdr.uBF-g_DllGlobalCfg.auPI;
             g_PdpUBuf.uState    = PDP_STATE_FIRST;
             g_PdpUBuf.uDEI      = puUPHdr->p_PdpNcHdr.uDEI;
             g_PdpUBuf.uBLOCKCnt = 0;
@@ -1645,7 +1883,7 @@ int IDP_UCHeaderFun(UINT8 *puData)
             g_PdpUBuf.uDPF      = puUPHdr->d_PdpNcHdr.uDPF;
             g_PdpUBuf.uBF       = puUPHdr->d_PdpNcHdr.uBF;
             g_PdpUBuf.uSAP      = puUPHdr->d_PdpNcHdr.uSAP;
-            g_PdpUBuf.uBLOCKNum = puUPHdr->d_PdpNcHdr.uBF;
+            g_PdpUBuf.uBLOCKNum = puUPHdr->d_PdpNcHdr.uBF-g_DllGlobalCfg.auPI;
             g_PdpUBuf.uState    = PDP_STATE_FIRST;
             g_PdpUBuf.uPOC      = puUPHdr->d_PdpNcHdr.uPOCH<<4 | puUPHdr->d_PdpNcHdr.uPOCL;
             g_PdpUBuf.uBLOCKCnt = 0;
@@ -1660,7 +1898,23 @@ int IDP_UCHeaderFun(UINT8 *puData)
         }
 
     }
-
+    if(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_BASE)//基本加密需要在(U)C_HEAD初始化加密库，高级加密需要在EHEAD初始化加密库
+    {
+        memcpy(Decry_Data.EHead,puData,DATA_HEADER_LEN);
+        Decry_Data.Type= TYPE_EHEAD;
+        int ret=DecryptFunc_Data(&Decry_Data);
+        if(ret==0)
+        {
+            memcpy(g_PdpUBuf.auHead[1],Decry_Data.EHead,DATA_HEADER_LEN);
+            LOG_WARNING(s_LogMsgId,"[DLL][%s][ENCRYPT_HYT_BASE][Decry_Data Init OK]", _F_);
+            LOG_PrintM(s_LogMsgId,Decry_Data.EHead,DATA_HEADER_LEN);
+        }
+        else
+        {
+            LOG_WARNING(s_LogMsgId,"[DLL][%s][ENCRYPT_HYT_BASE][Decry_Data Init Fail]", _F_);
+            return ERR;
+        }
+    }
     return NO_ERR;
 }
 
@@ -1688,12 +1942,12 @@ int IDP_CHeaderFun(UINT8 *puData)
 
     if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
     {
-        if (0x01 == puUPHdr->p_Pdp_CHdr.uFMF && 0x03 == puUPHdr->p_Pdp_CHdr.uSAP)
+        if (0x01 == puUPHdr->p_Pdp_CHdr.uFMF && ((0x03 == puUPHdr->p_Pdp_CHdr.uSAP)||(0x0b == puUPHdr->p_Pdp_CHdr.uSAP)))
         {
             g_PdpUBuf.uDPF      = puUPHdr->p_Pdp_CHdr.uDPF;
             g_PdpUBuf.uBF       = puUPHdr->p_Pdp_CHdr.uBF;
             g_PdpUBuf.uSAP      = puUPHdr->p_Pdp_CHdr.uSAP;
-            g_PdpUBuf.uBLOCKNum = puUPHdr->p_Pdp_CHdr.uBF;
+            g_PdpUBuf.uBLOCKNum = puUPHdr->p_Pdp_CHdr.uBF-g_DllGlobalCfg.auPI;
             g_PdpUBuf.uState    = PDP_STATE_FIRST;
             g_PdpUBuf.uDEI      = puUPHdr->p_Pdp_CHdr.uDEI;
             g_PdpUBuf.uNS       = puUPHdr->p_Pdp_CHdr.uNS;
@@ -1712,12 +1966,12 @@ int IDP_CHeaderFun(UINT8 *puData)
     }
     else
     {
-        if (0x01 == puUPHdr->d_PdpNcHdr.uF && 0x03 == puUPHdr->d_Pdp_CHdr.uSAP)
+        if (0x01 == puUPHdr->d_PdpNcHdr.uF && ((0x03 == puUPHdr->d_Pdp_CHdr.uSAP)||(0x09 == puUPHdr->d_Pdp_CHdr.uSAP)))
         {
             g_PdpUBuf.uDPF      = puUPHdr->d_Pdp_CHdr.uDPF;
             g_PdpUBuf.uBF       = puUPHdr->d_Pdp_CHdr.uBF;
             g_PdpUBuf.uSAP      = puUPHdr->d_Pdp_CHdr.uSAP;
-            g_PdpUBuf.uBLOCKNum = puUPHdr->d_Pdp_CHdr.uBF;
+            g_PdpUBuf.uBLOCKNum = puUPHdr->d_Pdp_CHdr.uBF-g_DllGlobalCfg.auPI;
             g_PdpUBuf.uState    = PDP_STATE_FIRST;
             g_PdpUBuf.uPOC      = puUPHdr->d_Pdp_CHdr.uPOCH<<4 | puUPHdr->d_Pdp_CHdr.uPOCL;
             g_PdpUBuf.uNS       = puUPHdr->d_Pdp_CHdr.uNS;
@@ -1772,7 +2026,7 @@ int IDP_REHeaderFun(UINT8 *puData)
 
     if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
     {
-        if (0 == puUPHdr->p_PdpReHdr.uA && 3 == puUPHdr->p_PdpReHdr.uSAP && 0 == puUPHdr->p_PdpReHdr.uBF)
+        if (0 == puUPHdr->p_PdpReHdr.uA && ((3 == puUPHdr->p_PdpReHdr.uSAP)||(11 == puUPHdr->p_PdpReHdr.uSAP)) && 0 == puUPHdr->p_PdpReHdr.uBF)
         {
             if (0 == puUPHdr->p_PdpReHdr.uCLAS && 1 == puUPHdr->p_PdpReHdr.uTYPE)  // NS 的所有数据帧全部接收
             {
@@ -1797,6 +2051,7 @@ int IDP_REHeaderFun(UINT8 *puData)
     }
     else
     {
+        LOG_DEBUG(s_LogMsgId,"[DLL][%s][DMR] Response header", _F_);
     }
 
     return NO_ERR;
@@ -1821,6 +2076,8 @@ int IDP_DataHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
     UINT8 *puData = pDataLink->PayLoad;
     PDP_HEAD_UU *puUPHdr = (PDP_HEAD_UU *)puData;
+    DLL_ENCLIB_DATA Detrypt_Data;
+    memset(&Detrypt_Data, 0x00, sizeof(DLL_ENCLIB_DATA));
 
     DstChecksum = ALG_Crc16(puData, DATA_HEADER_LEN);
 
@@ -1840,8 +2097,11 @@ int IDP_DataHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         LOG_WARNING(s_LogMsgId,"[DLL][%s] Dataheader CRC Err(DPF:%d)", _F_, puUPHdr->d_PdpNcHdr.uDPF);
         return ERR;
     }
-    memset(&g_PdpUBuf, 0, sizeof(PDP_UT));
-
+    if((puUPHdr->d_PdpNcHdr.uDPF != DPF_PDT_E2E_ENCRYPT)&&(puUPHdr->d_PdpNcHdr.uDPF != DPF_PROP_DATA_PACKET))
+    {
+        //LOG_WARNING(s_LogMsgId,"[DLL][%s] Clear g_PdpUBuf,puUPHdr->d_PdpNcHdr.uDPF=%d", _F_,puUPHdr->d_PdpNcHdr.uDPF);
+        memset(&g_PdpUBuf, 0, sizeof(PDP_UT));
+    }
     switch (puUPHdr->d_PdpNcHdr.uDPF)
     {
         case DPF_UNCONFIRM_PACKET:  // 无确认数据分组
@@ -1852,28 +2112,31 @@ int IDP_DataHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 LOG_WARNING(s_LogMsgId,"[DLL][%s] Data Just a single U_HEAD", _F_);
                 return NO_ERR;
             }
-            else if (6 < puUPHdr->d_PdpNcHdr.uBF)
+            else
             {
-                LOG_WARNING(s_LogMsgId,"[DLL][%s] U_Data length over range", _F_);
-                return NO_ERR;
+                if ((6+g_DllGlobalCfg.auPI) < puUPHdr->d_PdpNcHdr.uBF)
+                {
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s] U_Data length = %d over range", _F_,puUPHdr->d_PdpNcHdr.uBF);
+                    return NO_ERR;
+                }
             }
 
-            IDP_RelayLinkData(pvInfData, RevFrqNo, S_U_HDR);
+            IDP_RelayLinkData(pvInfData, RevFrqNo, S_U_HDR);//组包+发送
             IDP_UCHeaderFun(puData);
             break;
         }
         case DPF_CONFIRM_PACKET:  // confirm, 有确认数据分组
         {
-            if (2 == puUPHdr->p_Pdp_CHdr.uBF && 0xff == uGpsFlag)
+            if ((2+g_DllGlobalCfg.auPI) == puUPHdr->p_Pdp_CHdr.uBF && 0xff == uGpsFlag)//下行分组数据头转发
             {
                 uGpsFlag = GPS_PRE;
                 IDP_CHeaderFun(puData);
                 IDP_RelayLinkData(pvInfData, RevFrqNo, S_C_HDR);
 
                 DLL_SetTimer(CALL_DATA_D, 1000);        //定时1s
-                return NO_ERR;
+                //return NO_ERR;
             }
-            else if (3 == puUPHdr->p_Pdp_CHdr.uBF && GPS_REQ == uGpsFlag)
+            else if ((3+g_DllGlobalCfg.auPI) == puUPHdr->p_Pdp_CHdr.uBF && GPS_REQ == uGpsFlag)//上行分组数据头不进行转发
             {
                 uGpsFlag = GPS_ACK;
                 IDP_CHeaderFun(puData);
@@ -1881,6 +2144,23 @@ int IDP_DataHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             else
             {
                 LOG_WARNING(s_LogMsgId,"[DLL][%s] DataHdr GpsFlag %x", _F_, uGpsFlag);
+                break;
+            }
+
+            if(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_BASE)
+            {
+                memcpy(Detrypt_Data.EHead,puData,DATA_HEADER_LEN);
+                Detrypt_Data.Type= TYPE_EHEAD;
+                int ret=DecryptFunc_Data(&Detrypt_Data);
+                if(ret==0)
+                {
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s][ENCRYPT_HYT_BASE][Decryption Init OK][C_HEAD]", _F_);
+                }
+                else
+                {
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s][ENCRYPT_HYT_BASE][Decryption Init Fail]", _F_);
+                    return ERR;
+                }
             }
             break;
         }
@@ -1889,13 +2169,48 @@ int IDP_DataHeaderFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             IDP_DSDHeaderFun(puData);
             break;
         }
-        case DPF_RESPONSE_PACKET:    // Response, 相应分组(PDT常规使用)
+        case DPF_RESPONSE_PACKET:    // Response, 响应头
         {
             IDP_REHeaderFun(puData);
             break;
         }
-        case DPF_UDT_PACKET:
+        case DPF_PDT_E2E_ENCRYPT:
         case DPF_PROP_DATA_PACKET:
+        //case DPF_E2E_NVOC_UNCONFIRM_PACKET:
+        //case DPF_E2E_NVOC_CONFIRM_PACKET://处理加密数据头EHEAD
+        {
+            if((uGpsFlag==0xff)||(uGpsFlag==GPS_PRE)) //1/2分组数据EHEAD或3/4下发的EHEAD请求
+            {
+                IDP_RelayLinkData(pvInfData, RevFrqNo, S_E_HDR);
+            }
+            else if(uGpsFlag==GPS_ACK)//终端上行的EHEAD
+            {
+                LOG_DEBUG(s_LogMsgId,"[DLL][%s] Rcv Ehead . uGpsFlag=%d", _F_,uGpsFlag);
+            }
+            else
+            {
+                LOG_ERROR(s_LogMsgId,"[DLL][%s] Rcv Ehead Error. uGpsFlag=%d", _F_,uGpsFlag);
+                break;
+            }
+
+            if((g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_ENHA)||(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_DMRA))
+            {
+                memcpy(Detrypt_Data.EHead,puData,DATA_HEADER_LEN);
+                Detrypt_Data.Type= TYPE_EHEAD;
+                int ret=DecryptFunc_Data(&Detrypt_Data);
+                if(ret==0)
+                {
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s][High Encryption][E_HEAD][Decry Init OK]", _F_);
+                }
+                else
+                {
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s][High Encryption][E_HEAD][Decry Init Fail]", _F_);
+                    return ERR;
+                }
+            }
+            break;
+        }
+        case DPF_UDT_PACKET:
         case DPF_RAW_SD_PACKET:
         {
             break;
@@ -1932,12 +2247,14 @@ int IDP_R12PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     PDP_DATA_BLOCK_UU* puUPData = (PDP_DATA_BLOCK_UU*)g_PdpUBuf.auData;
     DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
     R12_UU *puD12Data = (R12_UU *)(pDataLink->PayLoad);
+    DLL_ENCLIB_DATA Decry_Data;
+    memset(&Decry_Data, 0x00, sizeof(DLL_ENCLIB_DATA));
 
     if (DPF_UNCONFIRM_PACKET == g_PdpUBuf.uDPF)
     {
         IDP_RelayLinkData(pvInfData, RevFrqNo, S_DATA_1_2);
 
-        memcpy(puUPData->tPdpR12NcBlk.auData[g_PdpUBuf.uBLOCKCnt], puD12Data->tR12NcData.auData, R12_NC_DATA_ULEN);
+        memcpy(puUPData->tPdpR12NcBlk.auData[g_PdpUBuf.uBLOCKCnt], puD12Data->tR12NcData.auData, R12_NC_DATA_ULEN);//攒包做整体校验
         IDP_WriteFlag(g_PdpUBuf.auResData, g_PdpUBuf.uBLOCKCnt, 1);
 
         g_PdpUBuf.uDataType = DT_R_1_2_DATA;
@@ -1952,7 +2269,7 @@ int IDP_R12PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                      (puD12Data->tR12NcLData.auRV[1] << 8)  |
                      (puD12Data->tR12NcLData.auRV[0]);
 
-            if (IDP_CheckFlag(g_PdpUBuf.auResData, 0, g_PdpUBuf.uBLOCKNum - 1))
+            if (IDP_CheckFlag(g_PdpUBuf.auResData, 0, g_PdpUBuf.uBLOCKNum - 1))//中间丢包不作任何处理
             {
                 if (u4CRCA == u4CRCB)
                 {
@@ -1960,7 +2277,7 @@ int IDP_R12PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                     ptCclData->MsgType = pDataLink->MsgType;
                     ptCclData->FrmType = pDataLink->FrmType;
                     ptCclData->DataType = CT_PACKET_DATA;
-
+                    //计算实际的数据长度
                     if (PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
                     {
                         Restat = DetectEndPattern(&g_PdpUBuf, &(ptCclData->DataLen));
@@ -1976,6 +2293,36 @@ int IDP_R12PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
                     memcpy(ptCclData->DstId, g_PdpUBuf.uDstId, 3);
                     memcpy(ptCclData->SrcId, g_PdpUBuf.uSrcId, 3);
+
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s][Before][Admin Data:]", _F_);
+                    LOG_PrintM(s_LogMsgId,g_PdpUBuf.auData,ptCclData->DataLen);
+
+                    if(g_DllGlobalCfg.auPI==1)
+                    {
+                        if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
+                        {
+                            Decry_Data.Data=g_PdpUBuf.auData+5;
+                            Decry_Data.DataLen=ptCclData->DataLen-5;
+                        }
+                        else
+                        {
+                            Decry_Data.Data=g_PdpUBuf.auData;
+                            Decry_Data.DataLen=ptCclData->DataLen;
+                        }
+                        Decry_Data.Type= TYPE_DATA;
+                        int ret=DecryptFunc_Data(&Decry_Data);
+                        if(ret==0)
+                        {
+                            LOG_WARNING(s_LogMsgId,"[DLL][%s][After][Admin Data:]", _F_);
+                            LOG_PrintM(s_LogMsgId,g_PdpUBuf.auData,ptCclData->DataLen);
+                        }
+                        else
+                        {
+                            LOG_WARNING(s_LogMsgId,"[DLL][%s] Data Decryption Fail", _F_);
+                            return ERR;
+                        }
+                    }
+
                     memcpy(ptCclData->PayLoad, g_PdpUBuf.auData, ptCclData->DataLen);
                     LOG_DEBUG(s_LogMsgId,"[DLL][%s] ShortMessage: SrcId:%2x %2x %2x DstId:%2x %2x %2x datalen:%d",
                             _F_,
@@ -2005,7 +2352,7 @@ int IDP_R12PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     }
     else
     {
-        LOG_ERROR(s_LogMsgId,"[DLL][%s] R12Data Undefined DPF type", _F_);
+        LOG_ERROR(s_LogMsgId,"[DLL][%s] R12Data Undefined DPF type %d", _F_,g_PdpUBuf.uDPF);
     }
 
     return NO_ERR;
@@ -2083,7 +2430,7 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         {
             memcpy(puUPData->tPdpR34CBlk.auData[pu34Data->tR34CData.uDBSN], pu34Data->tR34CData.auData, R34_C_DATA_DLEN-2);
             IDP_WriteFlag(g_PdpUBuf.auResData, pu34Data->tR34CData.uDBSN, 1);
-            if (GPS_PRE == uGpsFlag)
+            if (GPS_PRE == uGpsFlag)//解析是下行的3/4数据才转发，上行不进行转发
             {
                 ODP_144to196bptc(r34Data, pvInfData->tDataLink[RevFrqNo].PayLoad);
                 IDP_RelayLinkData(pvInfData, RevFrqNo, S_DATA_3_4);
@@ -2101,32 +2448,46 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         if (PDP_STATE_FIRST == g_PdpUBuf.uState)
         {
             g_PdpUBuf.uBLOCKCnt++;
-
+            //包个数够了或者索引够了(中间丢包，体现在错误图样上)
             if ((g_PdpUBuf.uBLOCKNum <= g_PdpUBuf.uBLOCKCnt) || ((g_PdpUBuf.uBLOCKNum -1) == pu34Data->tR34CData.uDBSN))
             {
-            //修复重传机制，失败清除原状态
-                if(g_PdpUBuf.ucErrDBSNCnt>0)//本次失败
+                //修复重传机制，失败清除原状态
+                //需要之前的C_HEAD数据包个数来区分是否NAS的数据还是MS的数据，进而进行分别处理
+                //            g_PdpUBuf.uBF  依据此值进行修改
+                if(g_PdpUBuf.uBLOCKNum==3)//说明之前的C_HEAD是终端上行的,同时随之而来的3/4数据也是终端上行的,考虑改成blocknum
                 {
-                    if(auGpsRetryCnt==1)//两次都失败
+                    if(g_PdpUBuf.ucErrDBSNCnt>0)//本次失败
                     {
+                        if(auGpsRetryCnt==1)//两次都失败
+                        {
+                            g_PdpUBuf.ucErrDBSNCnt=0;
+                            auGpsRetryCnt=0;
+
+                            LOG_WARNING(s_LogMsgId,"[DLL][Ms_Gps Upload] R34_C_DATA Two Times Error [Final Fail]");
+                        }
+                        else //再给予一次机会，清除之前状态,回到等待终端相应并上报数据状态
+                        {
+                            auGpsRetryCnt=1;
+                            uGpsFlag = GPS_REQ;
+                            DLL_SetTimer(CALL_DATA_D, 4000);        //定时4s
+
+                            LOG_WARNING(s_LogMsgId,"[DLL][Ms_Gps Upload] R34_C_DATA %d th Times Error [Retry]",auGpsRetryCnt);
+                            return ERR;
+                        }
+                    }
+                    else//成功，单包校验通过
+                    {
+                        LOG_WARNING(s_LogMsgId,"[DLL][Ms_Gps Upload] R34_C_DATA Success Times:%d th",1+auGpsRetryCnt);
                         g_PdpUBuf.ucErrDBSNCnt=0;
                         auGpsRetryCnt=0;
-
-                        LOG_WARNING(s_LogMsgId,"[DLL] R34_C_DATA Two Times Error [Final Fail]");
-                    }
-                    else //再给予一次机会，清除之前状态,回到等待终端相应并上报数据状态
-                    {
-                        auGpsRetryCnt=1;
-                        uGpsFlag = GPS_REQ;
-                        DLL_SetTimer(CALL_DATA_D, 4000);        //定时4s
-
-                        LOG_WARNING(s_LogMsgId,"[DLL] R34_C_DATA %d th Times Error [Retry]",auGpsRetryCnt);
-                        return ERR;
                     }
                 }
-                else//成功，单包校验通过
+                else
                 {
-                    LOG_WARNING(s_LogMsgId,"[DLL] R34_C_DATA Success Times:%d th",1+auGpsRetryCnt);
+                    if(g_PdpUBuf.ucErrDBSNCnt>0)//Req失败
+                        LOG_WARNING(s_LogMsgId,"[DLL][%s] Ms_Gps Upload Req CRC Error for Every Bag, Error_Cnt=%d",_F_,g_PdpUBuf.ucErrDBSNCnt);
+                    else
+                        LOG_WARNING(s_LogMsgId,"[DLL][%s] Ms_Gps Upload Req CRC OK for Every Bag,Not for Whole Bag",_F_);
                     g_PdpUBuf.ucErrDBSNCnt=0;
                     auGpsRetryCnt=0;
                 }
@@ -2151,19 +2512,43 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                                 {
                                     if (*(Index+i) == 0x7f)
                                     {
-                                        break;
+                                        UINT8 total=0xff;
+                                        for(int j=i+1;j<(R34_C_DATA_DLEN-2);j++)
+                                        {
+                                            total=total & (*(Index+j));
+                                        }
+                                        if(total==0xff)
+                                        {
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            continue;
+                                        }
                                     }
                                 }
                                 DataLen = g_PdpUBuf.uBLOCKNum * (R34_C_DATA_DLEN-2) -4 -(R34_C_DATA_DLEN-2-i+12);
                             }
                             else if (g_PdpUBuf.uDEI == 1)
                             {
-                                Index = puUPData->tPdpR12NcBlk.auData[g_PdpUBuf.uBLOCKNum-1];
+                                Index = puUPData->tPdpR34CBlk.auData[g_PdpUBuf.uBLOCKNum-1];
                                 for (i = 0; i < (R34_C_DATA_DLEN-2); i++)
                                 {
                                     if (*(Index+i) == 0x7f)
                                     {
-                                        break;
+                                        UINT8 total=0xff;
+                                        for(int j=i+1;j<(R34_C_DATA_DLEN-2);j++)
+                                        {
+                                            total=total & (*(Index+j));
+                                        }
+                                        if(total==0xff)
+                                        {
+                                            break;
+                                        }
+                                        else
+                                        {
+                                            continue;
+                                        }
                                     }
                                 }
                                 DataLen = g_PdpUBuf.uBLOCKNum * (R34_C_DATA_DLEN-2) -4 -(12-i);
@@ -2176,12 +2561,14 @@ int IDP_R34PackDataFun(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                             {
                                 DataLen = g_PdpUBuf.uBLOCKNum * (R34_C_DATA_DLEN-2) -4;
                             }
+                            LOG_WARNING(s_LogMsgId,"[DLL][%s][PDT] g_PdpUBuf.uDEI=%d,DataLen=%d",_F_,g_PdpUBuf.uDEI,DataLen);
                         }
                         else
                         {
                             DataLen = g_PdpUBuf.uBLOCKNum * (R34_C_DATA_DLEN-2) -4 -g_PdpUBuf.uPOC;
+                            LOG_WARNING(s_LogMsgId,"[DLL][%s][DMR] uPOC=%d,DataLen=%d",_F_,g_PdpUBuf.uPOC,DataLen);
                         }
-
+                        //图样处理完毕，得出数据长度和数据内容
                         R34DataAnalyze(g_PdpUBuf.auData, DataLen);
 
                     }
@@ -2434,7 +2821,7 @@ int IDP_NasGpsReportFun(NAS_AI_PAYLOAD * pvNasData)
     memset(ptInfData,  0, sizeof(NAS_INF_DL_T));
     memset(&NasAiData, 0, sizeof(NAS_AI_PAYLOAD));
 
-    if ((OP_CODE_GET == pvNasData->op_code) && (g_DllGlobalCfg.auNodeId == pvNasData->dst_id))
+    if ((OP_CODE_GET == pvNasData->op_code) && (g_DllGlobalCfg.auNodeId == pvNasData->dst_id))//别的NAS查询本机NAS GPS数据
     {
         GpsDevData = (GPS_DEV_DATA_T *)(p_DllFpgaShm->GpsData);
 
@@ -2449,7 +2836,7 @@ int IDP_NasGpsReportFun(NAS_AI_PAYLOAD * pvNasData)
         GpsDevData->NMINF,
         GpsDevData->EMINF);
 
-        IDP_GpsDevToNas(GpsDevData, &GpsNasData);
+        IDP_GpsDevToNas(GpsDevData, &GpsNasData);//压缩
 
         NasAiData.cmd_code = CMD_CODE_GPS_REQUEST;
         NasAiData.nm_type = NM_TYPE_CENTER;
@@ -2458,7 +2845,7 @@ int IDP_NasGpsReportFun(NAS_AI_PAYLOAD * pvNasData)
         NasAiData.dst_id = pvNasData->src_id;
         memcpy(NasAiData.data, &GpsNasData, GPS_LEN);
         NasAiData.crc = ALG_Crc8((UINT8 *)&NasAiData, NM_DATA_LEN);
-        WaitFollowEnable(3000);
+        WaitFollowEnable(3000);//等待FPGA未锁定,低电平状态
         memset(ptInfData, 0, sizeof(NAS_INF_DL_T));
         CallingShootData(0xffffffff, tDllPrint->FrqSlt, DI_MSG_WLU, FT_VOICE_NO, DI_MSG_WLU, (NM_DATA_LEN+1), (UINT8 *)&NasAiData);
 //        ODP_PrintNasCmdOpLog(&NasAiData);  // by zhoudayuan
@@ -2504,7 +2891,7 @@ int IDP_NasStunFun(NAS_AI_PAYLOAD * pvNasData)
         p_DllFpgaShm->StunFlag[2] = (NAS_KILL_FLAG>>16)&0xff;
         p_DllFpgaShm->StunFlag[3] = (NAS_KILL_FLAG>>24)&0xff;
 
-        GenNasCclData(ptCclData, CT_STUN_RPT_NAS, g_DllGlobalCfg.auNodeId, pvNasData->src_id, 0, ptCclData->PayLoad);
+        GenNasCclData(ptCclData, CT_STUN_RPT_NAS, g_DllGlobalCfg.auNodeId, pvNasData->src_id, 0, ptCclData->PayLoad);//遥晕的主动上报，其他节点查询本节点会触发此流程
         IDP_SendCclData(ptCclData);
 
         NasAiData.cmd_code = CMD_CODE_STUN;
@@ -2526,7 +2913,7 @@ int IDP_NasStunFun(NAS_AI_PAYLOAD * pvNasData)
 
 
     }
-    else if (OP_CODE_SET_ACK == pvNasData->op_code && g_DllGlobalCfg.auNodeId == pvNasData->dst_id)
+    else if (OP_CODE_SET_ACK == pvNasData->op_code && g_DllGlobalCfg.auNodeId == pvNasData->dst_id)//本节点查询其他节点给的ACK回复，上报到本地中心
     {
         GenNasCclData(ptCclData, CT_STUN_ACK_NAS, pvNasData->dst_id, pvNasData->src_id, 0, ptCclData->PayLoad);
         IDP_SendCclData(ptCclData);
@@ -2884,10 +3271,18 @@ void IDP_RelayLinkData(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo, UINT8 SapType)
 }
 
 
-
-
-void GpsParseEmbLon(GPS_NAS_DATA_T *ptGpsData, UINT32 ulGpsEmb)
+/**
+ * @brief  生成GPS内嵌-精度
+ *
+ * @param [in]
+ * @param [in]
+ * @author  周大元
+ * @since
+ * @bug
+ */
+void GPS_ParseEmbLon(GPS_NAS_DATA_T *ptGpsData, UINT32 ulGpsEmb)
 {
+    char acbuf[30];
     int iGpsEmb;
     int iDegree, iMinLarge, iMinLittle;
     double dTmp;
@@ -2895,23 +3290,35 @@ void GpsParseEmbLon(GPS_NAS_DATA_T *ptGpsData, UINT32 ulGpsEmb)
     ulGpsEmb &= (1<<24) -1;
     iGpsEmb = (int)ulGpsEmb;
     dTmp = (double)(iGpsEmb/LON_RATIO);  // 得出GPS:DD.DD
-
-    printf("[%s:%d] Lon: dTmp=%f\n", _F_, __LINE__, dTmp);
+//    printf("[%s:%d] Lon: dTmp=%f\n", _F_, __LINE__, dTmp);
     iDegree = (int)dTmp;
     dTmp = (dTmp - iDegree)*60.0;
     iMinLarge = (int)dTmp;
     dTmp = (dTmp - iMinLarge)*10000.0;
     iMinLittle = (int)dTmp;
-
     ptGpsData->EDEG = iDegree;        //<8bit 经度     0~179
     ptGpsData->EMINmm = iMinLarge;    //<6bit 经分的整数部分 0~59
     ptGpsData->EMINF = iMinLittle;    //<14bit 经分的小数部分 0~9999
-    printf("[%s:%d] Lon: EW=[%u-%s], EDEG=%d, EMINmm=%d, EMINF=%d\n", _F_, __LINE__, ptGpsData->EW, g_acpLonStr[ptGpsData->EW%2], ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
+    // 暂时留着这个打印
+    snprintf(acbuf, sizeof(acbuf), "%u.%u,%u", ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
+    printf("[DLL:%s:%d] Lon:%s, EW=[%u-%s], EDEG=%d, EMINmm=%d, EMINF=%d\n", _F_, __LINE__, acbuf, ptGpsData->EW, g_apcLonStr[ptGpsData->EW%2], ptGpsData->EDEG, ptGpsData->EMINmm, ptGpsData->EMINF);
 }
 
 
-void GpsParseEmbLat(GPS_NAS_DATA_T *ptGpsData, UINT32 ulGpsEmb)
+
+
+/**
+ * @brief  生成GPS内嵌-纬度
+ *
+ * @param [in]
+ * @param [in]
+ * @author  周大元
+ * @since
+ * @bug
+ */
+void GPS_ParseEmbLat(GPS_NAS_DATA_T *ptGpsData, UINT32 ulGpsEmb)
 {
+    char acbuf[30];
     int iGpsEmb;
     int iDegree, iMinLarge, iMinLittle;
     double dTmp;
@@ -2919,7 +3326,7 @@ void GpsParseEmbLat(GPS_NAS_DATA_T *ptGpsData, UINT32 ulGpsEmb)
     ulGpsEmb &= (1<<LAT_BIT) -1;
     iGpsEmb = (int)ulGpsEmb;
     dTmp = (double)(iGpsEmb/LAT_RATIO);  // 得出GPS:DD.DD
-    printf("[%s:%d] Lat: dTmp=%f\n", _F_, __LINE__, dTmp);
+//    printf("[%s:%d] Lat: dTmp=%f\n", _F_, __LINE__, dTmp);
     iDegree = (int)dTmp;
     dTmp = (dTmp - iDegree)*60.0;
     iMinLarge = (int)dTmp;
@@ -2928,21 +3335,46 @@ void GpsParseEmbLat(GPS_NAS_DATA_T *ptGpsData, UINT32 ulGpsEmb)
     ptGpsData->NDEG = iDegree;      //<7bit 纬度    0~89
     ptGpsData->NMINmm = iMinLarge;  //<6bit 纬分的整数部分 0~59
     ptGpsData->NMINF = iMinLittle;  //<14bit 纬分的小数部分 0~9999
-    printf("[%s:%d] Lat: NS=[%u-%s], NDEG=%d, NMINmm=%d, NMINF=%d\n", _F_, __LINE__, ptGpsData->NS, g_acpLatStr[ptGpsData->NS%2], ptGpsData->NDEG, ptGpsData->NMINmm, ptGpsData->NMINF);
+    snprintf(acbuf, sizeof(acbuf), "%u.%u,%u", ptGpsData->NDEG, ptGpsData->NMINmm, ptGpsData->NMINF);
+    printf("[DLL:%s:%d] Lat:%s, NS=[%u-%s], NDEG=%d, NMINmm=%d, NMINF=%d\n", _F_, __LINE__, acbuf, ptGpsData->NS, g_apcLatStr[ptGpsData->NS%2], ptGpsData->NDEG, ptGpsData->NMINmm, ptGpsData->NMINF);
 }
 
 
 
-
-void GpsParseEmb(unsigned long ulEmbLon, unsigned long ulEmbLat, GPS_NAS_DATA_T *ptGpsNas)
+/**
+ * @brief  生成GPS内嵌
+ *
+ * @param [in]
+ * @param [in]
+ * @author  周大元
+ * @since
+ * @bug
+ */
+void GPS_ParseEmb_1(unsigned long ulEmbLon, unsigned long ulEmbLat, GPS_NAS_DATA_T *ptGpsNas)
 {
-    GpsParseEmbLon(ptGpsNas, ulEmbLon);
-    GpsParseEmbLat(ptGpsNas, ulEmbLat);
+    GPS_ParseEmbLon(ptGpsNas, ulEmbLon); // 解内嵌经度
+    GPS_ParseEmbLat(ptGpsNas, ulEmbLat); // 解内嵌纬度
 }
 
+/**
+ * @brief  生成GPS内嵌
+ *
+ * @param [OUT] ptGpsNas - GPS信息
+ * @param [in]  ptLcEmb  - 语音内嵌，通过该值计算出GPS信息
+ *                       - ptLcEmb ==> ptGpsNas
+ * @author  周大元
+ * @since
+ * @bug
+ */
+void GPS_ParseEmb(EMBBED_GPS_PDU *ptLcEmb, GPS_NAS_DATA_T *ptGpsNas)
+{
+    UINT32 ulEmbLon, ulEmbLat;
+    ulEmbLon = ptLcEmb->uLongitude[0] << 16 | ptLcEmb->uLongitude[1] << 8 | ptLcEmb->uLongitude[2] | ptLcEmb->uEW << 24;  // 获取经度 bit
+    ulEmbLat = ptLcEmb->uLatitude[0]  << 16 | ptLcEmb->uLatitude[1]  << 8 | ptLcEmb->uLatitude[2];  // 获取纬度 bit
+    GPS_ParseEmbLon(ptGpsNas, ulEmbLon);  // 解析内嵌经度
+    GPS_ParseEmbLat(ptGpsNas, ulEmbLat);  // 解析内嵌纬度
 
-
-
+}
 
 
 /**
@@ -2954,56 +3386,90 @@ void GpsParseEmb(unsigned long ulEmbLon, unsigned long ulEmbLat, GPS_NAS_DATA_T 
  * @since   trunk.00001
  * @bug
  */
-void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
+void INFVoiceProcess(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo)
 {
     UINT16 ReStatus;
-    UINT8 Lc_Tmp[12];
-    DATA_LINK_T *pDataLink = &(pvInfData->tDataLink[RevFrqNo]);
+    UINT16 KeyResult;
+    UINT8  uAlg_ID;
+    UINT8  uKey_ID;
+    UINT8  Lc_Tmp[12]={0};
+    DATA_LINK_T *ptDataLink = &(pvInfData->tDataLink[RevFrqNo]);
     EMBBED_GPS_PDU *ptEmbData = NULL;
-    NAS_PRE_LC_PDU *LcData = NULL;
-
-    // 包长度判断
-    if (pDataLink->DataLen != 27)
+    NAS_PRE_LC_PDU *ptLcData = NULL;
+    UINT8  uRet=NO_ERR;
+    UINT8  CheckId[27] = {0};
+    BOOL   ret=TRUE;
+    /*
+    ** 包长度判断
+    */ 
+    if (ptDataLink->DataLen != 27)
     {
-        LOG_WARNING(s_LogMsgId,"[DLL][%s][%d] voice datalen:%d error", _F_, __LINE__, pDataLink->DataLen);
+        LOG_WARNING(s_LogMsgId,"[DLL][%s][%d] voice datalen:%d error", _F_, __LINE__, ptDataLink->DataLen);
         return;
     }
-
-    // 色码判断
-    if (g_DllGlobalCfg.auMSCC != pDataLink->CC)
+    /*
+    ** 色码判断
+    */ 
+    if (g_DllGlobalCfg.auMSCC != ptDataLink->CC)
     {
-        LOG_WARNING(s_LogMsgId, "[DLL][%s][%d] voice CC: %d error", _F_,  __LINE__, pDataLink->CC);
-        if (!g_CcRightFlg || (tDllPrint->Ccerrsuperfrmcnt <= CCERR_SUPERFRM_COUNT))
+        LOG_WARNING(s_LogMsgId, "[DLL][%s][%d] voice CC: %d error", _F_,  __LINE__, ptDataLink->CC);
+        /* 
+        ** g_bCcRightFrmRcvFlg - 当收到色码不一样的语音帧时，
+        **                       当 g_bCcRightFrmRcvFlg=0 是首次， 则丢弃该帧，
+        **                       当 g_bCcRightFrmRcvFlg=1 说明是中间帧， 则需要记录错误的次数， 再进行判断
+        ** g_iCcErrSuperFrmCnt - 错误了多少个超帧, 预设值 [tDllPrint->CcErrSuperFrmCnt] 与其对比。
+        ** 
+        ** 如果是非首次，即收到干扰帧，如果小于预设定帧数，认为普通干扰不做处理，如果连续出现次数大于预设定数，则丢弃，
+        */
+        if (!g_bCcRightFrmRcvFlg || (tDllPrint->CcErrSuperFrmCnt <= g_iCcErrSuperFrmCnt))
         {
-            LOG_WARNING(s_LogMsgId, "[DLL][%s][%d] voice CC: %d error abandon: ERR_COUNT:%d, SUPERFRM_COUNT:%d, g_CcRightFlg=%d", _F_, __LINE__, pDataLink->CC, CC_ERR_COUNT, CCERR_SUPERFRM_COUNT, g_CcRightFlg);
+            LOG_WARNING(s_LogMsgId, "[DLL][%s][%d] voice CC: %d error abandon: ERR_COUNT:%d, SUPERFRM_COUNT:%d, g_bCcRightFrmRcvFlg=%d", 
+                    _F_, __LINE__, ptDataLink->CC, g_iCcErrFrmCnt, g_iCcErrSuperFrmCnt, g_bCcRightFrmRcvFlg);
             return;
         }
         else
         {
-            CC_ERR_COUNT ++;
-            if (6 == CC_ERR_COUNT)
+            g_iCcErrFrmCnt ++;
+            if (6 == g_iCcErrFrmCnt)
             {
-                CCERR_SUPERFRM_COUNT++;
-                CC_ERR_COUNT=0;
+                g_iCcErrSuperFrmCnt++;
+                g_iCcErrFrmCnt = 0;
             }
-            LOG_WARNING(s_LogMsgId,"[DLL][%s][%d] voice CC: %d error  ERR_COUNT:%d SUPERFRM_COUNT:%d", _F_, __LINE__, pDataLink->CC, CC_ERR_COUNT, CCERR_SUPERFRM_COUNT);
+            LOG_WARNING(s_LogMsgId,"[DLL][%s][%d] voice CC: %d error  ERR_COUNT:%d SUPERFRM_COUNT:%d", _F_, __LINE__, ptDataLink->CC, g_iCcErrFrmCnt, g_iCcErrSuperFrmCnt);
         }
     }
     else
     {
-        CC_ERR_COUNT=0;
-        CCERR_SUPERFRM_COUNT=0;
+        g_iCcErrFrmCnt = 0;
+        g_iCcErrSuperFrmCnt = 0;
     }
-    g_CcRightFlg=1;
+    g_bCcRightFrmRcvFlg = 1;
 
-    ErrRateVoiceTest(pDataLink, STATE_VOICE_RCV);
+    // 语音误码率测试-调试用-正常情况不执行
+    if (ptErrPrint->Voice == 1)
+    {
+        ErrRateVoiceTest(ptDataLink, SET_ERR_RCV);  // 设置接收语音帧(FRM-A...F)
+    }
 
-    switch (pDataLink->FrmType)
+    if (g_DllGlobalCfg.auPI == 1)  // 有语音上行重新定时计数清0
+    {
+        uWaitVoiceTimes=0;
+        if(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_DMRA)
+        {
+            memcpy(dmra_voice_tmp+27*(ptDataLink->FrmType-1), ptDataLink->PayLoad, 27);
+        }
+    }
+
+    switch (ptDataLink->FrmType)
     {
         case FT_VOICE_A:
         {
-            GenVoiceCclData(ptCclData, pDataLink);
-            IDP_SendCclData(ptCclData);
+            memset(&Later_PI_temp,0x00,sizeof(DMRA_PI_PDU));
+            uRet=GenVoiceCclData(ptCclData, ptDataLink);
+            if(!uRet)
+            {
+                IDP_SendCclData(ptCclData);
+            }
             break;
         }
         case FT_VOICE_B:
@@ -3011,29 +3477,30 @@ void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
         case FT_VOICE_D:
         case FT_VOICE_E:
         {
-            if (1 == pDataLink->LCSS)
+            if (1 == ptDataLink->LCSS)
             {
                 //B
-                memcpy(&g_DllGlobalCfg.auEmbInfo[0], pDataLink->EmbInfo, 4);
-                
+                memcpy(&g_DllGlobalCfg.auEmbInfo[0], ptDataLink->EmbInfo, 4);
+
             }
-            else if (2 == pDataLink->LCSS)
+            else if (2 == ptDataLink->LCSS)
             {
                 //E
-                memcpy(&g_DllGlobalCfg.auEmbInfo[12], pDataLink->EmbInfo, 4);
+                memcpy(&g_DllGlobalCfg.auEmbInfo[12], ptDataLink->EmbInfo, 4);
             }
-            else if (3 == pDataLink->LCSS)
+            else if (3 == ptDataLink->LCSS)
             {
                 //CD
                 if (3 == auLastLcss)
                 {
                     // 当第二次进入时，auLastLcss=3,  所以该位置为 D
-                    memcpy(&g_DllGlobalCfg.auEmbInfo[8], pDataLink->EmbInfo, 4);
+                    memcpy(&g_DllGlobalCfg.auEmbInfo[8], ptDataLink->EmbInfo, 4);
+                    auLastPiFlag=auPiFlag;
                 }
                 else if (1 == auLastLcss)
                 {
                     // 当第一次进入时，auLastLcss=1,  所以该位置为 C
-                    memcpy(&g_DllGlobalCfg.auEmbInfo[4], pDataLink->EmbInfo, 4);
+                    memcpy(&g_DllGlobalCfg.auEmbInfo[4], ptDataLink->EmbInfo, 4);
                 }
                 else
                 {
@@ -3045,101 +3512,190 @@ void INFVoiceProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
                 ; // do nothing
             }
 
-            auLastLcss = pDataLink->LCSS;
+            auLastLcss = ptDataLink->LCSS;
 
-            if (FT_VOICE_E == pDataLink->FrmType)
+            if (FT_VOICE_E == ptDataLink->FrmType)
             {
                 EmbeddedDec(g_DllGlobalCfg.auEmbInfo, Lc_Tmp, &ReStatus);  // auEmbInfo ==> Lc_Tmp
                 if (NO_ERR != ReStatus)
                 {
-                    LOG_ERROR(s_LogMsgId,"[DLL][%s] voice embedded_lc_dec error",_F_);
+                    LOG_ERROR(s_LogMsgId,"[DLL][%s] Voice EmbeddedDec error,PI=%d",_F_,ptDataLink->PI);//不处理
                 }
                 else
                 {
-                    ptEmbData = (EMBBED_GPS_PDU *)Lc_Tmp;
-                    if (0 == ptEmbData->uFLCO)     // lc 数据
+                    if(ptDataLink->PI==1)//基本加密PI值当成0处理,高级加密进入此分支
                     {
-                        LcData = (NAS_PRE_LC_PDU *)Lc_Tmp;
-                        //  不相等的情景:  迟入或没有收到 LC_HEADER
-                        if (0 != memcmp((char *)g_DllGlobalCfg.auUploadLC, (char *)Lc_Tmp, FLC_LEN))
+                        if(g_DllGlobalCfg.auPI==1)
                         {
-                            ErrRateVoiceTest(NULL, STATE_VOICE_HEADER);
-                            memcpy(g_DllGlobalCfg.auUploadLC, Lc_Tmp, FLC_LEN);
-                            LOG_WARNING(s_LogMsgId,"[DLL][%s] Lc change!!! Update Lc Info: ",_F_);
-                            LOG_PrintM(s_LogMsgId, g_DllGlobalCfg.auUploadLC, FLC_LEN);
+                            if(auPiFlag==0)//未初始化加密向量
+                            {
+                                if(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_ENHA)//Hytera高级加密
+                                {
+                                    //初始化加密向量函数
+                                    DLL_ENCLIB_VOICE Encryp_str;
+                                    HYTERA_PI_PDU_PDT *Later_PI=(HYTERA_PI_PDU_PDT*)Encryp_str.PIInfo;
+                                    memset(&Encryp_str, 0x00, sizeof(DLL_ENCLIB_VOICE));
+                                    memcpy(Encryp_str.PIInfo,Lc_Tmp,FLC_LEN);
+                                    Later_PI->uChechSum=_PI_CheckSum(&Encryp_str);
+                                    Encryp_str.FrameNum = VOICE_PI_FRAME;
+                                    Encryp_str.ValidFlag = VALID;
+                                    DecryptFunc_Voice(&Encryp_str);//PI调用解码初始化向量函数
+                                    auPiFlag=1;
+                                    LOG_DEBUG(s_LogMsgId,"[DLL][%s][Hytera Hight Encryption] Not Rcv PI_Head,Enter Later",_F_);
+                                }
+                                else//基本加密
+                                {
+                                    LOG_ERROR(s_LogMsgId,"[DLL][%s] Rcv Voice_Emb_PI, But NAS is not Hight Encryption",_F_);
+                                }
+                            }
+                            else
+                            {
+                                //已初始化过加密向量，不做处理
+                            }
+                        }
+                        else
+                        {
+                            LOG_ERROR(s_LogMsgId,"[DLL][%s] Rcv Voice_Emb_PI, But NAS is not Encryption",_F_);
+                        }
+                    }
+                    else//处理LC
+                    {
+                        ptEmbData = (EMBBED_GPS_PDU *)Lc_Tmp;
+                        if (FLCO_HDR == ptEmbData->uFLCO)     // lc 数据
+                        {
+                            ptLcData = (NAS_PRE_LC_PDU *)Lc_Tmp;
+                            //  不相等的情景:  迟入或没有收到 LC_HEADER
+                            if (0 != memcmp((char *)g_DllGlobalCfg.auUploadLC, (char *)Lc_Tmp, FLC_LEN))
+                            {
+                                if (ptErrPrint->Voice == 1)
+                                {
+                                    ErrRateVoiceTest(NULL, SET_ERR_HDR);
+                                }
+                                memcpy(g_DllGlobalCfg.auUploadLC, Lc_Tmp, FLC_LEN);
+                                LOG_WARNING(s_LogMsgId,"[DLL][%s] Lc change!!! Update Lc Info: ",_F_);
+                                LOG_PrintM(s_LogMsgId, g_DllGlobalCfg.auUploadLC, FLC_LEN);
+                                memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
+                                ptCclData->MsgType = DI_MSG_DATA;
+                                ptCclData->FrmType = FT_VOICE_NO;
+                                ptCclData->DataType = CT_LC_HEADER;
+                                ptCclData->DataLen = FLC_LEN;
+                                ptCclData->Vari[0] = ptDataLink->Vari[0];
+                                ptCclData->Vari[1] = ptDataLink->Vari[1];
+                                ptCclData->Rssi[0] = ptDataLink->Rssi[0];
+                                ptCclData->Rssi[1] = ptDataLink->Rssi[1];
+                                ptCclData->Prohibit = ptDataLink->Prohibit;
+                                memcpy(ptCclData->SrcId, ptLcData->auSADDR, 3);
+                                memcpy(ptCclData->DstId, ptLcData->auTADDR, 3);
+                                memcpy(ptCclData->PayLoad, Lc_Tmp, FLC_LEN);
+                                EmbeddedEnc(g_DllGlobalCfg.auUploadLC, g_DllGlobalCfg.auEmbInfo);  // auUploadLC => auEmbInfo
+                                memcpy(p_DllFpgaShm->EmbInfo, g_DllGlobalCfg.auEmbInfo, 16);
+                                g_iCcErrFrmCnt = 0;
+                                g_iCcErrSuperFrmCnt = 0;
+                                IDP_SendCclData(ptCclData);
+                            }
+                        }
+                        else if (FLCO_GPS == ptEmbData->uFLCO)  // GPS数据
+                        {
+                            /*
+                            ** 1-GPS 内嵌中没有ID
+                            ** 2-暂时不判定GPS 是否锁定成功， 即 p_DllFpgaShm->GpsFlag
+                            */
+                            GPS_NAS_DATA_T tGpsSnd = {0};  // GPS信息-内嵌-DD,FF,FFFF
+                            GPS_NAS_DATA_T tGpsRcv = {0};   // GPS信息-自己-DD,FF,FFFF
+                            GPS_DEV_DATA_T *ptGpsShm = (GPS_DEV_DATA_T *)(p_DllFpgaShm->GpsData);  // 共享内存中本地的GPS信息
+                            GPS_ParseEmb(ptEmbData, &tGpsSnd);   // 获取语音内嵌中的GPS, ptEmbData  ==> tGpsSnd
+                            IDP_GpsDevToNas(ptGpsShm, &tGpsRcv);  // 获取本地GPS信息, ptGpsShm ==> tGpsRcv
+
+                            //---组包---
                             memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
                             ptCclData->MsgType = DI_MSG_DATA;
                             ptCclData->FrmType = FT_VOICE_NO;
-                            ptCclData->DataType = CT_LC_HEADER;
-                            ptCclData->DataLen = FLC_LEN;
-                            ptCclData->Vari[0] = pDataLink->Vari[0];
-                            ptCclData->Vari[1] = pDataLink->Vari[1];
-                            ptCclData->Rssi[0] = pDataLink->Rssi[0];
-                            ptCclData->Rssi[1] = pDataLink->Rssi[1];
-                            ptCclData->Prohibit = pDataLink->Prohibit;
-                            memcpy(ptCclData->SrcId, LcData->auSADDR, 3);
-                            memcpy(ptCclData->DstId, LcData->auTADDR, 3);
-                            memcpy(ptCclData->PayLoad, Lc_Tmp, FLC_LEN);
-                            EmbeddedEnc(g_DllGlobalCfg.auUploadLC, g_DllGlobalCfg.auEmbInfo);  // auUploadLC => auEmbInfo
-                            memcpy(p_DllFpgaShm->EmbInfo, g_DllGlobalCfg.auEmbInfo, 16);
-                            g_CcRightFlg=1;
-                            CC_ERR_COUNT=0;
-                            CCERR_SUPERFRM_COUNT=0;
+                            ptCclData->DataType = CT_VOICE_EMB_GPS;
+                            ptCclData->DataLen = GPS_LEN + GPS_LEN;  // 两段GPS信息(1-语音内嵌GPS, 2-本地GPS)
+                            ptCclData->Vari[0] = ptDataLink->Vari[0];
+                            ptCclData->Vari[1] = ptDataLink->Vari[1];
+                            ptCclData->Rssi[0] = ptDataLink->Rssi[0];
+                            ptCclData->Rssi[1] = ptDataLink->Rssi[1];
+                            ptCclData->Prohibit = ptDataLink->Prohibit;
+
+                            if (ptHdrID->ucEnableFlg == 1)  // 是否在 Header 接收到相关ID
+                            {
+                                memcpy(ptCclData->DstId, ptHdrID->aucCalledID, sizeof(ptHdrID->aucCalledID));    // 被叫ID, 组号
+                                memcpy(ptCclData->SrcId, ptHdrID->aucCallingID, sizeof(ptHdrID->aucCallingID));  // 主叫ID，Nas/Ms
+                            }
+
+                            memcpy(ptCclData->PayLoad, &tGpsSnd, GPS_LEN);  //  拷贝发射端GPS, 即从语音中解出的GPS信息
+                            memcpy(ptCclData->PayLoad + sizeof(GPS_NAS_DATA_T), &tGpsRcv, GPS_LEN);  // 拷贝发接收端GPS, 即自己本地的GPS信息
                             IDP_SendCclData(ptCclData);
                         }
-                    }
-                    else if (8 == ptEmbData->uFLCO)  // GPS数据
-                    {
-                        UINT32 ulTmpLon, ulTmpLat;
-                        GPS_NAS_DATA_T tGpsNas;
-                        ptEmbData = (EMBBED_GPS_PDU *)Lc_Tmp;
-                        ulTmpLon = ptEmbData->uLongitude[0] << 16 | ptEmbData->uLongitude[1] << 8 | ptEmbData->uLongitude[2]| ptEmbData->uEW << 24;
-                        ulTmpLat = ptEmbData->uLatitude[0] <<16   | ptEmbData->uLatitude[1] <<8   | ptEmbData->uLatitude[2];
-                        GpsParseEmb(ulTmpLon, ulTmpLat, &tGpsNas);
-                        memset(ptCclData, 0, sizeof(DLL_CCL_UL_T));
-                        ptCclData->MsgType = DI_MSG_DATA;
-                        ptCclData->FrmType = FT_VOICE_NO;
-                        ptCclData->DataType = CT_GPS_EMB_VOICE;
-                        ptCclData->DataLen = GPS_LEN;
-                        ptCclData->Vari[0] = pDataLink->Vari[0];
-                        ptCclData->Vari[1] = pDataLink->Vari[1];
-                        ptCclData->Rssi[0] = pDataLink->Rssi[0];
-                        ptCclData->Rssi[1] = pDataLink->Rssi[1];
-                        ptCclData->Prohibit = pDataLink->Prohibit;
-                        memcpy(ptCclData->PayLoad, &tGpsNas, FLC_LEN);
-                        IDP_SendCclData(ptCclData);
-
-#if 0
-//                      printf("[%s:%d] ptEmbData->uErrCode=%#x, ptEmbData->uEW=%#x, ptEmbData->uFID=%#x, ptEmbData->uPF=%#x, ptEmbData->uREV=%#x, ptEmbData->uREV1=%#x\n", _F_, __LINE__, ptEmbData->uErrCode, ptEmbData->uEW, ptEmbData->uFID, ptEmbData->uPF, ptEmbData->uREV, ptEmbData->uREV1);
-#endif
-                    }
-                    else
-                    {
-                        if (1 == tDllPrint->AIUp)
+                        else
                         {
-                            LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lc uFLCO unknow: %d",_F_, ptEmbData->uFLCO);
+                            if (1 == tDllPrint->AIUp)
+                            {
+                                LOG_DEBUG(s_LogMsgId,"[DLL][%s] Lc uFLCO unknow: %d",_F_, ptEmbData->uFLCO);
+                            }
                         }
                     }
                 }
             }
 
-            GenVoiceCclData(ptCclData, pDataLink);
-            IDP_SendCclData(ptCclData);
+            uRet=GenVoiceCclData(ptCclData, ptDataLink);
+            if(!uRet)
+            {
+                IDP_SendCclData(ptCclData);
+            }
             break;
         }
         case FT_VOICE_F:
         {
-            GenVoiceCclData(ptCclData, pDataLink);
-            IDP_SendCclData(ptCclData);
+            if((auPiFlag==0)&&(g_DllGlobalCfg.auEncryption_Type==ENCRYPT_DMRA)&&(0 != memcmp((char *)dmra_voice_tmp, (char *)CheckId, VOICE_LEN)))
+            {
+                //初始化加密向量函数
+                rc_dec((UINT16 *)ptDataLink->EmbInfo,&KeyResult);
+
+                uAlg_ID=(UINT8)(KeyResult & 0x0003);
+                uKey_ID=(UINT8)((KeyResult>>3) & 0x00ff);
+                LOG_WARNING(s_LogMsgId,"[DLL][%s] uAlg_ID=%d,uKey_ID=%d,KeyResult=%d ",_F_,uAlg_ID,uKey_ID,KeyResult);
+                Later_PI_temp.uAlgId=uAlg_ID;
+                Later_PI_temp.uKeyID=uKey_ID;
+                Later_PI_temp.uGI=1;
+                Later_PI_temp.uFID=MFID;
+
+                ret = _DMRA_GetParam(Later_PI_temp.auIV,Later_PI_temp.uAlgId);
+                if(ret)//语音提取偷比特成功
+                {
+                    DLL_ENCLIB_VOICE Encryp_str;
+                    memset(&Encryp_str, 0x00, sizeof(DLL_ENCLIB_VOICE));
+                    memcpy(Encryp_str.PIInfo,&Later_PI_temp,PI_LEN);
+                    Encryp_str.FrameNum = VOICE_PI_FRAME;
+                    Encryp_str.ValidFlag = VALID;
+                    DecryptFunc_Voice(&Encryp_str);//PI调用解码初始化向量函数
+                    auPiFlag=1;
+                    LOG_DEBUG(s_LogMsgId,"[DLL][%s][DMRA Hight Encryption] Not Rcv PI_Head,Enter Later",_F_);
+                }
+                else
+                {
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s] [DMRA] Steal Bit 72bit to 32bit error ", _F_);
+                }
+            }
+            memset(dmra_voice_tmp,0x00,6*VOICE_LEN);
+
+            uRet=GenVoiceCclData(ptCclData, ptDataLink);
+            if(!uRet)
+            {
+                IDP_SendCclData(ptCclData);
+            }
+            if(g_DllGlobalCfg.auPI==1)
+            {
+                DLL_SetTimer(CALL_VOICE_U,360);
+            }
             break;
         }
         default:
         {
             break;
         }
-
     }
-
 }
 
 
@@ -3171,20 +3727,39 @@ void INFDataProcess(NAS_INF_UL_T *pvInfData, UINT8 RevFrqNo)
     {
         case DT_PI_HEADER:
         {
+
+            if ((g_DllGlobalCfg.auPI == 0) || (g_DllGlobalCfg.auEncryption_Type==ENCRYPT_HYT_BASE))
+            {
+                LOG_ERROR(s_LogMsgId,"[DLL][%s] Rcv PI_Head.But Epack is not Encryption Mode or not Higt Encryption",_F_);
+                break;
+            }
+            else
+            {
+                IDP_PiHeaderFun(pvInfData, RevFrqNo);
+                auLastPiFlag=1;
+            }
             break;
         }
         case DT_LC_HEADER:
         {
-            ErrRateVoiceTest(NULL, STATE_VOICE_HEADER);
+            if (ptErrPrint->Voice == 1)
+            {
+                ErrRateVoiceTest(NULL, SET_ERR_HDR);
+            }
+            auPiFlag=0;
+            auLastPiFlag=0;
             g_BurstCnt = 0;
-            g_CcRightFlg=0;
-            CC_ERR_COUNT=0;
-            CCERR_SUPERFRM_COUNT=0;
+            g_bCcRightFrmRcvFlg = 0;
+            g_iCcErrFrmCnt = 0;
+            g_iCcErrSuperFrmCnt = 0;
             IDP_LcHeaderFun(pvInfData, RevFrqNo);
+            DLL_ClearTimer();
             break;
         }
         case DT_LC_TERMINATOR:
         {
+            auPiFlag=0;
+            auLastPiFlag=0;
             IDP_LcTerminatorFun(pvInfData, RevFrqNo);
             break;
         }
@@ -3263,14 +3838,7 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 
     u2CRC = ALG_Crc16(pDataLink->PayLoad, CSBK_LEN);
 
-    if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
-    {
         u2CRC = u2CRC ^ PDT_CRC_MASK_CSBK;
-    }
-    else
-    {
-        u2CRC = u2CRC ^ DMR_CRC_MASK_CSBK;
-    }
 
     AirCRC = ((UINT16)(pNegrBurst->Crc[0]) << 8) | pNegrBurst->Crc[1];
 
@@ -3293,7 +3861,7 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     }
 
     g_DllGlobalCfg.auNegrId1 = g_DllGlobalCfg.auNegrId1 | (0x0001 << pNegrBurst->NodeId);  // auNegrId1每个bit代表相应邻点是否存在标志
-    g_DllGlobalCfg.auNerInfo1[pNegrBurst->NodeId] = pNegrBurst->NegrId;  // 数据索引代表相应索引, 索引对饮的32bit数组元素即为该借点的邻点信息
+    g_DllGlobalCfg.auNerInfo1[pNegrBurst->NodeId] = pNegrBurst->NegrId;  // 数据索引代表相应索引, 索应对饮的32bit数组元素即为该借点的邻点信息
 
     if ((ptCFGShm->start_neighbor.val == 1) && (g_DllGlobalCfg.auNegrId1 != 0))
     {
@@ -3303,7 +3871,7 @@ void INFNearDataProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             g_DisconRecoverPrintFlg++;
             LOG_DEBUG(s_LogMsgId, "[DLL][%s] Discon Recover",  _F_);
         }
-        set_alarm_discon_switch(TURN_OFF);
+        SetDisconAlarm(TURN_OFF);
     }
     return;
 }
@@ -3358,6 +3926,7 @@ void INFNasProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     ** 广播: dst = src = 31
     ** 转发: dst != src
     */
+    //MS业务产生的广播: 邻点上报、MS_GPS_ACK、MS_KILL_ACK   MS_ENABLE_ACK
     if (pNasAiData->dst_id == pNasAiData->src_id && 31 == pNasAiData->dst_id)  // 广播
     {
         LOG_DEBUG(s_LogMsgId,"[DLL][%s] Nas data broadcast", _F_);
@@ -3383,12 +3952,13 @@ void INFNasProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
     // 断链告警恢复
     if ((ptCFGShm->start_neighbor.val == 1) && (g_discon_state == DISCON_HAPPEN))
     {
-        set_alarm_discon_switch(TURN_OFF);
+        SetDisconAlarm(TURN_OFF);
     }
 
 
     switch (pNasAiData->cmd_code)
     {
+        //本机节点有关的链路机消息
         case CMD_CODE_GPS_REQUEST:
         {
             IDP_NasGpsReportFun(pNasAiData);
@@ -3414,6 +3984,9 @@ void INFNasProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             IDP_NasNeighborQueryFun(pNasAiData);
             break;
         }
+        //本机节点有关的链路机消息结束
+
+        //广播消息开始
         case CMO_CODE_NER_REPORT:  // 邻点上报-主动
         {
             IDP_NasNegrReportFun(pNasAiData);
@@ -3434,6 +4007,8 @@ void INFNasProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
             IDP_NasMsEnableFun(pNasAiData);
             break;
         }
+        //广播消息结束
+        //对本节点操作的预载波只做打印，对其他点操作的NAS预载波前面已转发
         case CMO_CODE_NAS_PRE:
         {
             IDP_NasPre(pNasAiData);
@@ -3458,7 +4033,7 @@ void INFNasProcess(NAS_INF_UL_T * pvInfData, UINT8 RevFrqNo)
 void *INFUploadTask(void * p)
 {
     int RetSize;
-    int RecvBuf[INF_RECV_MAX];
+    int aiAiRcvBuf[INF_RECV_MAX];  // 数组-整形-空口-接收-Buf
     int ret;
     UINT8 Frq;
     NAS_INF_UL_T *pvInfData;
@@ -3471,27 +4046,66 @@ void *INFUploadTask(void * p)
 
     while(1)
     {
-        FD_ZERO(&fdsr);
-        FD_SET(INFSocket, &fdsr);
+        FD_ZERO(&fdsr);//将字符集清空
+        FD_SET(INFSocket, &fdsr);//将所要监控的socket 加入到fdsr集合中，将集合对应的比特位置1.
 
         tv.tv_sec = 5;
         tv.tv_usec = 0;
 
-        ret = select((INFSocket+1), &fdsr, NULL, NULL, &tv);
+        ret = select((INFSocket+1), &fdsr, NULL, NULL, &tv);//监控集合中置1比特位的socket.  其中范围在 0-socket+1范围内
+                                                            //如果fdsr集合为0的话，select会返回-1
+                                                            //如果tv时间内超时，则集合清0，返回ret=0
+                                                            //如果tv时间内接收到数据，则返回正数，当返回为正数时，表示已经准备好的描述符
+
+        /*select讲解
+
+        10         FD_ZERO(&readfds);
+        11         FD_SET(fd,&readfds);
+        12         tv.tv_sec=sec;
+        13         tv.tv_usec=usec;
+        14         select(fd+1,&readfds,NULL,NULL,&tv);
+        15         if(FD_ISSET(fd,&readfds))
+        16         {
+        17             if((n=recvfrom(fd,buf,buf_n,0,addr,len))>=0)
+
+        第10行将集合readfds清零，
+
+        第11行将我们关注的sock加入集合readfds中（置fd对应的bit为1），
+
+        第12和13行设置超时参数，
+
+        第14行以非阻塞的方式调用select，如果tv时间内有数据则返回并设置readfds中fd对应的bit位为1，如果tv时间内没有数据则返回并设置readfds中对应的bit位为0；
+
+        第15行FD_ISSET测试readfds中fd位有没有置1，如果置一则返回成功，否则失败
+
+        这里要强调两点：
+
+        第一：如果tv时间内没有数据到来，你还想继续等待N次，那么一定要注意重新设置readfds，因为它已经被select破坏了，如果不重新设置的话，你的select语句会返回-1，strerr时会打印出参数设置出错，主要是由于readfds中全部为零，select不知道该去监视哪个sock；
+
+        第二：重复等待时不光要注意重新设置readfds，同时还要注意重新设置一下tv的值，因为select同时也破坏了tv的值（select在返回时会改变tv，改变的公式是tv=tv-等待的时间，所以如果tv时间内没有数据到达的话，select返回时tv会变成0）。
+
+
+        select()调用返回处于就绪状态并且已经包含在fd_set结构中的描述字总数；如果超时则返回0；否则的话，返回SOCKET_ERROR错误，应用程序可通过WSAGetLastError获取相应错误代码。
+        当返回为-1时，所有描述符集清0。
+        当返回为0时，表示超时。
+        当返回为正数时，表示已经准备好的描述符数。
+        select（）返回后，在3个描述符集里，依旧是1的位就是准备好的描述符。这也就是为什么，每次用select后都要用FD_ISSET的原因。
+
+        */
 
         if (ret < 0)
         {
             LOG_ERROR(s_LogMsgId,"[DLL][%s] select error", _F_);
             continue;
         }
-        else if (ret == 0)
+        else if (ret == 0)//timeout
         {
             continue;
         }
 
         if (FD_ISSET(INFSocket, &fdsr))
         {
-            RetSize = recvfrom(INFSocket, RecvBuf, INF_RECV_MAX, 0, (struct sockaddr *)(&RecvAddr), &AddrSize);
+            RetSize = recvfrom(INFSocket, aiAiRcvBuf, INF_RECV_MAX, 0, (struct sockaddr *)(&RecvAddr), &AddrSize);
             if (RetSize < 0)
             {
                 LOG_ERROR(s_LogMsgId,"[DLL][%s] recvfrom <0 fail", _F_);
@@ -3504,20 +4118,20 @@ void *INFUploadTask(void * p)
                 continue;
             }
 
-            pvInfData = (NAS_INF_UL_T *)RecvBuf;
+            pvInfData = (NAS_INF_UL_T *)aiAiRcvBuf;
 
-            if (g_DllGlobalCfg.auStunFlag == NAS_KILL_FLAG || g_DllGlobalCfg.auKillFlag == NAS_KILL_FLAG)
+            if (g_DllGlobalCfg.auStunFlag == NAS_KILL_FLAG || g_DllGlobalCfg.auKillFlag == NAS_KILL_FLAG)  // 是否摇晕 or 摇毙
             {
-                if (0 > EnableNasGrep(pvInfData))
+                if (0 > EnableNasGrep(pvInfData))  // 遥晕遥毙的状态下只能处理NAS使能遥晕遥毙操作码
                 {
-                    LOG_WARNING(s_LogMsgId,"[DLL][%s] Nas is Stun", _F_);
+                    LOG_WARNING(s_LogMsgId,"[DLL][%s] Nas is Stuned or Killed", _F_);
                     continue;
                 }
             }
 
             if (tDllPrint->AIUp == 1)
             {
-                IDP_AiPrintf(pvInfData);
+                IDP_AiPrintf(pvInfData);  // 看打印
             }
 
             if (S_2 < pvInfData->SlotNum)
@@ -3539,23 +4153,23 @@ void *INFUploadTask(void * p)
 
                 switch (pvInfData->tDataLink[Frq].MsgType)
                 {
-                    case DI_MSG_VOICE:
+                    case DI_MSG_VOICE:  // 语音业务
                     {
                         g_BurstCnt = 0;
                         INFVoiceProcess(pvInfData, Frq);
                         break;
                     }
-                    case DI_MSG_DATA:
+                    case DI_MSG_DATA:  // 数据业务
                     {
                         INFDataProcess(pvInfData, Frq);
                         break;
                     }
-                    case DI_MSG_NEAR:
+                    case DI_MSG_NEAR:  // 邻点业务 [突发-接收-其他NAS]
                     {
-                        INFNearDataProcess(pvInfData, Frq);  // 邻点突发 idp 收集
+                        INFNearDataProcess(pvInfData, Frq);  // 1-收集邻点信息; 2-断链告警相关
                         break;
                     }
-                    case DI_MSG_WLU:
+                    case DI_MSG_WLU:  // 链路机业务
                     {
                         INFNasProcess(pvInfData, Frq);
                         break;

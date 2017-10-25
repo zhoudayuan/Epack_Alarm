@@ -104,8 +104,8 @@ typedef  struct _WEB_NM_DATA_ITEM {
 	 unsigned int   dev_power;
 	 unsigned int   dev_cc;
 	 unsigned int   terminal_cc;
-	 char   work_mode[10];
-	 char   vol_code[10];
+	 char   work_mode[50];
+	 char   vol_code[50];
 	 unsigned char   work_mode_2;
 	 unsigned char   vol_code_2;
 	 unsigned short locking_time;
@@ -212,6 +212,10 @@ typedef  struct _WEB_NM_DATA_ITEM {
 	 unsigned short  vol_energy_value;
 	 unsigned char   vol_packet_time;
 	 unsigned char   terminal_compatible;
+	 unsigned int    stop_transmit;
+	 unsigned char   device_language_switch;
+	 unsigned char   boot_mode_switch;
+	 unsigned char   reboot_strategy_switch;
 }__attribute__((packed,aligned(1)))WEB_NM_DATA_ITEM;
 
 
@@ -323,7 +327,9 @@ typedef struct _CENTER_DATA_STRUCT {
 	 unsigned char  alarm_display;
 	 unsigned char  dev_alarm_icon_show_switch[8];
 	 unsigned char  dev_alarm_word_show_switch[8];
-	 unsigned char  mic_reserve[10];
+	 unsigned char  version[5];
+	 unsigned char  dev_language_switch;
+	 unsigned char  mic_reserve[4];
 	
 	 char dev_ai_id[WEB_STRING_MAX_LENGTH];
 	 char current_group_id[WEB_STRING_MAX_LENGTH];
@@ -338,22 +344,71 @@ typedef  enum {
 	GET_FAIL_FLAG       = 4,
 	SET_SUCCESS_FLAG    = 5,
 	SET_FAIL_FLAG       = 6,
-	UPDATE_SUCCESS_FALG = 7,
-	UPDATE_FAIL_FLAG    = 8,
-	SET_CODE_SUCCESS    = 9,
-	SET_CODE_FAIL       = 10,
-	GET_VALIDATE_SUCCESS   = 11,
-	VALIDATE_FAIL   = 12,
-	SET_VALIDATE_SUCCESS   = 13,
-	REBOOT_VALIDATE_SUCCESS=14,
-	SET_CODE_VALIDATE_SUCCESS=15
-}OPERATE_FLAG;
+	UPDATE_DTB_SUCCESS_FALG = 7,
+	UPDATE_DTB_FAIL_FLAG    = 8,
+	UPDATE_RBF_SUCCESS_FALG = 9,
+	UPDATE_RBF_FAIL_FLAG    = 10,
+	UPDATE_UBOOT_SUCCESS_FALG = 11,
+	UPDATE_UBOOT_FAIL_FLAG    = 12,
+	UPDATE_APP_SUCCESS_FALG = 13,
+	UPDATE_APP_FAIL_FLAG    = 14,
+	UPDATE_RAM_SUCCESS_FALG = 15,
+	UPDATE_RAM_FAIL_FLAG    = 16,
+	UPDATE_ZIMAGE_SUCCESS_FALG = 17,
+	UPDATE_ZIMAGE_FAIL_FLAG    = 18,
+	SET_CODE_SUCCESS    = 19,
+	SET_CODE_FAIL       = 20,
+	GET_VALIDATE_SUCCESS   = 21,
+	VALIDATE_FAIL   = 22,
+	SET_VALIDATE_SUCCESS   = 23,
+	REBOOT_VALIDATE_SUCCESS=24,
+	SET_CODE_VALIDATE_SUCCESS=25,
+	OTHER_UPDATE_DTB_DOING=26,   
+	OTHER_UPDATE_RBF_DOING=27,   
+	OTHER_UPDATE_UBOOT_DOING=28,   
+	OTHER_UPDATE_APP_DOING=29,   
+	OTHER_UPDATE_RAM_DOING=30,   
+	OTHER_UPDATE_ZIMAGE_DOING=31, 
+	OTHER_READ_DOING=32, 
+	OTHER_WRITING_DOING=33,  
+	OTHER_REBOOT_DOING=34,   
+	OTHER_USER_INFO_DOING=35,
+	REBOOT_DTB_FAIL=36,
+	REBOOT_BOOT_FAIL=37,
+	REBOOT_RBF_FAIL=38,
+	REBOOT_RAM_FAIL=39,
+	REBOOT_ZIMAGE_FAIL=40,
+	FERQ_NOT_SAME=41,
+	FERQ_CHANNEL_ERROR=42
+}OPERATE_RESULT_FLAG;
+
+///////////////其它用户操作标志///////////////////
+typedef  enum {
+	NO_OPERATE_FLAG=0,
+	UPDATE_DTB_FLAG=1,
+	UPDATE_RBF_FLAG=2,
+	UPDATE_UBOOT_FLAG=3,
+	UPDATE_APP_FLAG=4,
+	UPDATE_RAM_FLAG=5,
+	UPDATE_ZIMAGE_FLAG=6,
+	READ_FLAG=7,
+	WRITE_FLAG=8,
+	REBOOT_FLAG=9,
+	USER_INFO_FLAG=10
+}WEB_OPERATE_FLAG;
+
 
 ///////////////工作模式（正常/工程）///////////////////
 typedef  enum {
 	NORMAL_MODE         = 0,
 	ENGINEER_MODE       = 1
 }WORK_MODE;
+
+///////////////升级结果///////////////////
+typedef  enum {
+	UPDATE_SUCCESS         = 0,
+	UPDATE_FAIL      	   = 1
+}UPDATE_RESULT;
 ///////////////升级文件类型///////////////////
 #define     UPDATE_LOADAPP     "loadapp.bin"
 #define     UPDATE_DTB         "soc_system_dtb.bin" 

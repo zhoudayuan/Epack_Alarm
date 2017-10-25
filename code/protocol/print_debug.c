@@ -42,7 +42,7 @@ FILE *g_fp_err_test;
 #define NER_CHECK_LOG_PATH   "NerCheckLog.log"
 FILE *g_fpNerCheckLog = NULL;
 
-UINT8  g_ErrVoiceState = ERR_VOICE_HEADER;
+UINT8  g_ErrVoiceState = WAIT_ERR_VOICE_HDR;
 
 //------------------------类型------------------------
 // table-0 sms-类型调试表--by zhoudayuan
@@ -301,13 +301,10 @@ unsigned short usDllDataTableLen = sizeof(atDllDataTable)/sizeof(atDllDataTable[
 // table-7 CSBKO 类型调试表
 T_TypePrint atCsbkoTable[] = {
     {PRE_CSBKO               ,    "Pre"      },    // 预载波
-//    {REQ_CSBKO_DMR           ,    "ReqDmr"   },    // Common Signalling Request CSBKO FOR DMR
     {REQ_CSBKO               ,    "Req"      },    // Common Signalling Request CSBKO
     {ACK_CSBKO               ,    "Ack"      },    // Common Signalling Answer Response CSBKO
     {ALARM_CSBKO             ,    "Alarm"    },    // Digital Alarm Service Request CSBKO
-//    {ALARM_CSBKO_DMR         ,    "AlarmDmr" },    // Digital Alarm Service Request CSBKO For DMR
-};                                                 
-
+};
 T_TypePrint *ptCsbkoTable = atCsbkoTable;
 unsigned short usCsbkoTableLen = sizeof(atCsbkoTable)/sizeof(atCsbkoTable[0]);
 
@@ -317,12 +314,7 @@ T_TypePrint atSsoTable[] = {
     {EN_RADIO_SSO            ,   "En"        },    // Radio Enable Service
     {DIS_RADIO_SSO           ,   "Dis"       },    // Radio Disable Service
 //    {DIGITAL_ALARM_SSO       ,   "Alarm"     },    // 该值暂定-Digital Alarm Service
-//    {DIGITAL_ALARM_SSO_DMR   ,   "AlarmDmr"  },    // 该值暂定-Digital Alarm Service FOR DMR
-//    {EN_RADIO_REV_DMR        ,   "EnDmr"     },    // Radio Enable Service for DMR
-//    {DIS_RADIO_REV_DMR       ,   "DisDmr"    },    // Radio Disable Service for DMR
-//    {EN_RADIO_REV_ACK_DMR    ,   "EnAckDmr"  },    // Radio Enable Service for DMR ACK
-//    {DIS_RADIO_REV_ACK_DMR   ,   "DisAckDmr" },    // Radio Disable Service for DMR ACK
-};                                                 
+};
 T_TypePrint *ptSsoTable = atSsoTable;
 unsigned short usSsoTableLen = sizeof(atSsoTable)/sizeof(atSsoTable[0]);
 
@@ -967,37 +959,74 @@ void PrintIDbyDec(unsigned char *src, unsigned char *dst)
 }
 
 
+
 /**
  * @brief  大端转小端，将源ID和目的ID以十进制打印出来，方便调试看
  * @author 周大元
  * @since
  * @bug
  */
-void SetIdDec2buf(unsigned char *src, unsigned char *dst, char *BufGet, unsigned int BufLen)
+void DLL_SetIdDec2buf(unsigned char *pucSrc, unsigned char *pucDst, char *OutBuf, unsigned int OutBufLen)
 {
-    unsigned char src_tmp[4];
-    unsigned char dst_tmp[4];
-    unsigned int  src_val;
-    unsigned int  dst_val;
+    unsigned char ucSrcTmp[4];
+    unsigned char ucDstTmp[4];
+    unsigned int  uiSrcVal;
+    unsigned int  uiDstVal;
 
-    if ((src[1]==0 && src[2]==0) || (dst[1]== 0 && dst[2]== 0))
+    if ((pucSrc[1]==0 && pucSrc[2]==0) || (pucDst[1]== 0 && pucDst[2]== 0))
     {
-        snprintf(BufGet, BufLen, "snd=%d->rcv=%d", src[0], dst[0]);
+        snprintf(OutBuf, OutBufLen, "snd=%d->rcv=%d", pucSrc[0], pucDst[0]);
     }
     else
     {
         // 转回小端模式
-        src_tmp[0] = src[2];
-        src_tmp[1] = src[1];
-        src_tmp[2] = src[0];
-        src_tmp[3] = '\0';
-        dst_tmp[0] = dst[2];
-        dst_tmp[1] = dst[1];
-        dst_tmp[2] = dst[0];
-        dst_tmp[3] = '\0';
-        memcpy(&src_val, src_tmp, sizeof(src_tmp));
-        memcpy(&dst_val, dst_tmp, sizeof(dst_tmp));
-        snprintf(BufGet, BufLen, "snd=%d->rcv=%d", src_val, dst_val);
+        ucSrcTmp[0] = pucSrc[2];
+        ucSrcTmp[1] = pucSrc[1];
+        ucSrcTmp[2] = pucSrc[0];
+        ucSrcTmp[3] = '\0';
+        ucDstTmp[0] = pucDst[2];
+        ucDstTmp[1] = pucDst[1];
+        ucDstTmp[2] = pucDst[0];
+        ucDstTmp[3] = '\0';
+        memcpy(&uiSrcVal, ucSrcTmp, sizeof(ucSrcTmp));
+        memcpy(&uiDstVal, ucDstTmp, sizeof(ucDstTmp));
+        snprintf(OutBuf, OutBufLen, "S:%d->R:%d", uiSrcVal, uiDstVal);
+    }
+    return ;
+}
+
+
+/**
+ * @brief  大端转小端，将源ID和目的ID以十进制打印出来，方便调试看
+ * @author 周大元
+ * @since
+ * @bug
+ */
+void SetIdDec2buf(unsigned char *pucSrc, unsigned char *pucDst, char *OutBuf, unsigned int OutBufLen)
+{
+    unsigned char ucSrcTmp[4];
+    unsigned char ucDstTmp[4];
+    unsigned int  uiSrcVal;
+    unsigned int  uiDstVal;
+
+    if ((pucSrc[1]==0 && pucSrc[2]==0) || (pucDst[1]== 0 && pucDst[2]== 0))
+    {
+        snprintf(OutBuf, OutBufLen, "S:%d->R:%d", pucSrc[0], pucDst[0]);
+    }
+    else
+    {
+        // 转回小端模式
+        ucSrcTmp[0] = pucSrc[2];
+        ucSrcTmp[1] = pucSrc[1];
+        ucSrcTmp[2] = pucSrc[0];
+        ucSrcTmp[3] = '\0';
+        ucDstTmp[0] = pucDst[2];
+        ucDstTmp[1] = pucDst[1];
+        ucDstTmp[2] = pucDst[0];
+        ucDstTmp[3] = '\0';
+        memcpy(&uiSrcVal, ucSrcTmp, sizeof(ucSrcTmp));
+        memcpy(&uiDstVal, ucDstTmp, sizeof(ucDstTmp));
+        snprintf(OutBuf, OutBufLen, "snd=%d->rcv=%d", uiSrcVal, uiDstVal);
     }
     return ;
 }
@@ -1032,10 +1061,6 @@ void test_err_voice_init()
     }
 }
 
-
-
-
-
 void test_err_voice_result()
 {
     int i;
@@ -1048,7 +1073,7 @@ void test_err_voice_result()
     LOG_DEBUG(s_LogMsgId, "[ERR][V][%s] Result:Frm=%d,SuperFrm=%d,bytes=%d,bits=%d", _F_,
         ptErrVoice->FrmCnt, ptErrVoice->FrmCnt/6, ptErrVoice->FrmCnt*27, ptErrVoice->FrmCnt*27*8);
 
-    // 每帧A-F 有多少误码
+    // 每帧A-F 有多少误码,最后一个超帧
     for (i = 0; i < FRM_F + 1;i++)
     {
         LOG_DEBUG(s_LogMsgId, "[ERR][V] %s ErrBits:%d",  ptErrVoice->pErrFrm[i].FrmNameStr, ptErrVoice->pErrFrm[i].FrmErrBit);
@@ -1121,27 +1146,27 @@ void ErrRateVoiceTest(DATA_LINK_T *pDataLink, int state)
 
     switch (state)
     {
-        case STATE_VOICE_HEADER:
+        case SET_ERR_HDR:  // 设置为接收语音头
         {
-            if (g_ErrVoiceState == ERR_VOICE_HEADER)
+            if (g_ErrVoiceState == WAIT_ERR_VOICE_HDR)  // 当前状态是否为接收语音头
             {
                 test_err_voice_init();
-                g_ErrVoiceState = ERR_VOICE_TERMINATOR;
+                g_ErrVoiceState = WAIT_ERR_VOICE_TER;  // 当前状态切换为接收语音结束
                 DLL_ClearTimer();  // 清除超时处理
             }
             break;
         }
-        case STATE_VOICE_TERMINATOR:
+        case SET_ERR_TER: // 设置为接收语音结束
         {
-            if (g_ErrVoiceState == ERR_VOICE_TERMINATOR)
+            if (g_ErrVoiceState == WAIT_ERR_VOICE_TER)  // 当前状态是否为接收语音结束
             {
                 test_err_voice_result();
-                g_ErrVoiceState = ERR_VOICE_HEADER;
+                g_ErrVoiceState = WAIT_ERR_VOICE_HDR;  // 当前状态切换为接收语音头
                 DLL_ClearTimer();  // 清除超时处理
             }
             break;
         }
-        case STATE_VOICE_RCV:
+        case SET_ERR_RCV:
         {
             if (pDataLink != NULL)
             {

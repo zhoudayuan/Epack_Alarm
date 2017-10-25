@@ -86,18 +86,13 @@ typedef struct _WLU_LOG_MSG_T
         free(tLogMsg);\
     }\
 }while(0)
+	//gettimeofday 第一个变量返回当前时间，第二个为时区time() 也是获取系统时间放入timep地址中.localtime讲根据1970的偏移值计算系统时间
+	//__VA_ARGS__  是什么  参数代替
 
-#if 0
-// bak
+
 #define LOG_DEBUG(x,...) LOG_Debug(x,"[""DEBUG""]""["TASK_NAME"]"__VA_ARGS__)
 #define LOG_ERROR(x,...) LOG_Debug(x,"[""ERROR""]""["TASK_NAME"]"__VA_ARGS__)
 #define LOG_WARNING(x,...) LOG_Debug(x,"[""WARNING""]""["TASK_NAME"]"__VA_ARGS__)
-#endif
-#define LOG_DEBUG(x,...) LOG_Debug(x,"[""DEBUG""]"__VA_ARGS__)
-#define LOG_ERROR(x,...) LOG_Debug(x,"[""ERROR""]"__VA_ARGS__)
-#define LOG_WARNING(x,...) LOG_Debug(x,"[""WARNING""]"__VA_ARGS__)
-
-
 
 #define LOG_Wfile(x,...) do{\
      time_t timep;\

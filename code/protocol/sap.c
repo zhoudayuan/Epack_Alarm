@@ -109,7 +109,7 @@ int main(void)
         LOG_WFile(pLogFd, "[SAP]Creat msqKey Error");
         exit(1);
     }
-    s_LogMsgId = msgget(msqKey, IPC_EXCL);  /*检查消息队列是否存在*/
+    s_LogMsgId = msgget(msqKey, IPC_EXCL);  /*检查消息队列是否存在*/  /*日志的消息队列*/
     if(s_LogMsgId < 0)
     {
         LOG_WFile(pLogFd,"[SAP]failed to get msq");
@@ -117,13 +117,13 @@ int main(void)
     }
     printf("[SAP] log print ok!\n");
 
-    _CFG_Shm();
+    _CFG_Shm();//全局配置
     printf("[SAP] cfg shm ok!\n");
 
     _IPC_sem();
     printf("[SAP] ipc sem ok!\n");
 
-    _IPC_Shm();
+    _IPC_Shm();//共享内存
     printf("[SAP] ipc shm ok!\n");
 
     ret = _LocalCfgPrint();

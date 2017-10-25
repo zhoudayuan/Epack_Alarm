@@ -207,8 +207,8 @@ typedef struct{
 
 typedef struct{
 	NEW_EEPROM_FPGA_PARAM calibration_param;
-	unsigned int scan_mode;
-	unsigned int freq_offset;
+	unsigned int stop_transmit;
+	unsigned int pdt_dmr;
 	unsigned int freq;
 	unsigned int power;
 	unsigned int open_close_loop;
@@ -221,6 +221,7 @@ typedef struct{
     unsigned int tempratue_alarm_close_threshold;
     unsigned int moto_mode_switch;
     unsigned int threshold_opt_switch;
+    unsigned int reboot_strategy_switch;
 }INIT_FPGA_PARAM;
 
 
@@ -240,6 +241,11 @@ typedef struct{
 	unsigned int  alarm_value;
 }__attribute__((packed,aligned(1)))FPGA_ITEM_ALARM_STRUCT;
 
+typedef struct{
+	unsigned char  fpga_version[8];
+	unsigned int  transmit_error_value;
+}__attribute__((packed,aligned(1)))FPGA_SHARE_MEM_STRUCT;
+
 
 
 typedef struct {
@@ -258,13 +264,22 @@ typedef struct{
 	unsigned short f2s2_half;
     unsigned int   u_half_rssi;
 	unsigned char prohibit_transmit_flag;
-    unsigned short cnt_rst_pos;
-    unsigned short cnt_rst_neg;
-	unsigned short data3;
-	unsigned short data4;
-	unsigned short data5;
-	unsigned short data6;
-    unsigned char reserve1[75];
+    unsigned short fpga_pa_info;
+    unsigned short board_version;
+	unsigned short reboot_strategy_low;
+	unsigned short reboot_strategy_high;
+	unsigned char cs_vco_fsm;         
+    unsigned char cs_webmaster;
+    unsigned char cs_Operation_Config;
+    unsigned char cs_UpStreamPort;
+    unsigned char cs_DownStreamPort;
+    unsigned char en_debug_mode;
+    unsigned char moto_mode;
+    unsigned char follow_en;
+    unsigned char system_init;
+    unsigned int  d_timestap;
+    unsigned int  up_timestap;
+    unsigned char reserve1[62];
     
 	
 	unsigned int vari_threshold;

@@ -55,7 +55,7 @@
 /** @defgroup  业务状态定义 */
 /** @{ */
 #define WORK_START               ((UINT8)0)
-#define WORK_STOP                ((UINT8)1)   // 启动等待500ms
+#define WORK_STOP                ((UINT8)1)
 
 /** @defgroup  打印状态定义 */
 /** @{ */
@@ -93,6 +93,8 @@
 #define DPF_RAW_SD_PACKET        ((UINT8)14)   ///< Short Data: Raw or Status/Precoded  原始数据或预定义状态数据
 #define DPF_PROP_DATA_PACKET     ((UINT8)15)   ///< Proprietary Data Packet  专有数据分组
 #define DPF_PDT_E2E_ENCRYPT      ((UINT8)4)    ///< PDT end-to-end encrypt  端到端加密数据头
+#define DPF_E2E_NVOC_UNCONFIRM_PACKET   ((UINT8)6)   ///< Proprietary Data Packet  专有数据分组
+#define DPF_E2E_NVOC_CONFIRM_PACKET     ((UINT8)7)   ///< Proprietary Data Packet  专有数据分组
 
 // FID类型
 #define SFID                     ((UINT8)0x00)  //standard
@@ -115,7 +117,7 @@
 #define R11_NC_DATA_ULEN         ((UINT8)24)
 #define R12_C_DATA_DLEN          ((UINT8)12)
 #define R12_C_DATA_ULEN          ((UINT8)12)
-#define R34_C_DATA_DLEN          ((UINT8)18)
+#define R34_C_DATA_DLEN          ((UINT8)18)//带2字节头校验及序号的长度
 #define R34_C_DATA_ULEN          ((UINT8)18)
 #define R11_C_DATA_DLEN          ((UINT8)24)
 #define R11_C_DATA_ULEN          ((UINT8)24)
@@ -168,9 +170,11 @@
 /** @defgroup CSBK命令码 */
 /** @{ */
 #define PRE_CSBKO               0x3d  // 预载波
+#define REQ_CSBKO_DMR           0x24  // Common Signalling Request CSBKO FOR DMR
 #define REQ_CSBKO               0x29  // Common Signalling Request CSBKO
 #define ACK_CSBKO               0x2c  // Common Signalling Answer Response CSBKO
 #define ALARM_CSBKO             0x37  // Digital Alarm Service Request CSBKO
+#define ALARM_CSBKO_DMR         0x27  // Digital Alarm Service Request CSBKO For DMR
 /** @} */
 
 /** @defgroup 补充业务命令码 */
@@ -179,7 +183,24 @@
 #define EN_RADIO_SSO            0x09  // Radio Enable Service
 #define DIS_RADIO_SSO           0x0a  // Radio Disable Service
 #define DIGITAL_ALARM_SSO       0x0f  // 该值暂定-Digital Alarm Service
+#define DIGITAL_ALARM_SSO_DMR   0x08  // 该值暂定-Digital Alarm Service FOR DMR
+#define EN_RADIO_REV_DMR        0x7e  // Radio Enable Service for DMR
+#define DIS_RADIO_REV_DMR       0x7f  // Radio Disable Service for DMR
+#define EN_RADIO_REV_ACK_DMR    0xfe  // Radio Enable Service for DMR ACK
+#define DIS_RADIO_REV_ACK_DMR   0xff  // Radio Disable Service for DMR ACK
 /** @} */
+#define FLC_GPS_ON      1
+#define FLC_GPS_OFF     0
+
+#define EMB_HDR       0
+#define EMB_GPS         1
+
+#define PLAN_HDR       0
+#define PLAN_GPS         1
+
+#define SND_FLC_ONCE       0   // GPS内嵌只发送一次
+#define SND_FLC_MULTI      1   // GPS内嵌周期发送多次
+
 
 /**
  * @def GPS_FlAG
@@ -234,7 +255,6 @@
 #define GPS_OK                 ((UINT8)0x02)    //GPS完成
 #define GPS_PRE                ((UINT8)0x03)    //GPS预占
 #define GPS_RLY                ((UINT8)0x04)    //GPS中转
-
 #define NODE_TYPE_D            ((UINT8)0x00)    //数据节点
 #define NODE_TYPE_V            ((UINT8)0x01)    //语音节点
 
@@ -246,6 +266,12 @@
 #define     DISCON_HAPPEN            1     // 检测到邻点断链出现，
 #define     DISCON_RECOVER           0     // 检测到邻点断链已恢复，当前为不断链状态，
 
+#define SIZE_ONE_FRAME		(UINT8)27
+#define	SIZE_SUPER_FRAME	(UINT16)(6*SIZE_ONE_FRAME)		//一个超帧
+#define BUFFSIZE 			(UINT16)(10*SIZE_SUPER_FRAME)  	//10个超帧
+
+#define PRE_CSBK_NONE_FLAG 0
+#define PRE_CSBK_GPS_FLAG 1
 
 /******************************************************************************
  *   全局变量定义
@@ -286,7 +312,6 @@ typedef enum _SAP_TYPE_E
     S_VOICE_D           = 5,
     S_VOICE_E           = 6,
     S_VOICE_F           = 7,
-
     S_CSBK_PRE          = 8,                      ///< 预载波
     S_C_HDR             = 9,                      ///< 确认头
     S_U_HDR             = 10,                     ///< 非确认头
@@ -334,9 +359,11 @@ typedef enum _SAP_TYPE_E
 
     S_NAS_RELAY         = 60,                     ///< NAS 转发
     S_NAS_PRE_LC        = 61,                     ///< NAS gps请求
+    
+	S_PI_HDR			= 62,					  ///< PI头
+	S_E_HDR				= 63					  ///< EI头
 
 } SAP_TYPE_E;
-
 
 
 /******************************************************************************
@@ -503,14 +530,14 @@ typedef struct _NAS_NEGR_BURST_T
  */
 typedef struct _DLL_GLB_CFG_T
 {
-    UINT8  auUploadLC[12];             ///< 时隙上行LC信令
+    UINT8  auUploadLC[12];             ///< 时隙上行LC信令 9字节有效
     UINT8  auUploadPI[12];             ///< 时隙上行PI信令
     UINT8  auMSCC;                     ///< 终端色码标示
     UINT8  auWLUCC;                    ///< 链路机色码标示
     UINT8  auPI;                       ///< 加密标示
     UINT8  auSubNet;                   ///< 空口子网ID
     UINT8  auWorkMode;                 ///< 工作模式 PDT or DMR
-    UINT8  auDownloadLC[12];           ///< 时隙下行LC信令
+    UINT8  auDownloadLC[12];           ///< 时隙下行LC信令12字节有效
     UINT8  auDownloadPI[12];           ///< 时隙下行PI信令
     UINT8  auEmbInfo[16];              ///< 语音内嵌信令32bit
     UINT8  auCCflag;                   ///< 远程连接中心标示
@@ -528,9 +555,12 @@ typedef struct _DLL_GLB_CFG_T
     UINT32 auNerInfo1[32];             ///< 邻点拓扑信息 1
     UINT32 auNegrId2;                  ///< 邻点信息2
     UINT32 auNerInfo2[32];             ///< 邻点拓扑信息 2
+	UINT8  auVoiceType;				   ///< 语音类型6 AMBE/7 NVOC
+	UINT8  auEncryption_Type;		   ///< 语音加密类型1.hytera基本加密 2.hytera高级加密 3.dmra 加密
 	UINT8  ucFlcGpsSwitch;		       ///< NAS 的下行语音内嵌GPS开关
-	UINT8  ucFlcGpsSec;                ///< 单位时间下发GPS内嵌，以秒为单位，最长200s
-    UINT32 ulFlcGpsCnt;                ///< 将ucFlcGpsSec转为为定时器计数值
+	UINT8  ucFlcGpsSec;                ///< 单位时间下发GPS内嵌，以秒为单位，最长60s
+    UINT32 ulFlcGpsCnt;                ///< 将ucFlcGpsSec转为定时器计数值
+    UINT8  ucFlcGpsSndFlg;             ///< ucFlcGpsSndFlg = 0 使能发送一次， ucFlcGpsSndFlg = 1，周期发。
 }DLL_GLB_CFG_T;
 
 /**
@@ -552,6 +582,78 @@ typedef struct _NAS_PRE_LC_PDU
     UINT8 auCRC[3];
 
 } NAS_PRE_LC_PDU;
+
+/**
+ * @struct  DMRA_PI_PDU
+ * @brief DMRA加密方式的PI结构
+ * note: 
+ * Full Link Control (FULL LC) PDU
+ * 96bits
+ */
+typedef struct _DMRA_PI_PDU
+{
+    UINT8 uAlgId :3;   // See Algorithm ID table
+    UINT8 uRsv2  :2;   // 0
+    UINT8 uGI    :1;   // Group 1;Individual:0
+    UINT8 uRsv1  :2;   // 0
+    UINT8 uFID;        // Shall be set to 0x10(moto)
+    UINT8 uKeyID;      // 1-255
+    UINT8 auIV[4];
+    UINT8 auTADDR[3];
+    UINT8 auCRC[2];
+
+} DMRA_PI_PDU;
+/**
+ * @struct  HYTERA_PI_PDU_PDT
+ * @brief Hytera高级加密PDT_PI
+ * note: 
+ * Full Link Control (FULL LC) PDU
+ * 96bits
+ */
+typedef struct _HYTERA_PI_PDU_PDT
+{
+    UINT8 uFID          ;   // 0x68
+    UINT8 uEncryType  :4;   // 2
+    UINT8 uRsv1       :4;   // 0
+    UINT8 uKeyID        ;   // 1-255
+    UINT8 auIV[5]       ;
+    UINT8 uRsv2         ;   // 0
+    UINT8 uChechSum     ;
+    UINT8 auCRC[2];
+
+} HYTERA_PI_PDU_PDT;
+
+/**
+ * @struct  HYTERA_PI_PDU_DMR
+ * @brief Hytera高级加密DMR_PI
+ * note: 
+ * Full Link Control (FULL LC) PDU
+ * 96bits
+ */
+typedef struct _HYTERA_PI_PDU_DMR
+{
+    UINT8 uEncryType  :4;   // 2
+    UINT8 uRsv1       :4;   // 0
+    UINT8 uFID          ;   // 0x68
+    UINT8 uKeyID        ;   // 1-255
+    UINT8 auIV[5]       ;
+    UINT8 uRsv2         ;   // 0
+    UINT8 uChechSum     ;
+    UINT8 auCRC[2];
+
+
+} HYTERA_PI_PDU_DMR;
+
+
+/**
+ * @brief    上行R12分组数据联合体
+ */
+typedef union _PI_PDU
+{
+    DMRA_PI_PDU         dmraPiData;
+    HYTERA_PI_PDU_PDT   hyteraPiPdtData;
+
+} PI_PDU;
 
 /**
  * @struct  EMBBED_GPS_PDU
@@ -596,7 +698,9 @@ typedef struct _PRE_CSBK_PDU
     UINT8 uPF  :1;
     UINT8 uLB  :1;
     UINT8 uFID;
-    UINT8 uREV :6;
+    UINT8 uGps :1;//GPS业务需将此位置置0
+    UINT8 uR12 :1;//含义未定
+    UINT8 uREV :4;//预留自用
     UINT8 uGI  :1;
     UINT8 uDC  :1;
     UINT8 uCBF;
@@ -908,6 +1012,80 @@ typedef struct _DMR_RE_HEAD_PDU_UT
     UINT8 uCLASS        :2;
 
 } DMR_RE_HEAD_PDU_UT;
+
+
+
+/**
+ * @struct PDT_E_HEAD_PDU_DT
+ * @brief PDT 空口下行加密私有头
+ */
+typedef struct _PDT_E_HEAD_PDU_DT
+{
+    UINT8 uDPF          :4;  
+    UINT8 uSAP          :4;
+    UINT8 uFID; 
+    UINT8 uEncryType    :4;
+    UINT8 uOpcode       :4;
+    UINT8 uKeyID; 
+    UINT8 auIV[5];
+    UINT8 uRsv2;
+    UINT8 auCRC[2];
+
+} PDT_E_HEAD_PDU_DT;
+
+/**
+ * @struct PDT_E_HEAD_PDU_UT
+ * @brief PDT 空口上行加密私有头
+ */
+typedef struct _PDT_E_HEAD_PDU_UT
+{
+    UINT8 uDPF          :4;  
+    UINT8 uSAP          :4;
+    UINT8 uFID; 
+    UINT8 uEncryType    :4;
+    UINT8 uOpcode       :4;
+    UINT8 uKeyID; 
+    UINT8 auIV[5];
+    UINT8 uRsv2;
+
+} PDT_E_HEAD_PDU_UT;
+
+/**
+ * @struct DMR_E_HEAD_PDU_DT
+ * @brief DMR 空口下行加密私有头
+ */
+typedef struct _DMR_E_HEAD_PDU_DT
+{
+    UINT8 uDPF          :4;  
+    UINT8 uSAP          :4;
+    UINT8 uFID; 
+    UINT8 uOpcode       :4;
+    UINT8 uAlgID        :3;
+    UINT8 uRsv1         :1;
+    UINT8 uKeyID; 
+    UINT8 auRsv2[2];
+    UINT8 auIV[4];
+    UINT8 auCRC[2];
+
+} DMR_E_HEAD_PDU_DT;
+
+/**
+ * @struct DMR_E_HEAD_PDU_UT
+ * @brief DMR 空口上行加密私有头
+ */
+typedef struct _DMR_E_HEAD_PDU_UT
+{
+    UINT8 uDPF          :4;  
+    UINT8 uSAP          :4;
+    UINT8 uFID; 
+    UINT8 uOpcode       :4;
+    UINT8 uAlgID        :3;
+    UINT8 uRsv1         :1;
+    UINT8 uKeyID; 
+    UINT8 auRsv2[2];
+    UINT8 auIV[4];
+
+} DMR_E_HEAD_PDU_UT;
 
 /**
  * @struct DMR_P_HEAD_PDU_DT
@@ -1557,11 +1735,11 @@ typedef struct _PDP_DT
     UINT8  uNS;
     UINT8  uDataType;      ///< 数据类型
     UINT8  uHdrNum;        ///< 下行分组数据头的总个数
-    UINT8  uBLOCKNum;      ///< 下行分组数据数据包个数 @note 不包含P_HEAD和E_HEAD
+    UINT8  uBLOCKNum;      ///< 下行分组数据数据包个数 @note 不包含CHEAD,P_HEAD和E_HEAD
     UINT8  uPHeadNum;      ///< 下行分组数据中P_Head个数
     UINT8  uEHeadNum;      ///< 下行分组数据中E_Head个数
     UINT8  s_uDBSNIndex;   ///< 下行分组数据数据包索引     @不包含P_HEAD和E_HEAD
-    UINT8  BF;             ///< 除头帧之外的下行分组数据帧个数, 后续帧数(BF),规定了后续还有多少个数据帧
+    UINT8  BF;             ///< 只除C_HEAD头帧之外的下行分组数据帧个数, 后续帧数(BF),规定了后续还有多少个数据帧,包含EHEAD和PHEAD
     UINT8  uTdLcNum;
     UINT8  uTdLcCnt;
     UINT8  uSrcId[3];
@@ -1584,9 +1762,11 @@ typedef union _PDP_HEAD_DU
     PDT_NC_HEAD_PDU_DT p_PdpNcHdr;  // 空口下行无确认数据头
     PDT_C_HEAD_PDU_DT  p_Pdp_CHdr;  // 空口下行确认数据头
     PDT_RE_HEAD_PDU_DT p_PdpReHdr;  // 空口下行应答数据头
+    PDT_E_HEAD_PDU_DT  p_Pdp_EHdr;  // 空口下行加密私有头
     DMR_NC_HEAD_PDU_DT d_PdpNcHdr;  // 空口下行无确认数据头
     DMR_C_HEAD_PDU_DT  d_Pdp_CHdr;
     DMR_RE_HEAD_PDU_DT d_PdpReHdr;
+    DMR_E_HEAD_PDU_DT  d_Pdp_EHdr;  // 空口下行加密私有头
     DMR_P_HEAD_PDU_DT  d_Pdp_PHdr;
     DMR_SP_HEAD_PDU_DT d_PdpSpHdr;
     DMR_RA_HEAD_PDU_DT d_PdpRaHdr;
@@ -1600,9 +1780,11 @@ typedef union _PDP_HEAD_UU
     PDT_NC_HEAD_PDU_UT p_PdpNcHdr;  // 空口上行无确认数据头
     PDT_C_HEAD_PDU_UT  p_Pdp_CHdr;  // 空口上行确认数据头
     PDT_RE_HEAD_PDU_UT p_PdpReHdr;  // 空口上行应答数据头
+    PDT_E_HEAD_PDU_UT  p_Pdp_EHdr;  // 空口上行加密私有头
     DMR_NC_HEAD_PDU_UT d_PdpNcHdr;  // 空口上行无确认数据头
     DMR_C_HEAD_PDU_UT  d_Pdp_CHdr;  // 空口上行确认数据头
     DMR_RE_HEAD_PDU_UT d_PdpReHdr;  // 空口上行应答数据头
+    DMR_E_HEAD_PDU_UT  d_Pdp_EHdr;  // 空口上行加密私有头
     DMR_P_HEAD_PDU_UT  d_Pdp_PHdr;  // DMR空口上行私有数据头
     DMR_SP_HEAD_PDU_UT d_PdpSpHdr;  // DMR空口上行状态或预编码数据头
     DMR_RA_HEAD_PDU_UT d_PdpRaHdr;  // DMR空口上行原始短数据头
@@ -1729,7 +1911,6 @@ typedef union _PDP_DATA_UU
 
 extern INT8 g_NerbValidFlg;
 extern UINT32 g_BurstCnt;
-
 extern void DLL_ClearTimer(void);
 extern void DLL_SetTimer(UINT8 CallState, UINT16 CallWait);
 extern void CheckLocalNerInfoPrint(void);
@@ -1737,6 +1918,9 @@ extern void CheckOtherNerInfoPrint(unsigned char *pucData);
 extern void CheckNerInfo(unsigned char *pucNodeID, unsigned long *pulNerID, const char *Prompt);
 extern void CheckNerArray();
 extern void CheckNerMatrixPrint();
+
+extern BOOL _DMRA_GetParam(UINT8 *NEXTIV,UINT8 AlgID);
+
 
 #endif
 

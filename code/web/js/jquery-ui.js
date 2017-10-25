@@ -15704,10 +15704,9 @@ $.widget( "ui.tooltip", {
 
 	_create: function() {
 		this._on( {
-			mouseover: "open",
-			focusin: "open"
+			mouseover: "open"
+			//focusin: "open"
 		} );
-
 		// IDs of generated tooltips, needed for destroy
 		this.tooltips = {};
 
@@ -15865,7 +15864,7 @@ $.widget( "ui.tooltip", {
 		var tooltipData, tooltip, delayedShow, a11yContent,
 			positionOption = $.extend( {}, this.options.position );
 
-		if ( !content ) {
+		if ( !content) {
 			return;
 		}
 

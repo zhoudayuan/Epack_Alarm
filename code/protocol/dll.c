@@ -17,17 +17,18 @@
 #include "dll_fun.h"
 #include "mgr_common.h"
 #include "print_debug.h"
-
+#include "EncDec.h"
 
 /******************************************************************************
   *   全局变量定义
   *   *************************************************************************/
-extern int CC_ERR_COUNT;
-extern int  g_CcRightFlg;
-extern int CCERR_SUPERFRM_COUNT;
+extern int g_iCcErrFrmCnt;
+extern int g_bCcRightFrmRcvFlg;
+extern int g_iCcErrSuperFrmCnt;
 #define FPGA_FOLLOW     1
 #define FPGA_IDLE       0
 #define ARRAY_NEGR_LEN  3  // 邻点信息暂存数组长度
+#define Encrypt_key_path "encrypt_table"
 
 /**
  * @var  s_i4LogMsgId
@@ -64,6 +65,8 @@ extern PDP_UT g_PdpUBuf;
  * @brief 下行分组数据缓存
  */
 extern PDP_DT g_PdpDBuf;
+
+extern UINT16  s_au2AmbeEraData[14];
 
 /**
  * @var OdpPid
@@ -257,17 +260,14 @@ UINT8 g_DisconCnt = 0;
 /**
  * @var g_BurstCnt
  * @brief 邻点突发周期计数器，
- *        当有语音时，该计时器清零，当其小于2时，时候邻点功能无效。
+ *        当有语音时，该计时器清零，当其小于2时, 邻点功能无效。
  */
 UINT32 g_BurstCnt = 0;
-
 /**
  * @var 
  * @brief 关闭断链打印标志
  */
 UINT8 g_DisconRecoverPrintFlg = 0;
-
-
 /**
  * @var s_NerCycCnt
  * @brief 邻点突发周期计数器。记录邻点突发的个数,主要功能是鉴别奇数or偶数周期
@@ -281,7 +281,6 @@ UINT32 s_NerCycCnt = 0;
  */
 INT8 g_NerbValidFlg = 0;
 
-
 /**
  * @var s_auiNegrId
  * @brief 邻点信息暂存数组，数组中的每一个元素代表邻点信息的一次获取，
@@ -289,9 +288,7 @@ INT8 g_NerbValidFlg = 0;
  */
 static unsigned int s_auiNegrId[ARRAY_NEGR_LEN] = {0};
 static int s_uiNegrIdArrayLen = sizeof(s_auiNegrId)/sizeof(s_auiNegrId[0]);
-
 void delay(unsigned long msec);
-
 
 /******************************************************************************
   *   内部函数实现
@@ -319,7 +316,43 @@ void DLL_GlobalConfig(void)
     g_DllGlobalCfg.auSubNet = ptCFGShm->air_subnet_id.val;
     g_DllGlobalCfg.auStunFlag = ptCFGShm->stun_flag.val;
     g_DllGlobalCfg.auKillFlag = ptCFGShm->kill_flag.val;
-
+	#if 0
+		g_DllGlobalCfg.auVoiceType = ptCFGShm->voice_type.val;
+		g_DllGlobalCfg.auEncryption_Type = ptCFGShm->encryption_type.val;
+		g_DllGlobalCfg.ucFlcGpsSwitch= ptCFGShm->nas_gps_switch.val;
+	#endif
+	
+	//test
+	
+	g_DllGlobalCfg.auVoiceType = AMBE;
+	g_DllGlobalCfg.auEncryption_Type = ENCRYPT_HYT_ENHA;
+	
+	g_DllGlobalCfg.ucFlcGpsSwitch= FLC_GPS_ON;
+	g_DllGlobalCfg.ucFlcGpsSndFlg = SND_FLC_MULTI;
+	g_DllGlobalCfg.ucFlcGpsSec=3;
+	//网管增加   加解密密钥选择(基本加密、高级加密都需要选择)  及随机密钥加密，多密钥解密选项
+	//test over
+	
+	if(g_DllGlobalCfg.auPI==0)
+	{
+		g_DllGlobalCfg.auEncryption_Type=ENCRYPT_NONE;
+	}
+	else
+	{
+		if(g_DllGlobalCfg.auWorkMode==DMR_WORK_MODE)
+		{
+			g_DllGlobalCfg.auEncryption_Type=ENCRYPT_DMRA;
+			if(g_DllGlobalCfg.auVoiceType == NVOC)
+			{
+				LOG_ERROR(s_LogMsgId,"[DLL][%s][ENCRYPT_DMRA][NVOC][ERROR] ", _F_);
+			}
+		}
+		else
+		{
+			if((g_DllGlobalCfg.auEncryption_Type!=ENCRYPT_HYT_BASE)&&(g_DllGlobalCfg.auEncryption_Type!=ENCRYPT_HYT_ENHA))
+			LOG_ERROR(s_LogMsgId,"[DLL][%s] PI=1,But Encryption_Type=%d Error", _F_,g_DllGlobalCfg.auEncryption_Type);
+		}
+	}
     uLockFreq = 0xff;
     uLockSlot = 0xff;
 
@@ -327,7 +360,16 @@ void DLL_GlobalConfig(void)
     memset((UINT8 *)tDllPrint, 0x00, sizeof(DLL_PRINT_T));
     tDllPrint->FrqSlt = 0;
     tDllPrint->WorkMode = 0;
-    tDllPrint->Ccerrsuperfrmcnt=3;
+    tDllPrint->CcErrSuperFrmCnt = 3;
+
+	LOG_DEBUG(s_LogMsgId,"*************[%s]Dll Encryption and Gps Pramater***************", _F_);
+	LOG_DEBUG(s_LogMsgId,"[DLL][%s][auVoiceType      =%d,[206:AMBE,207:NVOC] ", _F_,g_DllGlobalCfg.auVoiceType);
+	LOG_DEBUG(s_LogMsgId,"[DLL][%s][auPI             =%d,[0:UnEryption,1:Encry] ", _F_,g_DllGlobalCfg.auPI);
+	LOG_DEBUG(s_LogMsgId,"[DLL][%s][auEncryption_Type=%d,[0:UnEryption,1:PDT BASE,2:PDT High,3:DMRA] ", _F_,g_DllGlobalCfg.auEncryption_Type);
+	LOG_DEBUG(s_LogMsgId,"[DLL][%s][ucFlcGpsSwitch   =%d,[0:OFF,1:ON] ", _F_,g_DllGlobalCfg.ucFlcGpsSwitch);
+	LOG_DEBUG(s_LogMsgId,"[DLL][%s][ucFlcGpsSndFlg   =%d,[0:ONCE,1:CYC] ", _F_,g_DllGlobalCfg.ucFlcGpsSndFlg);
+	LOG_DEBUG(s_LogMsgId,"[DLL][%s][ucFlcGpsSec      =%d s,[Cyc]", _F_,g_DllGlobalCfg.ucFlcGpsSec);
+	LOG_DEBUG(s_LogMsgId,"*************[%s]Dll Encryption and Gps Pramater Over***************", _F_);
 
 }
 
@@ -375,7 +417,7 @@ int DLL_FpgaConfig(void)
         p_DllFpgaShm->StunFlag[3] = (NAS_KILL_FLAG>>24)&0xff;
     }
 
-    DLL_SyncFpgaCfg();
+    DLL_SyncFpgaCfg();//更新
 
     return 0;
 
@@ -392,16 +434,21 @@ int DLL_FpgaConfig(void)
  */
 int DLL_Init(void)
 {
-    int status;
-
-    DLL_GlobalConfig();
-    status = DLL_FpgaConfig();
+    int status,ret;
+    DLL_GlobalConfig();//初始化本地全局，cfgshm全局配置更新到本地全局
+	//初始化加密参数
+	ret=InitEncLib(g_DllGlobalCfg.auVoiceType,g_DllGlobalCfg.auEncryption_Type,Encrypt_key_path);
+	if(ret == -1)
+	{
+        LOG_DEBUG(s_LogMsgId,"[DLL][%s] Error Or UnEncryption", _F_);
+	}
+    status = DLL_FpgaConfig();//通过g_DllGlobalCfg 全局  来配置更新DLL与FPGA的共享内存
     if (status != 0)
     {
         LOG_ERROR(s_LogMsgId,"[DLL][%s] DLL_FpgaConfig error", _F_);
         return -1;
     }
-    DLL_ClearTimer();
+    DLL_ClearTimer();//置位初始化状态
 
     CCLSocket = socket(AF_INET, SOCK_DGRAM, 0);
     if (0 > CCLSocket)
@@ -516,7 +563,7 @@ void DLL_SetTimer(UINT8 CallState, UINT16 CallWait)
 */
 void DLL_ClearTimer(void)
 {
-    uTimerSwitch = 0;
+    uTimerSwitch = 0;//定时器关闭
     uCallState = CALL_IDLE;
     uCallWait = 0xffff;
 
@@ -616,19 +663,20 @@ void *DLL_TimerTask(void * p)
         }
 
         TimerTask();  // 定时器
-        DLL_SyncFpgaCfg();
-        if (0 == p_DllFpgaShm->FollowEn)  // 0-解除/1-锁定
+        DLL_SyncFpgaCfg();//每60ms都更新一下共享内存
+		
+        if (0 == p_DllFpgaShm->FollowEn)//FPGA空闲，未锁定，维持低电平
         {
-            p_DllFpgaShm->WorkOver = WORK_START;
+            p_DllFpgaShm->WorkOver = WORK_START;//置FPGA为低电平 ，任何频点时隙都可以上数据
             uLockFreq = 0xff;
-            uLockSlot = 0xff;
+            uLockSlot = 0xff;//锁定为ff  表明2个频点2个时隙都可以上数据
             memset(g_DllGlobalCfg.auUploadLC, 0xff, (FLC_LEN+3));
         }
 
         GpsTimSync--;
         if (GpsTimSync < 0)
         {
-            DLL_SyncGpsTime();
+            DLL_SyncGpsTime();//更新系统时间250  * 60ms
             GpsTimSync = SYNC_CYC;
         }
 
@@ -658,33 +706,55 @@ void *DLL_TimerTask(void * p)
             {
                 break;
             }
-            case CALL_VOICE_U:
-            case CALL_VOICE_D:
+            case CALL_VOICE_D://无此状态，不处理定时器
+            case CALL_VOICE_U://只有加密才置此状态，正常语音DLL层不做定时
             {
                 uWaitVoiceTimes++;
-                if (uWaitVoiceTimes > uCallWait)
+                if (uWaitVoiceTimes >= uCallWait)
                 {
-                    CC_ERR_COUNT=0;
-                    g_CcRightFlg=0;
-                    CCERR_SUPERFRM_COUNT=0;
-                    LOG_DEBUG(s_LogMsgId,"[DLL][%s] TIM  ai data over time, mission complete!", _F_);
+                	if(uWaitVoiceTimes>=(UINT32)(uCallWait+2))// 2个超帧未上语音且未接收到LC_TER，清除状态 421ms-480ms
+					{
+	                    g_bCcRightFrmRcvFlg = 0;
+	                    g_iCcErrFrmCnt = 0;
+	                    g_iCcErrSuperFrmCnt = 0;
+
+						DLL_ClearTimer();
+						
+						DLL_ENCLIB_VOICE Dencryp_str;
+						memset(&Dencryp_str, 0x00, sizeof(DLL_ENCLIB_VOICE));
+						Dencryp_str.FrameNum = VOICE_TERM_FRAME;
+						Dencryp_str.ValidFlag = INVALID;
+						DecryptFunc_Voice(&Dencryp_str);//LC_Ter清除相关加密信息
+	                    LOG_DEBUG(s_LogMsgId,"[DLL][%s][CALL_VOICE_U][Dencryption] TIM  ai data over time, mission complete!", _F_);
+					}
+					
+					if (uWaitVoiceTimes == uCallWait)//301ms-360ms
+					{
+						DLL_ENCLIB_VOICE Dencryp_str;
+						memset(&Dencryp_str, 0x00, sizeof(DLL_ENCLIB_VOICE));
+						memcpy(Dencryp_str.Payload,s_au2AmbeEraData,VOICE_LEN);
+						Dencryp_str.FrameNum = VOICE_A_FRAME;
+						Dencryp_str.ValidFlag = INVALID;
+						DecryptFunc_Voice(&Dencryp_str);//A帧密钥流同步函数,且不发送语音上行
+	                    LOG_DEBUG(s_LogMsgId,"[DLL][%s][CALL_VOICE_U] Add Frame_A for Dencryption Key_Flow", _F_);
+					}
                 }
                 break;
             }
             case CALL_DATA_U:
-            case CALL_DATA_D:
+            case CALL_DATA_D://只有GPS下行需要启动定时器
             {
                 uWaitDataTimes++;
 
                 if (uWaitDataTimes > uCallWait)
                 {
                     DLL_ClearTimer();
-                    LOG_DEBUG(s_LogMsgId,"[DLL][%s] TIM  ai data over time, mission complete!", _F_);
+                    LOG_DEBUG(s_LogMsgId,"[DLL][%s][CALL_DATA_D] TIM  ai data over time, mission complete!", _F_);
                 }
                 break;
             }
             case CALL_WLU_U:
-            case CALL_WLU_D:
+            case CALL_WLU_D://链路机无需定时器
             {
                 uWaitWluTimes++;
 
@@ -699,7 +769,10 @@ void *DLL_TimerTask(void * p)
                 uWaitErrTimes++;
                 if (uWaitErrTimes > uCallWait)
                 {
-                    ErrRateVoiceTest(NULL, STATE_VOICE_TERMINATOR);
+                    if (ptErrPrint->Voice == 1) 
+                    {
+                        ErrRateVoiceTest(NULL, SET_ERR_TER);
+                    }
                 }
                 break;
             }
@@ -716,7 +789,13 @@ void *DLL_TimerTask(void * p)
 
 }
 
-
+/**
+ * @brief  通知MGR 当前告警状态
+ *
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
 static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
 {
     UINT32 i;
@@ -746,7 +825,7 @@ static UINT8 MGR_Alarm_Update_Status(UINT32 type, UINT8 uStatus, UINT32 value)
 
 
 // 检测邻点断链告警，唯一判断是否产生断链，连续两个周期内没有备份邻点，则认为断链。
-static int check_discon_state()
+static int CheckDisconState()
 {
     // 根据是否有邻点备份判断断链产生
     if (g_DllGlobalCfg.auNegrId2 == 0)  // auNegrId2=0,认为断链一次
@@ -761,14 +840,22 @@ static int check_discon_state()
     return DISCON_RECOVER;  // 没有断链
 }
 
-
-void set_alarm_discon_switch(int AlarmSwitch)
+/**
+ * @brief  设置是否断链
+ *
+ * @param [in] AlarmSwitch - TURN_OFF 断链恢复
+ *                         - TURN_ON  断链产生
+ * @author  周大元
+ * @since   trunk.00001
+ * @bug
+ */
+void SetDisconAlarm(int AlarmSwitch)
 {
     if ((AlarmSwitch == TURN_OFF) && (g_discon_state == DISCON_HAPPEN))
     {
         g_discon_state = DISCON_RECOVER;
         LOG_DEBUG(s_LogMsgId, "[DLL][%s] Tell mgr [TURN_OFF] Alarm ", _F_);
-        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);
+        MGR_Alarm_Update_Status(MGR_ALARM_SERVER_1, TURN_OFF, 0);//之前状态是发生，且此次消除告警，则上报关闭
     }
     else if (AlarmSwitch == TURN_ON)
     {
@@ -912,8 +999,6 @@ void CheckNerArray()
 
 
 
-
-
 /**
  * @brief 获取邻点突发周期随机值
  * @param [in]
@@ -971,7 +1056,6 @@ int IsNegrBurstSwitch()
 }
 
 
-
 /**
  * @brief  获取当前DLL状态
  * @param [in]
@@ -980,10 +1064,8 @@ int IsNegrBurstSwitch()
 */
 int GetCallState()
 {
-    return uCallState;   
+    return uCallState;
 }
-
-
 
 /**
  * @brief  获取当前FPGA状态
@@ -1012,14 +1094,8 @@ void NegrBurstStart()
     NegrBurst.NodeId = g_DllGlobalCfg.auNodeId;
     NegrBurst.NegrId = g_DllGlobalCfg.auNegrId2;
     u2CRC = ALG_Crc16((UINT8 *)&NegrBurst, CSBK_LEN);
-    if(PDT_WORK_MODE == g_DllGlobalCfg.auWorkMode)
-    {
-        u2CRC = u2CRC ^ PDT_CRC_MASK_CSBK;
-    }
-    else
-    {
-        u2CRC = u2CRC ^ DMR_CRC_MASK_CSBK;
-    }
+
+    u2CRC = u2CRC ^ PDT_CRC_MASK_CSBK;
     NegrBurst.Crc[0] = (UINT8)(u2CRC >> 8);
     NegrBurst.Crc[1] = (UINT8)(u2CRC & 0xff);
     memset(ptInfData, 0, sizeof(NAS_INF_DL_T));  //封装下行fpga数据帧
@@ -1038,7 +1114,6 @@ void NegrBurstStart()
 }
 
 
-
 /**
  * @brief  邻点周期自加
  * @param [in]
@@ -1047,7 +1122,7 @@ void NegrBurstStart()
 */
 void IncNgbrCycCnt()
 {
-    s_NerCycCnt++;  // 不会被清零的计数器，只记录周期数
+    s_NerCycCnt++;   // 不会被清零的计数器，只记录周期数
     g_BurstCnt++;    // 会被其他业务清零的计数器
 }
 
@@ -1199,7 +1274,6 @@ void *DLL_NerBurstTask(void * p)
     {
         GetBurstCyc(&BurstCycFirst, &BurstCycLast); // 获取前周期 后周期
         delay(BurstCycFirst);  // 前周期延时
-
         if ((IsNasKill() == 1) || (IsNasStun() == 1)) // 遥晕遥毙是否使能
         {
             continue;
@@ -1243,9 +1317,9 @@ void *DLL_NerBurstTask(void * p)
         {
             if ((GetCallState() == CALL_IDLE) && (GetFpgaFollowState() == FPGA_IDLE) && (IsNegrBurstSwitch() == 1))
             {
-                if (check_discon_state() == DISCON_HAPPEN)
+                if (CheckDisconState() == DISCON_HAPPEN)
                 {
-                    set_alarm_discon_switch(TURN_ON);  // 开启告警
+                    SetDisconAlarm(TURN_ON);  // 开启告警
                     g_DisconRecoverPrintFlg = 0;  // 开打印
                 }
             }

@@ -33,8 +33,9 @@ static void * CliInputTaskHandle(void* arg)
 	int len;
 	while(1)
 	{
-		gets(inputBuf);
-		len = strlen(inputBuf);
+		//gets(inputBuf);
+		fgets(inputBuf,128,stdin);
+		len = strlen(inputBuf); 
 		inputBuf[len++] = '\n';
 		write(s_hsocket,inputBuf,len);
 	}

@@ -23,7 +23,10 @@
 #include "web_mgr.h"
 #include "mgr.h"
 
- 
+/**
+ * js、css文件版本号规划    0~100：v1.0     301~600：v1.1  1001~1500：v1.1
+ */
+
 /**
  * @var semid_ipc
  * @brief 进程间通信共享内存信号量IPC键值
@@ -84,19 +87,20 @@ unsigned int A,B,C,D,a,b,c,d,flen[2],x[16];
 int len;
 char filename[200];
 FILE *fp;
-
+char buffer[30]= {0};///存放挂载点
 
 /**
- * @brief    登录页面
+ * @show_login    登录页面
  *
  * @param[in]		web_user		共享内存保存的用户名
  * @param[in]		web_code		共享内存保存的密码
- * @param[in]		flag			登录状态 1：登录信息错误
+ * @param[in]		flag			登录状态 1：用户模式  2：工程模式  3：登录信息错误
+ * @param[in]		language_switch   语言开关   0：中文  1：英文
  * @return		void
  * @author		wdz
  * @bug
  */
-void show_login( char * web_user, char * web_code,int flag)
+void show_login( char * web_user, char * web_code,int flag,int language_switch)
 {
 	fprintf(cgiOut, "<!DOCTYPE html>\n");
 	fprintf(cgiOut, "<html>\n");
@@ -109,29 +113,37 @@ void show_login( char * web_user, char * web_code,int flag)
 	fprintf(cgiOut, "<meta http-equiv=\"Expires\" content=\"0\">\n");
 	fprintf(cgiOut, "<meta http-equiv=\"Cache\" content=\"no-cache\">\n");
 	
-	fprintf(cgiOut, "<link rel=\"stylesheet\" href=\"../css/style.css?v=6\">\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery_1_7_2_min.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/layer.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/EpackConf.js?v=6\"></script>\n");
+	fprintf(cgiOut, "<link rel=\"stylesheet\" href=\"../css/style.css?v=303\">\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery_1_7_2_min.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/layer.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/EpackConf.js?v=303\"></script>\n");
 	fprintf(cgiOut,"<script>\n");
 	fprintf(cgiOut,"$(document).ready(function(){\n");
+	fprintf(cgiOut,"		disable_back();\n");
 	fprintf(cgiOut,"				log();\n");
-	fprintf(cgiOut,"				log_type(\"%d\",\"%s\",\"%s\");\n",flag,web_user,web_code);
+	fprintf(cgiOut,"				log_type(\"%d\",\"%s\",\"%s\",\"%d\");\n",flag,web_user,web_code,language_switch);
 	fprintf(cgiOut,"				})\n"); 
 	fprintf(cgiOut,"</script>\n");
 	
 	fprintf(cgiOut, "</head>\n");
 
-	fprintf(cgiOut, "<body  id=\"login\" onkeydown=\"BindEnter(event)\">\n");
+	fprintf(cgiOut, "<body  id=\"login\" oncontextmenu = \"return false\" onkeydown=\"Enter(event)\">\n");
 	fprintf(cgiOut, "	<div class=\"page-container\">\n");
-	fprintf(cgiOut, "		<h1>E-pack100 单机网络管理系统</h1>\n");
+	fprintf(cgiOut, "		<h1 id=\"h1_text\">E-pack100 单机网络管理系统</h1>\n");
 	fprintf(cgiOut, "		<form id=\"form2\" action=\"web_mgr.cgi\" method=\"post\">\n");
 	fprintf(cgiOut, "			<div>\n");
-	fprintf(cgiOut, "				<input type=\"text\" id=\"用户名\" name=\"user\" class=\"username\" placeholder=\"用户名\" maxlength=\"20\" autocomplete=\"off\"/>\n");
+	fprintf(cgiOut, "				<input type=\"text\" id=\"用户名\" name=\"user\" class=\"username\" placeholder=\"User Name\" maxlength=\"20\" autocomplete=\"off\"/>\n");
 	fprintf(cgiOut, "			</div>\n");
 	
 	fprintf(cgiOut, "			<div>\n");
-	fprintf(cgiOut, "			<input type=\"password\" id=\"密码\" name=\"code\" class=\"password\" placeholder=\"密码\" maxlength=\"20\" oncontextmenu=\"return false\" onpaste=\"return false\" />\n");
+	fprintf(cgiOut, "			<input type=\"password\" id=\"密码\" name=\"code\" class=\"password\" placeholder=\"Password\" maxlength=\"20\" oncontextmenu=\"return false\" onpaste=\"return false\" />\n");
+	fprintf(cgiOut, "			</div>\n");
+	
+	fprintf(cgiOut, "			<div>\n");
+	fprintf(cgiOut, "			<select class=\"language\" id=\"language_switch\"  name=\"language_switch\" onchange=\"chang_text()\" >\n");
+	fprintf(cgiOut, "				<option value='0' selected>Chinese-中文</option>\n");
+	fprintf(cgiOut, "				<option value='1'>English</option>\n");
+	fprintf(cgiOut, "			<select>\n");
 	fprintf(cgiOut, "			</div>\n");
 	
 	fprintf(cgiOut, "			<button id=\"log\" type=\"button\" >登　　录</button>\n");
@@ -143,7 +155,7 @@ void show_login( char * web_user, char * web_code,int flag)
 	fprintf(cgiOut, "		</form >\n");
 	
 	fprintf(cgiOut, "		<div class=\"connect\">\n");
-	fprintf(cgiOut, "			<p>版权所有 © 1993-2017 海能达通信股份有限公司</p>\n");
+	fprintf(cgiOut, "			<p id=\"p_text\">版权所有 © 1993-2017 海能达通信股份有限公司</p>\n");
 	fprintf(cgiOut, "		</div>\n");
 	fprintf(cgiOut, "	</div>\n");
 	fprintf(cgiOut, "</body>\n");
@@ -152,20 +164,20 @@ void show_login( char * web_user, char * web_code,int flag)
 
 
 /**
- * @brief    配置页面
+ * @showHtml    配置页面
  *
- * @param[in]		engineer_mode	当前模式：常规/工程
+ * @param[in]		engineer_mode	当前模式：用户/工程   0：用户  1：工程
  * @param[in]		flag		    操作返回状态标志
  * @param[in]		web_data_point  配置项数据
  * @param[in]		current_div     当前显示div
- * @param[in]		update_flag     升级进度标志
+ * @param[in]		language_switch     语言开关
  * @param[in]		file_name       升级文件名
  * @return		void
- * @author		wdz
+ * @author		wdz-6
  * @bug
  */
  
-void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int current_div,int update_flag, char *file_name)
+void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int current_div, char *file_name,int language_switch)
 {
 	fprintf(cgiOut, "<!DOCTYPE html>\n");
 	fprintf(cgiOut, "<html>\n");
@@ -178,24 +190,34 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "<meta http-equiv=\"Expires\" content=\"0\">\n");
 	fprintf(cgiOut, "<meta http-equiv=\"Cache\" content=\"no-cache\">\n");
 	
-	fprintf(cgiOut, "<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/jquery-ui.css?v=6\" />\n");
-	fprintf(cgiOut, "<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/validationEngine.jquery.css?v=6\" />\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery_1_7_2_min.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery.form.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/EpackConf.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery-ui.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/FileSaver.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/FileSaver.min.js?v=6\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/layer.js?v=6\"></script>\n");
+	fprintf(cgiOut, "<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/jquery-ui.css?v=303\" />\n");
+	fprintf(cgiOut, "<link rel=\"stylesheet\" type=\"text/css\" href=\"../css/validationEngine.jquery.css?v=303\" />\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery_1_7_2_min.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery.form.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/EpackConf.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery-ui.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/FileSaver.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/FileSaver.min.js?v=303\"></script>\n");
+	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/layer.js?v=303\"></script>\n");
 //	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/extend/layer.ext.js?v=8\"></script>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery.validationEngine-zh_CN.js?v=6\"></script>\n");
-    fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery.validationEngine.min.js?v=6\"></script>\n");
+	
+    fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery.validationEngine.min.js?v=303\"></script>\n");
 	
     fprintf(cgiOut, "<meta charset=\"utf-8\">\n");	
-	fprintf(cgiOut, "<title>E-pack100 单机网络管理系统 - 配置</title>\n");
+	fprintf(cgiOut, "<title id=\"title_text\">E-pack100 单机网络管理系统 - 配置</title>\n");
     fprintf(cgiOut, "<meta name=\"viewport\" content=\"width=device-width\" initial-scale=\"1.0\">\n");
-    fprintf(cgiOut, "<link rel=\"stylesheet\" href=\"../iconfont/iconfont.css?v=6\">\n");	
-	fprintf(cgiOut, "<link rel=\"stylesheet\" href=\"../css/style.css?v=6\">\n");
+    fprintf(cgiOut, "<link rel=\"stylesheet\" href=\"../iconfont/iconfont.css?v=303\">\n");
+	if(language_switch==0)
+	{
+		fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery.validationEngine-zh_CN.js?v=303\"></script>\n");
+		fprintf(cgiOut, "<link rel=\"stylesheet\" href=\"../css/style.css?v=303\">\n");
+	}
+	else
+	{
+		fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery.validationEngine-en.js?v=303\"></script>\n");
+		fprintf(cgiOut, "<link rel=\"stylesheet\" href=\"../css/style_en.css?v=303\">\n");
+	}
+	
 	
 	////////////////////////////
 	
@@ -203,18 +225,19 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	
 	fprintf(cgiOut,"$(document).ready(function(){\n");
 	fprintf(cgiOut,"		disable_back();\n");
+	fprintf(cgiOut,"		show_lable();\n");
+	fprintf(cgiOut,"		show_title();\n");
 //	fprintf(cgiOut,"		disable_flash();\n");
-//	fprintf(cgiOut,"		document.onkeydown=disable_shortcut_key();\n"); 
+//	fprintf(cgiOut,"		document.onkeydown=disable_shortcut_key();\n"); 565
 	fprintf(cgiOut,"		$(function () { \n");
 	fprintf(cgiOut,"			$( document ).tooltip({\n");  
     fprintf(cgiOut,"									position: {\n");  
 	fprintf(cgiOut,"									my: \"center top\", \n"); 
 	fprintf(cgiOut,"									at: \"right bottom+10\" \n"); 
-	fprintf(cgiOut,"				}\n");
-    fprintf(cgiOut,"				})\n"); 
-	
+    fprintf(cgiOut,"				}\n"); 
 	fprintf(cgiOut,"				})\n");
-	fprintf(cgiOut,"				})\n");
+	fprintf(cgiOut,"				});\n");
+	fprintf(cgiOut,"	})\n");
 	fprintf(cgiOut,"</script>\n");
 	
 	fprintf(cgiOut,"<script>\n");
@@ -242,14 +265,13 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut,"	showWhtList();\n");
 	}
 	fprintf(cgiOut,"	showgsmComm();\n");
-	fprintf(cgiOut,"	showOption(\"%u\",\"%u\",\"%u\",\"%u\",\"%u\", \"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\");\n",
+	fprintf(cgiOut,"	showOption(\"%u\",\"%u\",\"%u\",\"%u\",\"%u\", \"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\",\"%u\");\n",
 	                               web_data_point->dev_power,web_data_point->locking_time,web_data_point->half_variance_threshold,web_data_point->mic_volume,web_data_point->gsm_volume, web_data_point->horn_volume,web_data_point->blacklist_switch,web_data_point->whitelist_switch,web_data_point->filter_switch
 								   ,web_data_point->alarm_ai_switch,web_data_point->neighbor_switch,web_data_point->alarm_show_switch,web_data_point->gsm_alarm_show_switch,web_data_point->radio_alarm_show_switch,web_data_point->neighbor_ai_switch,atoi(web_data_point->current_group_id),web_data_point->current_freq,
-								   web_data_point->vol_start_threshold,web_data_point->vol_packet_time,web_data_point->terminal_compatible,web_data_point->work_mode_2,web_data_point->vol_code_2,web_data_point->neighbor_period);
+								   web_data_point->vol_start_threshold,web_data_point->vol_packet_time,web_data_point->terminal_compatible,web_data_point->work_mode_2,web_data_point->vol_code_2,web_data_point->neighbor_period,web_data_point->stop_transmit,web_data_point->device_language_switch,web_data_point->boot_mode_switch,web_data_point->reboot_strategy_switch);
 	
 	fprintf(cgiOut,"	showDiv(\"%d\");\n",current_div);
 	fprintf(cgiOut,"	showTip(\"%d\");\n",flag);
-	fprintf(cgiOut,"	update(\"%d\");\n",update_flag);
     fprintf(cgiOut,"	})\n");
 	fprintf(cgiOut,"</script>\n");
 	////////////////////////////////////
@@ -265,39 +287,39 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	
 	fprintf(cgiOut, "<div class=\"head\">\n");
 	fprintf(cgiOut, "	<div class=\"logo\"><img src=\"../img/logo.png\" height=\"48\"  alt=\"\"/></div>\n");
-	fprintf(cgiOut, "	<h1>E-pack100 单机网络管理系统 <span>v1.0</span></h1>\n");
+	fprintf(cgiOut, "	<h1 id=\"h1_text\">E-pack100 单机网络管理系统 </h1>\n");
 	fprintf(cgiOut, "	<div class=\"fr\">\n");
-	fprintf(cgiOut, "		<a href=\"#\" onclick=\"impot()\"><i class=\"icon iconfont icon-epack-9\"></i>导入</a>\n");
-	fprintf(cgiOut, "		<a href=\"#\" onclick=\"expt()\"><i class=\"icon iconfont icon-epack-10\"></i>导出</a>\n");
-	fprintf(cgiOut, "		<a href=\"#\" onclick=\"submit()\"><i class=\"icon iconfont icon-epack-18\"></i>写入 </a>\n");
-	fprintf(cgiOut, "		<a href=\"#\" onclick=\"readParam_validate()\"><i class=\"icon iconfont icon-epack-16\"></i>读取</a>\n");
+	fprintf(cgiOut, "		<a id=\"a1_text\" href=\"#\" onmousedown=\"impot()\"><i class=\"icon iconfont icon-epack-9\"></i>导入</a>\n");
+	fprintf(cgiOut, "		<a id=\"a2_text\" href=\"#\" onclick=\"expt()\"><i class=\"icon iconfont icon-epack-10\"></i>导出</a>\n");
+	fprintf(cgiOut, "		<a id=\"a3_text\" href=\"#\" onclick=\"submit()\"><i class=\"icon iconfont icon-epack-18\"></i>写入 </a>\n");
+	fprintf(cgiOut, "		<a id=\"a4_text\" href=\"#\" onmousedown=\"readParam_validate()\"><i class=\"icon iconfont icon-epack-16\"></i>读取</a>\n");
 //	fprintf(cgiOut, "		<a href=\"#\" onclick=\"modify_code()\"><i class=\"icon iconfont icon-epack-19\"></i>修改密码</a> \n");
-	fprintf(cgiOut, "		<a href=\"#\" onclick=\"reboot_validate()\"><i class=\"icon iconfont icon-epack-17\"></i>重启</a> \n");
+	fprintf(cgiOut, "		<a id=\"a5_text\" href=\"#\" onclick=\"reboot_validate()\"><i class=\"icon iconfont icon-epack-17\"></i>重启</a> \n");
 	
     fprintf(cgiOut, "	</div>\n");
 	fprintf(cgiOut, "</div>\n");
 	
 	fprintf(cgiOut, "<div class=\"left\">\n");
 	fprintf(cgiOut, "	<ul id=\"ulList\" class=\"menu\">\n");
-	fprintf(cgiOut, "		<li id=\"li1\"  class=\"on\"><a href=\"javascript:void(0)\" onclick=\"showDiv(1)\"><i class=\"icon iconfont icon-epack-1\"></i>网络参数</a></li>\n");
-	fprintf(cgiOut, "		<li id=\"li2\"><a href=\"javascript:void(0)\" onclick=\"showDiv(2)\"><i class=\"icon iconfont icon-epack-2\"></i>基础设置</a></li>\n");
-	fprintf(cgiOut, "		<li id=\"li3\"><a href=\"javascript:void(0)\" onclick=\"showDiv(3)\"><i class=\"icon iconfont icon-epack-3\"></i>组呼设置</a></li>\n");
-	fprintf(cgiOut, "		<li id=\"li4\"><a href=\"#\" onclick=\"showDiv(4)\"><i class=\"icon iconfont icon-epack-4\"></i>频率设置</a></li>\n");
-	fprintf(cgiOut, "		<li id=\"li5\"><a href=\"#\" onclick=\"showDiv(5)\"><i class=\"icon iconfont icon-epack-5\"></i>GSM通讯录</a></li>\n");
-	fprintf(cgiOut, "		<li id=\"li6\"><a href=\"#\" onclick=\"showDiv(6)\"><i class=\"icon iconfont icon-epack-12\"></i>&nbsp;升&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;级 </a></li>\n");
+	fprintf(cgiOut, "		<li id=\"li1\"  class=\"on\"><a id=\"a6_text\" href=\"javascript:void(0)\" onclick=\"showDiv(1)\"><i class=\"icon iconfont icon-epack-1\"></i>网络参数</a></li>\n");
+	fprintf(cgiOut, "		<li id=\"li2\"><a id=\"a7_text\" href=\"javascript:void(0)\" onclick=\"showDiv(2)\"><i class=\"icon iconfont icon-epack-2\"></i>基础设置</a></li>\n");
+	fprintf(cgiOut, "		<li id=\"li3\"><a id=\"a8_text\" href=\"javascript:void(0)\" onclick=\"showDiv(3)\"><i class=\"icon iconfont icon-epack-3\"></i>组呼设置</a></li>\n");
+	fprintf(cgiOut, "		<li id=\"li4\"><a id=\"a9_text\" href=\"#\" onclick=\"showDiv(4)\"><i class=\"icon iconfont icon-epack-4\"></i>频率设置</a></li>\n");
+	fprintf(cgiOut, "		<li id=\"li5\"><a id=\"a10_text\" href=\"#\" onclick=\"showDiv(5)\"><i class=\"icon iconfont icon-epack-5\"></i>GSM通讯录</a></li>\n");
+	fprintf(cgiOut, "		<li id=\"li6\"><a id=\"a11_text\" href=\"#\" onclick=\"showDiv(6)\"><i class=\"icon iconfont icon-epack-12\"></i>&nbsp;升&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;级 </a></li>\n");
 	
 	if(engineer_mode==ENGINEER_MODE)  ////工程模式
 	{
-		fprintf(cgiOut, "		<li id=\"li8\" ><a href=\"#\" onclick=\"showDiv(8)\"><i class=\"icon iconfont icon-epack-15\"></i>黑名单设置</a></li>\n");
-		fprintf(cgiOut, "		<li id=\"li9\" ><a href=\"#\" onclick=\"showDiv(9)\"><i class=\"icon iconfont icon-epack-14\"></i>白名单设置</a></li>\n");
-		fprintf(cgiOut, "		<li id=\"li10\"><a href=\"#\" onclick=\"showDiv(10)\"><i class=\"icon iconfont icon-epack-13\"></i>中转台设置</a></li>\n");
-		fprintf(cgiOut, "		<li id=\"li11\"><a href=\"#\" onclick=\"showDiv(11)\"><i class=\"icon iconfont icon-epack-20\"></i>工程模式</a></li>\n");
+		fprintf(cgiOut, "		<li id=\"li8\" ><a id=\"a12_text\" href=\"#\" onclick=\"showDiv(8)\"><i class=\"icon iconfont icon-epack-15\"></i>黑名单设置</a></li>\n");
+		fprintf(cgiOut, "		<li id=\"li9\" ><a id=\"a13_text\" href=\"#\" onclick=\"showDiv(9)\"><i class=\"icon iconfont icon-epack-14\"></i>白名单设置</a></li>\n");
+		fprintf(cgiOut, "		<li id=\"li10\"><a id=\"a14_text\" href=\"#\" onclick=\"showDiv(10)\"><i class=\"icon iconfont icon-epack-13\"></i>中转台设置</a></li>\n");
+		fprintf(cgiOut, "		<li id=\"li11\"><a id=\"a15_text\" href=\"#\" onclick=\"showDiv(11)\"><i class=\"icon iconfont icon-epack-20\"></i>工程模式</a></li>\n");
 	}
 	else
 	{
-		fprintf(cgiOut, "		<li id=\"li8\"><a href=\"#\"  onclick=\"showDiv(8)\"><i class=\"icon iconfont icon-epack-21\"></i>用户管理</a></li>\n");
+		fprintf(cgiOut, "		<li id=\"li8\"><a id=\"a16_text\" href=\"#\"  onclick=\"showDiv(8)\"><i class=\"icon iconfont icon-epack-21\"></i>用户管理</a></li>\n");
 	}
-	fprintf(cgiOut, "		<li id=\"li7\"><a href=\"#\" onclick=\"showDiv(7)\"><i class=\"icon iconfont icon-epack-6\"></i>版本信息</a></li>\n");
+	fprintf(cgiOut, "		<li id=\"li7\"><a id=\"a17_text\" href=\"#\" onclick=\"showDiv(7)\"><i class=\"icon iconfont icon-epack-6\"></i>版本信息</a></li>\n");
 	fprintf(cgiOut, "	</ul>\n");
 	fprintf(cgiOut, "	</div>\n");
 	
@@ -307,6 +329,7 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "		<input id=\"uploadfile\" name=\"uploadfile\" type=\"file\" onchange=\"createUploadFile()\" style=\"display:none\"/>\n");
 	fprintf(cgiOut, "		<input id=\"current_div\" name=\"current_div\" type=\"text\" style=\"display:none\" />\n");
 	fprintf(cgiOut, "		<input id=\"current_mode\" name=\"current_mode\" type=\"text\" value =\"%u\" style=\"display:none\" />\n",engineer_mode);
+	fprintf(cgiOut, "		<input id=\"language_switch\" name=\"language_switch\" type=\"text\" value =\"%u\" style=\"display:none\" />\n",language_switch);
 	fprintf(cgiOut, "		<input id=\"tmp_team\" type=\"text\" name=\"tmp_team\"  class=\"ipt-text \"  style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input id=\"tmp_freq\" type=\"text\" name=\"tmp_freq\"  class=\"ipt-text \"  style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input id=\"freq_channel\" type=\"text\" name=\"freq_channel\" value =\"%u\" class=\"ipt-text \"  style=\"display:none\" >\n",web_data_point->freq_channel);
@@ -320,6 +343,8 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "		<input id=\"repeate_whiteNumber\" type=\"text\" name=\"repeate_whiteNumber\"  class=\"ipt-text \"  style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input id=\"invalidate_gsmNumber\" type=\"text\" name=\"invalidate_gsmNumber\"  class=\"ipt-text \"  style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input id=\"repeate_gsmNumber\" type=\"text\" name=\"repeate_gsmNumber\"  class=\"ipt-text \"  style=\"display:none\" >\n");
+	fprintf(cgiOut, "		<input id=\"read_down\" type=\"text\" name=\"read_down\"  class=\"ipt-text \"  style=\"display:none\" >\n");
+	fprintf(cgiOut, "		<input id=\"import_down\" type=\"text\" name=\"import_down\"  class=\"ipt-text \"  style=\"display:none\" >\n");
 	if(engineer_mode==NORMAL_MODE)
 	{
 		fprintf(cgiOut, "		<input id=\"web_code\" type=\"text\" name=\"web_code\"  value =\"%s\" class=\"ipt-text \"  style=\"display:none\" >\n",web_data_point->web_code);
@@ -327,7 +352,7 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	}
     
 	fprintf(cgiOut, "		<input name=\"set_code\" id=\"set_code\" type=\"submit\" onclick=\"Delete_validate_Form();\"  style=\"display:none\" >\n");
-	fprintf(cgiOut, "		<input name=\"set_operate\" id=\"set_operate\"  type=\"submit\"  style=\"display:none\" >\n");
+	fprintf(cgiOut, "		<input name=\"set_operate\" id=\"set_operate\"  type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input name=\"set_operate_validate\" id=\"set_operate_validate\" type=\"submit\" onclick=\"Delete_validate_Form();\"   style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input name=\"get_operate\" id=\"get_operate\" type=\"submit\" onclick=\"Delete_validate_Form();\"   style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input name=\"get_operate_validate\" id=\"get_operate_validate\" type=\"submit\" onclick=\"Delete_validate_Form();\"   style=\"display:none\" >\n");
@@ -335,63 +360,51 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "		<input name=\"reboot_operate_validate\" id=\"reboot_operate_validate\" type=\"submit\" onclick=\"Delete_validate_Form();\"  style=\"display:none\" >\n");
 	fprintf(cgiOut, "		<input name=\"set_code_validate\" id=\"set_code_validate\" type=\"submit\" onclick=\"Delete_validate_Form();\"  style=\"display:none\" >\n");
     fprintf(cgiOut, "		<input name=\"transmit_dtb\" id=\"transmit_dtb\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"transmit_dtb_update\" id=\"transmit_dtb_update\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"update_dtb\" id=\"update_dtb\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
 	fprintf(cgiOut, "		<input name=\"transmit_uboot\" id=\"transmit_uboot\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"transmit_uboot_update\" id=\"transmit_uboot_update\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"update_uboot\" id=\"update_uboot\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
     fprintf(cgiOut, "		<input name=\"transmit_loadapp\" id=\"transmit_loadapp\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"transmit_loadapp_update\" id=\"transmit_loadapp_update\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"update_loadapp\" id=\"update_loadapp\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
 	fprintf(cgiOut, "		<input name=\"transmit_file\" id=\"transmit_file\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"transmit_file_update\" id=\"transmit_file_update\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"update_file\" id=\"update_file\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
 	fprintf(cgiOut, "		<input name=\"transmit_rbf\" id=\"transmit_rbf\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"transmit_rbf_update\" id=\"transmit_rbf_update\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"update_rbf\" id=\"update_rbf\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
 	fprintf(cgiOut, "		<input name=\"transmit_zimage\" id=\"transmit_zimage\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"transmit_zimage_update\" id=\"transmit_zimage_update\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-    fprintf(cgiOut, "		<input name=\"update_zimage\" id=\"update_zimage\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
-	fprintf(cgiOut, "		<input name=\"again_login\" id=\"again_login\" type=\"submit\" onclick=\"Delete_validate_Form();\" style=\"display:none\">\n");
+	fprintf(cgiOut, "		<input name=\"again_login\" id=\"again_login\" type=\"submit\" onclick=\"return  false;\" style=\"display:none\">\n");
 	fprintf(cgiOut, "	</div>\n");
 	
 	fprintf(cgiOut, "	<div id=\"show1\">\n");
 	fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 	fprintf(cgiOut, "			<a name=\"wlcs\"></a>\n");
-	fprintf(cgiOut, "			<legend>网络参数</legend>\n");
+	fprintf(cgiOut, "			<legend id=\"wlcs_text\">网络参数</legend>\n");
 	fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">本机IP</label>\n");
+	fprintf(cgiOut, "					<label id=\"linkIP_text\" class=\"i-title\">本机IP</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "					<input id=\"linkIP\" type=\"text\" name=\"linkIP\"   title =\"本机IP地址\"  value=\"%s\"  class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\" autocomplete=\"off\" >\n",web_data_point->dev_ip);
+	fprintf(cgiOut, "					<input id=\"linkIP\" type=\"text\" name=\"linkIP\"     value=\"%s\"  class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\" autocomplete=\"off\" >\n",web_data_point->dev_ip);
 	fprintf(cgiOut, "					</span>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">子网掩码</label>\n");
+	fprintf(cgiOut, "					<label id=\"mask_text\" class=\"i-title\">子网掩码</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "					<input id=\"mask\" type=\"text\" name=\"mask\" value=\"%s\"  title =\"本机子网掩码\"  class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->subnet_mask);
+	fprintf(cgiOut, "					<input id=\"mask\" type=\"text\" name=\"mask\" value=\"%s\"    class=\"ipt-text validate[required,custom[mask]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->subnet_mask);
 	fprintf(cgiOut, "					</span>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">网关</label>\n");
+	fprintf(cgiOut, "					<label id=\"gateWay_text\" class=\"i-title\">网关</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "					<input id=\"gateWay\" type=\"text\" name=\"gateWay\" value=\"%s\"  title =\"本机网关\"  class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->def_route);
+	fprintf(cgiOut, "					<input id=\"gateWay\" type=\"text\" name=\"gateWay\" value=\"%s\"   class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->def_route);
 	fprintf(cgiOut, "					</span>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">中心IP</label>\n");
+	fprintf(cgiOut, "					<label id=\"centerIP_text\" class=\"i-title\">中心IP</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "					<input id=\"centerIP\" type=\"text\" name=\"centerIP\"  value=\"%s\" title =\"控制中心IP地址\"  class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->center_ip);
+	fprintf(cgiOut, "					<input id=\"centerIP\" type=\"text\" name=\"centerIP\"  value=\"%s\"  class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->center_ip);
 	fprintf(cgiOut, "					</span>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">互联ID</label>\n");
+	fprintf(cgiOut, "					<label id=\"centerID_text\" class=\"i-title\">互联ID</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "					<input id=\"centerID\" type=\"text\" name=\"centerID\" value=\"%u\" title =\"设备接入中心时所用ID；取值范围：1~51200；默认值：4051\"  class=\"ipt-text validate[required,custom[integer],min[1],max[51200]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->center_id);
+	fprintf(cgiOut, "					<input id=\"centerID\" type=\"text\" name=\"centerID\" value=\"%u\"   class=\"ipt-text validate[required,custom[integer],min[1],max[51200]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->center_id);
 	fprintf(cgiOut, "					</span>\n");
 	fprintf(cgiOut, "				</li>\n");
 	fprintf(cgiOut, "			</ul>\n");
@@ -401,140 +414,140 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "	<div id=\"show2\">\n");
 	fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 	fprintf(cgiOut, "			<a name=\"jcsz\"></a>\n");
-	fprintf(cgiOut, "			<legend>基础设置</legend>\n");
+	fprintf(cgiOut, "			<legend id=\"jcsz_text\">基础设置</legend>\n");
 	fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">本机编号</label>\n");
+	fprintf(cgiOut, "					<label id=\"epkID_text\" class=\"i-title\">本机编号</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"epkID\" type=\"text\" name=\"epkID\" value=\"%u\"  title =\"同一链路下设备编号不应重复；取值范围：1~32；默认值：1\"  class=\"ipt-text validate[required,custom[integer],min[1],max[32]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_id);
+	fprintf(cgiOut, "						<input id=\"epkID\" type=\"text\" name=\"epkID\" value=\"%u\"    class=\"ipt-text validate[required,custom[integer],min[1],max[32]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">对讲ID</label>\n");
+	fprintf(cgiOut, "					<label id=\"intercomID_text\" class=\"i-title\">对讲ID</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"intercomID\" type=\"text\" name=\"intercomID\" title =\"对讲设备标识，用于识别发起组呼、文本等业务的设备；取值范围：1~16776415；默认值：1\" value=\"%s\" class=\"ipt-text validate[required,custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_ai_id);
+	fprintf(cgiOut, "						<input id=\"intercomID\" type=\"text\" name=\"intercomID\"  value=\"%s\" class=\"ipt-text validate[required,custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_ai_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">发射功率</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"设备当前功率；默认：低\">\n");
+	fprintf(cgiOut, "					<label id=\"power_text\" class=\"i-title\">发射功率</label>\n");
+	fprintf(cgiOut, "					<div id=\"power_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"power\" name=\"power\" >\n");
-	fprintf(cgiOut, "							<option value=\"5\">低</option>\n");
-	fprintf(cgiOut, "							<option value=\"10\">中</option>\n");
-	fprintf(cgiOut, "							<option value=\"20\">高</option>\n");
+	fprintf(cgiOut, "							<option id=\"power_1\" value=\"5\">低</option>\n");
+	fprintf(cgiOut, "							<option id=\"power_2\" value=\"10\">中</option>\n");
+	fprintf(cgiOut, "							<option id=\"power_3\" value=\"20\">高</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">链路色码</label>\n");
+	fprintf(cgiOut, "					<label id=\"epkCode_text\" class=\"i-title\">链路色码</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"epkCode\" type=\"text\" name=\"epkCode\" value=\"%u\"  title =\"相互通信的链路设备必须设置相同的链路色码，且不能与终端色码重复；取值范围：0~15；默认值：1\"  class=\"ipt-text validate[required,custom[integer],min[0],max[15]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_cc);
+	fprintf(cgiOut, "						<input id=\"epkCode\" type=\"text\" name=\"epkCode\" value=\"%u\"    class=\"ipt-text validate[required,custom[integer],min[0],max[15]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_cc);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">终端色码</label>\n");
+	fprintf(cgiOut, "					<label id=\"termCode_text\" class=\"i-title\">终端色码</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"termCode\" type=\"text\" name=\"termCode\" value=\"%u\" title =\"相互通信的对讲设备必须设置相同的终端色码，且不能与链路色码重复；取值范围:0~15；默认值：5\" class=\"ipt-text validate[required,custom[integer],min[0],max[15]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->terminal_cc);
+	fprintf(cgiOut, "						<input id=\"termCode\" type=\"text\" name=\"termCode\" value=\"%u\"  class=\"ipt-text validate[required,custom[integer],min[0],max[15]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->terminal_cc);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">工作模式</label>\n");
+	fprintf(cgiOut, "					<label id=\"workMode_text\" class=\"i-title\">工作模式</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input  type=\"text\" id=\"workMode\" value=\"%s\" name=\"workMode\" title =\"设备当前专网制式\"  class=\"ipt-text validate[maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  readonly=\"readonly\" style=\"background-color:#d0d0d0\">\n",web_data_point->work_mode);
+	fprintf(cgiOut, "						<input  type=\"text\" id=\"workMode\" value=\"%s\" name=\"workMode\"  class=\"ipt-text validate[maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  readonly=\"readonly\" style=\"background-color:#d0d0d0\">\n",web_data_point->work_mode);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">语音编码格式</label>\n");
+	fprintf(cgiOut, "					<label id=\"voiceCode_text\" class=\"i-title\">语音编码格式</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input  type=\"text\" id=\"voiceCode\" name=\"voiceCode\"  value=\"%s\"  title =\"设备当前使用语音编码格式\"  class=\"ipt-text validate[maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  readonly=\"readonly\" style=\"background-color:#d0d0d0\">\n",web_data_point->vol_code);
+	fprintf(cgiOut, "						<input  type=\"text\" id=\"voiceCode\" name=\"voiceCode\"  value=\"%s\"    class=\"ipt-text validate[maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  readonly=\"readonly\" style=\"background-color:#d0d0d0\">\n",web_data_point->vol_code);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">静噪门限</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"门限越低，通话距离越远；默认：低\" >\n");
+	fprintf(cgiOut, "					<label id=\"muteThreshold_text\" class=\"i-title\">静噪门限</label>\n");
+	fprintf(cgiOut, "					<div id=\"muteThreshold_div\" class=\"select\"  >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"muteThreshold\" name=\"muteThreshold\" >\n");
-	fprintf(cgiOut, "							<option value=\"3000\">低</option>\n");
-	fprintf(cgiOut, "							<option value=\"1500\">中</option>\n");
-	fprintf(cgiOut, "							<option value=\"700\">高</option>\n");
+	fprintf(cgiOut, "							<option id=\"muteThreshold_1\" value=\"3000\">低</option>\n");
+	fprintf(cgiOut, "							<option id=\"muteThreshold_2\" value=\"1500\">中</option>\n");
+	fprintf(cgiOut, "							<option id=\"muteThreshold_3\" value=\"700\">高</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">MIC音量</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"麦克风输入音量；默认：二级\">\n");
+	fprintf(cgiOut, "					<label id=\"micVolume_text\" class=\"i-title\">MIC音量</label>\n");
+	fprintf(cgiOut, "					<div id=\"micVolume_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"micVolume\" name=\"micVolume\" >\n");
-	fprintf(cgiOut, "							<option value=\"1\">一级</option>\n");
-	fprintf(cgiOut, "							<option value=\"2\">二级</option>\n");
-	fprintf(cgiOut, "							<option value=\"3\">三级</option>\n");
+	fprintf(cgiOut, "							<option id=\"micVolume_1\" value=\"1\">一级</option>\n");
+	fprintf(cgiOut, "							<option id=\"micVolume_2\" value=\"2\">二级</option>\n");
+	fprintf(cgiOut, "							<option id=\"micVolume_3\" value=\"3\">三级</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">GSM音量</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"GSM输出音量；默认：三级\">\n");
+	fprintf(cgiOut, "					<label id=\"gsmVolume_text\" class=\"i-title\">GSM音量</label>\n");
+	fprintf(cgiOut, "					<div id=\"gsmVolume_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"gsmVolume\" name=\"gsmVolume\"  >\n");
-	fprintf(cgiOut, "							<option value=\"1\">一级</option>\n");
-	fprintf(cgiOut, "							<option value=\"2\">二级</option>\n");
-	fprintf(cgiOut, "							<option value=\"3\">三级</option>\n");
-	fprintf(cgiOut, "							<option value=\"4\">四级</option>\n");
-	fprintf(cgiOut, "							<option value=\"5\">五级</option>\n");
+	fprintf(cgiOut, "							<option id=\"gsmVolume_1\" value=\"1\">一级</option>\n");
+	fprintf(cgiOut, "							<option id=\"gsmVolume_2\" value=\"2\">二级</option>\n");
+	fprintf(cgiOut, "							<option id=\"gsmVolume_3\" value=\"3\">三级</option>\n");
+	fprintf(cgiOut, "							<option id=\"gsmVolume_4\" value=\"4\">四级</option>\n");
+	fprintf(cgiOut, "							<option id=\"gsmVolume_5\" value=\"5\">五级</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">手咪默认音量</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"手咪输出音量；默认值：三级\">\n");
+	fprintf(cgiOut, "					<label id=\"trumpetVolume_text\" class=\"i-title\">手咪默认音量</label>\n");
+	fprintf(cgiOut, "					<div id=\"trumpetVolume_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"trumpetVolume\" name=\"trumpetVolume\" >\n");
-	fprintf(cgiOut, "							<option value=\"1\">一级</option>\n");
-	fprintf(cgiOut, "							<option value=\"2\">二级</option>\n");
-	fprintf(cgiOut, "							<option value=\"3\">三级</option>\n");
-	fprintf(cgiOut, "							<option value=\"4\">四级</option>\n");
-	fprintf(cgiOut, "							<option value=\"5\">五级</option>\n");
+	fprintf(cgiOut, "							<option id=\"trumpetVolume_1\" value=\"1\">一级</option>\n");
+	fprintf(cgiOut, "							<option id=\"trumpetVolume_2\" value=\"2\">二级</option>\n");
+	fprintf(cgiOut, "							<option id=\"trumpetVolume_3\" value=\"3\">三级</option>\n");
+	fprintf(cgiOut, "							<option id=\"trumpetVolume_4\" value=\"4\">四级</option>\n");
+	fprintf(cgiOut, "							<option id=\"trumpetVolume_5\" value=\"5\">五级</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">通话限时</label>\n");
+	fprintf(cgiOut, "					<label id=\"devCallTimeout_text\" class=\"i-title\">通话限时</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"devCallTimeout\" type=\"text\" name=\"devCallTimeout\" title =\"单次通话最长时间；取值范围：20~500；默认值：60\" value=\"%u\" class=\"ipt-text validate[required,custom[integer],min[20],max[500]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_call_timeout);
+	fprintf(cgiOut, "						<input id=\"devCallTimeout\" type=\"text\" name=\"devCallTimeout\" value=\"%u\" class=\"ipt-text validate[required,custom[integer],min[20],max[500]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_call_timeout);
 	fprintf(cgiOut, "					S</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">邻点查询使能</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"设备邻点查询使能开关，默认：开启\">\n");
+	fprintf(cgiOut, "					<label id=\"neighbor_switch_status_text\" class=\"i-title\">邻点查询使能</label>\n");
+	fprintf(cgiOut, "					<div id=\"neighbor_switch_status_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"neighbor_switch_status\" name=\"neighbor_switch_status\">\n");
-	fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-	fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+	fprintf(cgiOut, "							<option id=\"neighbor_switch_status_1\" value=\"0\">关闭</option>\n");
+	fprintf(cgiOut, "							<option id=\"neighbor_switch_status_2\" value=\"1\">开启</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">邻点周期</label>\n");
+	fprintf(cgiOut, "					<label id=\"neighbor_period_text\" class=\"i-title\">邻点周期</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"设备邻点查询周期；默认：2\">\n");
+	fprintf(cgiOut, "					<div id=\"neighbor_period_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"neighbor_period\" name=\"neighbor_period\">\n");
 	fprintf(cgiOut, "							<option value=\"2\">2</option>\n");
@@ -553,12 +566,56 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">邻点上报使能</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"设备邻点信息主动上报使能开关，默认：关闭\">\n");
+	fprintf(cgiOut, "					<label id=\"neighbor_ai_switch_text\" class=\"i-title\">邻点上报使能</label>\n");
+	fprintf(cgiOut, "					<div id=\"neighbor_ai_switch_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"neighbor_ai_switch\" name=\"neighbor_ai_switch\">\n");
-	fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-	fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+	fprintf(cgiOut, "							<option id=\"neighbor_ai_switch_1\" value=\"0\">关闭</option>\n");
+	fprintf(cgiOut, "							<option id=\"neighbor_ai_switch_2\" value=\"1\">开启</option>\n");
+	fprintf(cgiOut, "						</select>\n");
+	fprintf(cgiOut, "					</div>\n");
+	fprintf(cgiOut, "				</li>\n");
+	
+	fprintf(cgiOut, "				<li>\n");
+	fprintf(cgiOut, "					<label id=\"stop_transmit_switch_text\" class=\"i-title\">智能中转使能</label>\n");
+	fprintf(cgiOut, "					<div id=\"stop_transmit_switch_div\" class=\"select\" >\n");
+	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
+	fprintf(cgiOut, "						<select id=\"stop_transmit_switch\" name=\"stop_transmit_switch\">\n");
+	fprintf(cgiOut, "							<option id=\"stop_transmit_switch_1\" value=\"1\">关闭</option>\n");
+	fprintf(cgiOut, "							<option id=\"stop_transmit_switch_2\" value=\"0\">开启</option>\n");
+	fprintf(cgiOut, "						</select>\n");
+	fprintf(cgiOut, "					</div>\n");
+	fprintf(cgiOut, "				</li>\n");
+	
+	fprintf(cgiOut, "				<li>\n");
+	fprintf(cgiOut, "					<label id=\"dev_language_switch_text\" class=\"i-title\">语言切换</label>\n");
+	fprintf(cgiOut, "					<div id=\"dev_language_switch_div\" class=\"select\" >\n");
+	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
+	fprintf(cgiOut, "						<select id=\"dev_language_switch\" name=\"dev_language_switch\">\n");
+	fprintf(cgiOut, "							<option id=\"dev_language_switch_1\" value=\"0\">中文</option>\n");
+	fprintf(cgiOut, "							<option id=\"dev_language_switch_2\" value=\"1\">英文</option>\n");
+	fprintf(cgiOut, "						</select>\n");
+	fprintf(cgiOut, "					</div>\n");
+	fprintf(cgiOut, "				</li>\n");
+	
+	fprintf(cgiOut, "				<li>\n");
+	fprintf(cgiOut, "					<label id=\"boot_mode_switch_text\" class=\"i-title\">开机方式</label>\n");
+	fprintf(cgiOut, "					<div id=\"boot_mode_switch_div\" class=\"select\" >\n");
+	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
+	fprintf(cgiOut, "						<select id=\"boot_mode_switch\" name=\"boot_mode_switch\">\n");
+	fprintf(cgiOut, "							<option id=\"boot_mode_switch_1\" value=\"0\">按键开机</option>\n");
+	fprintf(cgiOut, "							<option id=\"boot_mode_switch_2\" value=\"1\">上电自动开机</option>\n");
+	fprintf(cgiOut, "						</select>\n");
+	fprintf(cgiOut, "					</div>\n");
+	fprintf(cgiOut, "				</li>\n");
+	
+	fprintf(cgiOut, "				<li>\n");
+	fprintf(cgiOut, "					<label id=\"reboot_strategy_switch_text\" class=\"i-title\">启动策略</label>\n");
+	fprintf(cgiOut, "					<div id=\"reboot_strategy_switch_div\" class=\"select\" >\n");
+	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
+	fprintf(cgiOut, "						<select id=\"reboot_strategy_switch\" name=\"reboot_strategy_switch\">\n");
+	fprintf(cgiOut, "							<option id=\"reboot_strategy_switch_1\" value=\"0\">快速启动</option>\n");
+	fprintf(cgiOut, "							<option id=\"reboot_strategy_switch_2\" value=\"1\">全面启动</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
@@ -567,55 +624,55 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	
 	fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 	fprintf(cgiOut, "			<a name=\"jcsz\"></a>\n");
-	fprintf(cgiOut, "			<legend>告警设置</legend>\n");
+	fprintf(cgiOut, "			<legend id=\"alarm_text\">告警设置</legend>\n");
 	fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">告警上报使能</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"设备告警信息主动上报空口使能开关；默认：关闭\">\n");
+	fprintf(cgiOut, "					<label id=\"alarm_switch_status_text\" class=\"i-title\">告警上报使能</label>\n");
+	fprintf(cgiOut, "					<div id=\"alarm_switch_status_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"alarm_switch_status\" name=\"alarm_switch_status\">\n");
-	fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-	fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+	fprintf(cgiOut, "							<option id=\"alarm_switch_status_1\" value=\"0\">关闭</option>\n");
+	fprintf(cgiOut, "							<option id=\"alarm_switch_status_2\" value=\"1\">开启</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">紧急警报重复次数</label>\n");
+	fprintf(cgiOut, "					<label id=\"alarm_count_text\" class=\"i-title\">紧急警报重复次数</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"alarm_count\" type=\"text\" name=\"alarm_count\" value=\"%u\" title =\"紧急告警发送次数，值为0将关闭紧急警报功能；默认值：3\" class=\"ipt-text validate[required,custom[integer],min[0],max[255]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->alarm_count);
+	fprintf(cgiOut, "						<input id=\"alarm_count\" type=\"text\" name=\"alarm_count\" value=\"%u\"  class=\"ipt-text validate[required,custom[integer],min[0],max[255]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->alarm_count);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">紧急警报显示使能</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"手咪显示紧急告警使能开关；默认；开启\">\n");
+	fprintf(cgiOut, "					<label id=\"alarm_show_switch_text\" class=\"i-title\">紧急警报显示使能</label>\n");
+	fprintf(cgiOut, "					<div id=\"alarm_show_switch_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"alarm_show_switch\" name=\"alarm_show_switch\">\n");
-	fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-	fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+	fprintf(cgiOut, "							<option id=\"alarm_show_switch_1\" value=\"0\">关闭</option>\n");
+	fprintf(cgiOut, "							<option id=\"alarm_show_switch_2\" value=\"1\">开启</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">GSM告警使能</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"GSM模块告警图标显示使能开关；默认：开启\">\n");
+	fprintf(cgiOut, "					<label id=\"gsm_alarm_show_switch_text\" class=\"i-title\">GSM告警使能</label>\n");
+	fprintf(cgiOut, "					<div id=\"gsm_alarm_show_switch_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"gsm_alarm_show_switch\" name=\"gsm_alarm_show_switch\">\n");
-	fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-	fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+	fprintf(cgiOut, "							<option id=\"gsm_alarm_show_switch_1\" value=\"0\">关闭</option>\n");
+	fprintf(cgiOut, "							<option id=\"gsm_alarm_show_switch_2\" value=\"1\">开启</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">中转台告警使能</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\"  title =\"中转台告警图标显示使能开关；默认：开启\">\n");
+	fprintf(cgiOut, "					<label id=\"radio_alarm_show_switch_text\" class=\"i-title\">中转台告警使能</label>\n");
+	fprintf(cgiOut, "					<div id=\"radio_alarm_show_switch_div\" class=\"select\"  >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"radio_alarm_show_switch\" name=\"radio_alarm_show_switch\">\n");
-	fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-	fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+	fprintf(cgiOut, "							<option id=\"radio_alarm_show_switch_1\" value=\"0\">关闭</option>\n");
+	fprintf(cgiOut, "							<option id=\"radio_alarm_show_switch_2\" value=\"1\">开启</option>\n");
 	fprintf(cgiOut, "						</select>\n");
 	fprintf(cgiOut, "					</div>\n");
 	fprintf(cgiOut, "				</li>\n");
@@ -627,88 +684,88 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "	<div id=\"show3\">\n");
 	fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 	fprintf(cgiOut, "			<a name=\"zhsz\"></a>\n");
-	fprintf(cgiOut, "			<legend >组呼设置</legend>\n");
+	fprintf(cgiOut, "			<legend id=\"zhsz_text\">组呼设置</legend>\n");
 	fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组1</label>\n");
+	fprintf(cgiOut, "					<label id=\"team1_text\" class=\"i-title\">组1</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team1\" type=\"text\" name=\"team1\" title =\"组呼呼叫列表；取值范围：1~16776415,不能为空\" value=\"%s\" class=\"ipt-text validate[required,custom[team_number],min[1],max[16776415]]\"  maxlength=\"30\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\" onfocus=\"groupNumber_focus(1)\" onblur=\"groupNumber_blur(1)\"   autocomplete=\"off\">\n",web_data_point->group1_id);
+	fprintf(cgiOut, "						<input id=\"team1\" type=\"text\" name=\"team1\"  value=\"%s\" class=\"ipt-text validate[required,custom[team_number],min[1],max[16776415]]\"  maxlength=\"30\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\" onmouseover=\"groupNumber_mouse(1)\"   onfocus=\"groupNumber_focus(1)\" onblur=\"groupNumber_blur(1)\"  onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->group1_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组2</label>\n");
+	fprintf(cgiOut, "					<label id=\"team2_text\" class=\"i-title\">组2</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team2\" type=\"text\" name=\"team2\" value=\"%s\"   class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(2)\"  onfocus=\"groupNumber_focus(2)\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group2_id);
+	fprintf(cgiOut, "						<input id=\"team2\" type=\"text\" name=\"team2\" value=\"%s\"   class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(2)\" onmouseover=\"groupNumber_mouse(2)\"  onfocus=\"groupNumber_focus(2)\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group2_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组3</label>\n");
+	fprintf(cgiOut, "					<label id=\"team3_text\" class=\"i-title\">组3</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team3\" type=\"text\" name=\"team3\" value=\"%s\"  class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(3)\"  onfocus=\"groupNumber_focus(3)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group3_id);
+	fprintf(cgiOut, "						<input id=\"team3\" type=\"text\" name=\"team3\" value=\"%s\"  class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(3)\" onmouseover=\"groupNumber_mouse(3)\" onfocus=\"groupNumber_focus(3)\" disabled=\"true\" onpaste=\"return false\"autocomplete=\"off\">\n",web_data_point->group3_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组4</label>\n");
+	fprintf(cgiOut, "					<label id=\"team4_text\" class=\"i-title\">组4</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team4\" type=\"text\" name=\"team4\" value=\"%s\"  class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(4)\"   onfocus=\"groupNumber_focus(4)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group4_id);
+	fprintf(cgiOut, "						<input id=\"team4\" type=\"text\" name=\"team4\" value=\"%s\"  class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(4)\"  onmouseover=\"groupNumber_mouse(4)\" onfocus=\"groupNumber_focus(4)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group4_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组5</label>\n");
+	fprintf(cgiOut, "					<label id=\"team5_text\" class=\"i-title\">组5</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team5\" type=\"text\" name=\"team5\" value=\"%s\"   class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(5)\" onfocus=\"groupNumber_focus(5)\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group5_id);
+	fprintf(cgiOut, "						<input id=\"team5\" type=\"text\" name=\"team5\" value=\"%s\"   class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(5)\" onfocus=\"groupNumber_focus(5)\"  onmouseover=\"groupNumber_mouse(5)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group5_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组6</label>\n");
+	fprintf(cgiOut, "					<label id=\"team6_text\" class=\"i-title\">组6</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team6\" type=\"text\" name=\"team6\"   value=\"%s\" class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(6)\"  onfocus=\"groupNumber_focus(6)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group6_id);
+	fprintf(cgiOut, "						<input id=\"team6\" type=\"text\" name=\"team6\"   value=\"%s\" class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(6)\"  onfocus=\"groupNumber_focus(6)\" onmouseover=\"groupNumber_mouse(6)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group6_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组7</label>\n");
+	fprintf(cgiOut, "					<label id=\"team7_text\" class=\"i-title\">组7</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team7\" type=\"text\" name=\"team7\"   value=\"%s\" class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(7)\" onfocus=\"groupNumber_focus(7)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group7_id);
+	fprintf(cgiOut, "						<input id=\"team7\" type=\"text\" name=\"team7\"   value=\"%s\" class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\"  maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(7)\" onfocus=\"groupNumber_focus(7)\" onmouseover=\"groupNumber_mouse(7)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group7_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组8</label>\n");
+	fprintf(cgiOut, "					<label id=\"team8_text\" class=\"i-title\">组8</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team8\" type=\"text\" name=\"team8\" value=\"%s\"  class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\" maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(8)\"  onfocus=\"groupNumber_focus(8)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group8_id);
+	fprintf(cgiOut, "						<input id=\"team8\" type=\"text\" name=\"team8\" value=\"%s\"  class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\" maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(8)\"  onfocus=\"groupNumber_focus(8)\" onmouseover=\"groupNumber_mouse(8)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group8_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组9</label>\n");
+	fprintf(cgiOut, "					<label id=\"team9_text\" class=\"i-title\">组9</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team9\" type=\"text\" name=\"team9\"  value=\"%s\" class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\" maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(9)\"  onfocus=\"groupNumber_focus(9)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group9_id);
+	fprintf(cgiOut, "						<input id=\"team9\" type=\"text\" name=\"team9\"  value=\"%s\" class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\" maxlength=\"30\" reqmsg=\"\" onblur=\"groupNumber_blur(9)\"  onfocus=\"groupNumber_focus(9)\" onmouseover=\"groupNumber_mouse(9)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group9_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">组10</label>\n");
+	fprintf(cgiOut, "					<label id=\"team10_text\" class=\"i-title\">组10</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"team10\" type=\"text\" name=\"team10\" value=\"%s\"   class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\" maxlength=\"30\" reqmsg=\"\"  onblur=\"groupNumber_blur(10)\"  onfocus=\"groupNumber_focus(10)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->group10_id);
+	fprintf(cgiOut, "						<input id=\"team10\" type=\"text\" name=\"team10\" value=\"%s\"   class=\"ipt-text validate[custom[team_number],min[1],max[16776415]]\"  data-prompt-position=\"bottomRight:-112\" maxlength=\"30\" reqmsg=\"\" onmouseover=\"groupNumber_mouse(10)\"  onblur=\"groupNumber_blur(10)\"  onfocus=\"groupNumber_focus(10)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->group10_id);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<span class=\"ipt\">\n");
+	fprintf(cgiOut, "					<span class=\"ipt\" tabindex=\"0\" id=\"team_span\">\n");
 	fprintf(cgiOut, "						<input id=\"team\" type=\"text\" name=\"team\"  style=\"display:none\">\n");
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">当前组</label>\n");
-	fprintf(cgiOut, "					<div class=\"select\" title =\"当前组呼号\">\n");
+	fprintf(cgiOut, "					<label id=\"teamIdNow_text\" class=\"i-title\">当前组</label>\n");
+	fprintf(cgiOut, "					<div id=\"teamIdNow_div\" class=\"select\" >\n");
 	fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 	fprintf(cgiOut, "						<select id=\"teamIdNow\" name=\"teamIdNow\" >\n");
 	fprintf(cgiOut, "							<option value=\"0\">  </option>\n");
@@ -724,90 +781,90 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "	<div id=\"show4\">\n");
 		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 		fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-		fprintf(cgiOut, "			<legend>频段350~400Mhz</legend>\n");
+		fprintf(cgiOut, "			<legend id=\"plsz_text\">频段350~400Mhz</legend>\n");
 		fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率1</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint1_text\" class=\"i-title\">频率1</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint1\" type=\"text\" name=\"frePoint1\"  title =\"设备可用频率列表；取值范围：350~400,不能为空；输入格式：最多6位精度位数\" value=\"%s\" class=\"ipt-text validate[required,custom[number],min[350],max[400]]\" maxlength=\"10\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(1)\"  onfocus=\"freqNumber_focus(1)\"   autocomplete=\"off\">\n",web_data_point->freq1);
+		fprintf(cgiOut, "						<input id=\"frePoint1\" type=\"text\" name=\"frePoint1\"   value=\"%s\" class=\"ipt-text validate[required,custom[number],min[350],max[400]]\" maxlength=\"10\" data-prompt-position=\"bottomRight:-112\" onmouseover=\"freqNumber_mouse(1)\"  onblur=\"freqNumber_blur(1)\"  onfocus=\"freqNumber_focus(1)\"  onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->freq1);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率2</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint2_text\" class=\"i-title\">频率2</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint2\" type=\"text\" name=\"frePoint2\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(2)\"  maxlength=\"10\"  onfocus=\"freqNumber_focus(2)\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq2);
+		fprintf(cgiOut, "						<input id=\"frePoint2\" type=\"text\" name=\"frePoint2\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(2)\"  maxlength=\"10\" onmouseover=\"freqNumber_mouse(2)\"  onfocus=\"freqNumber_focus(2)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq2);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率3</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint3_text\" class=\"i-title\">频率3</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint3\" type=\"text\" name=\"frePoint3\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(3)\"  maxlength=\"10\" onfocus=\"freqNumber_focus(3)\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq3);
+		fprintf(cgiOut, "						<input id=\"frePoint3\" type=\"text\" name=\"frePoint3\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(3)\"  maxlength=\"10\" onmouseover=\"freqNumber_mouse(3)\" onfocus=\"freqNumber_focus(3)\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq3);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率4</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint4_text\" class=\"i-title\">频率4</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint4\" type=\"text\" name=\"frePoint4\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(4)\" maxlength=\"10\"  onfocus=\"freqNumber_focus(4)\" disabled=\"true\"   autocomplete=\"off\">\n",web_data_point->freq4);
+		fprintf(cgiOut, "						<input id=\"frePoint4\" type=\"text\" name=\"frePoint4\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(4)\" maxlength=\"10\"  onmouseover=\"freqNumber_mouse(4)\" onfocus=\"freqNumber_focus(4)\" disabled=\"true\"  onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->freq4);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率5</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint5_text\" class=\"i-title\">频率5</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint5\" type=\"text\" name=\"frePoint5\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"onblur=\"freqNumber_blur(5)\" maxlength=\"10\"  onfocus=\"freqNumber_focus(5)\"   disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq5);
+		fprintf(cgiOut, "						<input id=\"frePoint5\" type=\"text\" name=\"frePoint5\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"onblur=\"freqNumber_blur(5)\" maxlength=\"10\"  onmouseover=\"freqNumber_mouse(5)\" onfocus=\"freqNumber_focus(5)\"   disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq5);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率6</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint6_text\" class=\"i-title\">频率6</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint6\" type=\"text\" name=\"frePoint6\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(6)\" maxlength=\"10\" onfocus=\"freqNumber_focus(6)\"  disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->freq6);
+		fprintf(cgiOut, "						<input id=\"frePoint6\" type=\"text\" name=\"frePoint6\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(6)\" maxlength=\"10\" onmouseover=\"freqNumber_mouse(6)\" onfocus=\"freqNumber_focus(6)\"  disabled=\"true\" onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->freq6);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率7</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint7_text\" class=\"i-title\">频率7</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint7\" type=\"text\" name=\"frePoint7\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(7)\"  maxlength=\"10\" onfocus=\"freqNumber_focus(7)\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq7);
+		fprintf(cgiOut, "						<input id=\"frePoint7\" type=\"text\" name=\"frePoint7\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(7)\"  maxlength=\"10\" onmouseover=\"freqNumber_mouse(7)\" onfocus=\"freqNumber_focus(7)\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq7);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率8</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint8_text\" class=\"i-title\">频率8</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint8\" type=\"text\" name=\"frePoint8\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(8)\" maxlength=\"10\"  onfocus=\"freqNumber_focus(8)\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq8);
+		fprintf(cgiOut, "						<input id=\"frePoint8\" type=\"text\" name=\"frePoint8\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(8)\" maxlength=\"10\"  onmouseover=\"freqNumber_mouse(8)\"onfocus=\"freqNumber_focus(8)\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq8);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率9</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint9_text\" class=\"i-title\">频率9</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint9\" type=\"text\" name=\"frePoint9\" value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(9)\" maxlength=\"10\"  onfocus=\"freqNumber_focus(9)\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->freq9);
+		fprintf(cgiOut, "						<input id=\"frePoint9\" type=\"text\" name=\"frePoint9\" value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(9)\" maxlength=\"10\"  onmouseover=\"freqNumber_mouse(9)\" onfocus=\"freqNumber_focus(9)\" disabled=\"true\" onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->freq9);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率10</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint10_text\"class=\"i-title\">频率10</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint10\" type=\"text\" name=\"frePoint10\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(10)\" maxlength=\"10\"  onfocus=\"freqNumber_focus(10)\" disabled=\"true\" autocomplete=\"off\" >\n",web_data_point->freq10);
+		fprintf(cgiOut, "						<input id=\"frePoint10\" type=\"text\" name=\"frePoint10\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[350],max[400]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(10)\" maxlength=\"10\"  onmouseover=\"freqNumber_mouse(10)\" onfocus=\"freqNumber_focus(10)\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\" >\n",web_data_point->freq10);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "					<span class=\"ipt\" tabindex=\"1\" id=\"fre_span\">\n");
 		fprintf(cgiOut, "						<input id=\"fre\" type=\"text\" name=\"fre\" style=\"display:none\" >\n");
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">当前频率</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePointNow_text\" class=\"i-title\">当前频率</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "					<div class=\"select\" title =\"设备当前频率\">\n");
+		fprintf(cgiOut, "					<div id=\"frePointNow_div\" class=\"select\" >\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"frePointNow\" name=\"frePointNow\" >\n");
 		fprintf(cgiOut, "							<option value=\"0\">  </option>\n");
@@ -825,90 +882,191 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "	<div id=\"show4\">\n");
 		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 		fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-		fprintf(cgiOut, "			<legend>频段410~470Mhz</legend>\n");
+		fprintf(cgiOut, "			<legend id=\"plsz_text\">频段410~470Mhz</legend>\n");
 		fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率1</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint1_text\" class=\"i-title\">频率1</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint1\" type=\"text\" name=\"frePoint1\"  title =\"设备可用频率列表；取值范围：410~470,不能为空；输入格式：最多6位精度位数\" value=\"%s\" maxlength=\"10\" class=\"ipt-text validate[required,custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(1)\"  onfocus=\"freqNumber_focus(1)\"   autocomplete=\"off\">\n",web_data_point->freq1);
+		fprintf(cgiOut, "						<input id=\"frePoint1\" type=\"text\" name=\"frePoint1\"   value=\"%s\" maxlength=\"10\" class=\"ipt-text validate[required,custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onmouseover=\"freqNumber_mouse(1)\"  onblur=\"freqNumber_blur(1)\"  onfocus=\"freqNumber_focus(1)\"  onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq1);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率2</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint2_text\" class=\"i-title\">频率2</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint2\" type=\"text\" name=\"frePoint2\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(2)\"  onfocus=\"freqNumber_focus(2)\" maxlength=\"10\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq2);
+		fprintf(cgiOut, "						<input id=\"frePoint2\" type=\"text\" name=\"frePoint2\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(2)\" onmouseover=\"freqNumber_mouse(2)\"  onfocus=\"freqNumber_focus(2)\" maxlength=\"10\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq2);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率3</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint3_text\" class=\"i-title\">频率3</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint3\" type=\"text\" name=\"frePoint3\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(3)\"  onfocus=\"freqNumber_focus(3)\" maxlength=\"10\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq3);
+		fprintf(cgiOut, "						<input id=\"frePoint3\" type=\"text\" name=\"frePoint3\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(3)\" onmouseover=\"freqNumber_mouse(3)\"  onfocus=\"freqNumber_focus(3)\" maxlength=\"10\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq3);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率4</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint4_text\" class=\"i-title\">频率4</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint4\" type=\"text\" name=\"frePoint4\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(4)\"  onfocus=\"freqNumber_focus(4)\" maxlength=\"10\" disabled=\"true\"   autocomplete=\"off\">\n",web_data_point->freq4);
+		fprintf(cgiOut, "						<input id=\"frePoint4\" type=\"text\" name=\"frePoint4\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(4)\"  onmouseover=\"freqNumber_mouse(4)\" onfocus=\"freqNumber_focus(4)\" maxlength=\"10\" disabled=\"true\"   onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq4);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率5</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint5_text\" class=\"i-title\">频率5</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint5\" type=\"text\" name=\"frePoint5\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"onblur=\"freqNumber_blur(5)\"  onfocus=\"freqNumber_focus(5)\"   maxlength=\"10\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq5);
+		fprintf(cgiOut, "						<input id=\"frePoint5\" type=\"text\" name=\"frePoint5\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"onblur=\"freqNumber_blur(5)\"  onmouseover=\"freqNumber_mouse(5)\" onfocus=\"freqNumber_focus(5)\"   maxlength=\"10\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq5);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率6</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint6_text\" class=\"i-title\">频率6</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint6\" type=\"text\" name=\"frePoint6\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(6)\"  onfocus=\"freqNumber_focus(6)\" maxlength=\"10\"  disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->freq6);
+		fprintf(cgiOut, "						<input id=\"frePoint6\" type=\"text\" name=\"frePoint6\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(6)\"  onmouseover=\"freqNumber_mouse(6)\" onfocus=\"freqNumber_focus(6)\" maxlength=\"10\"  disabled=\"true\"  onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq6);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率7</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint7_text\" class=\"i-title\">频率7</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint7\" type=\"text\" name=\"frePoint7\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(7)\"  onfocus=\"freqNumber_focus(7)\" maxlength=\"10\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq7);
+		fprintf(cgiOut, "						<input id=\"frePoint7\" type=\"text\" name=\"frePoint7\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(7)\"  onmouseover=\"freqNumber_mouse(7)\" onfocus=\"freqNumber_focus(7)\" maxlength=\"10\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq7);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率8</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint8_text\" class=\"i-title\">频率8</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint8\" type=\"text\" name=\"frePoint8\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(8)\"  onfocus=\"freqNumber_focus(8)\" maxlength=\"10\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->freq8);
+		fprintf(cgiOut, "						<input id=\"frePoint8\" type=\"text\" name=\"frePoint8\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\" onblur=\"freqNumber_blur(8)\" onmouseover=\"freqNumber_mouse(8)\"  onfocus=\"freqNumber_focus(8)\" maxlength=\"10\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq8);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率9</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint9_text\" class=\"i-title\">频率9</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint9\" type=\"text\" name=\"frePoint9\" value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(9)\"  onfocus=\"freqNumber_focus(9)\" maxlength=\"10\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->freq9);
+		fprintf(cgiOut, "						<input id=\"frePoint9\" type=\"text\" name=\"frePoint9\" value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(9)\"  onmouseover=\"freqNumber_mouse(9)\" onfocus=\"freqNumber_focus(9)\" maxlength=\"10\" disabled=\"true\" onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->freq9);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">频率10</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint10_text\" class=\"i-title\">频率10</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"frePoint10\" type=\"text\" name=\"frePoint10\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(10)\"  onfocus=\"freqNumber_focus(10)\" maxlength=\"10\" disabled=\"true\" autocomplete=\"off\" >\n",web_data_point->freq10);
+		fprintf(cgiOut, "						<input id=\"frePoint10\" type=\"text\" name=\"frePoint10\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[410],max[470]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"freqNumber_blur(10)\"  onmouseover=\"freqNumber_mouse(10)\" onfocus=\"freqNumber_focus(10)\" maxlength=\"10\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\" >\n",web_data_point->freq10);
 		fprintf(cgiOut, "					MHz</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "					<span class=\"ipt\" tabindex=\"2\" id=\"fre_span\">\n");
 		fprintf(cgiOut, "						<input id=\"fre\" type=\"text\" name=\"fre\" style=\"display:none\" >\n");
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">当前频率</label>\n");
+		fprintf(cgiOut, "					<label id=\"frePointNow_text\" class=\"i-title\">当前频率</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "					<div class=\"select\" title =\"设备当前频率\">\n");
+		fprintf(cgiOut, "					<div id=\"frePointNow_div\" class=\"select\" >\n");
+		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
+		fprintf(cgiOut, "						<select id=\"frePointNow\" name=\"frePointNow\" >\n");
+		fprintf(cgiOut, "							<option value=\"0\">  </option>\n");
+		fprintf(cgiOut, "						</select>\n");
+		fprintf(cgiOut, "					</div>\n");	
+		fprintf(cgiOut, "					MHz</span>\n");
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "			</ul>\n");
+		fprintf(cgiOut, "		</fieldset>\n");
+		fprintf(cgiOut, "	</div>\n");
+	}
+	else if(web_data_point->freq_channel==0)
+	{
+		fprintf(cgiOut, "	<div id=\"show4\">\n");
+		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
+		fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
+		fprintf(cgiOut, "			<legend id=\"plsz_text\">无效频段</legend>\n");
+		fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint1_text\" class=\"i-title\">频率1</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint1\" type=\"text\" name=\"frePoint1\"   value=\"%s\" maxlength=\"10\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"  disabled=\"true\"   onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq1);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint2_text\" class=\"i-title\">频率2</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint2\" type=\"text\" name=\"frePoint2\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"  disabled=\"true\"  maxlength=\"10\"  onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq2);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint3_text\" class=\"i-title\">频率3</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint3\" type=\"text\" name=\"frePoint3\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"      maxlength=\"10\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq3);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint4_text\" class=\"i-title\">频率4</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint4\" type=\"text\" name=\"frePoint4\"   value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"   maxlength=\"10\" disabled=\"true\"   onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq4);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint5_text\" class=\"i-title\">频率5</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint5\" type=\"text\" name=\"frePoint5\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"    maxlength=\"10\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq5);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint6_text\" class=\"i-title\">频率6</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint6\" type=\"text\" name=\"frePoint6\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"    maxlength=\"10\"  disabled=\"true\"  onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq6);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint7_text\" class=\"i-title\">频率7</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint7\" type=\"text\" name=\"frePoint7\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"     maxlength=\"10\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq7);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint8_text\" class=\"i-title\">频率8</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint8\" type=\"text\" name=\"frePoint8\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"   maxlength=\"10\"  disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->freq8);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint9_text\" class=\"i-title\">频率9</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint9\" type=\"text\" name=\"frePoint9\" value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"      maxlength=\"10\" disabled=\"true\" onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->freq9);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePoint10_text\" class=\"i-title\">频率10</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "						<input id=\"frePoint10\" type=\"text\" name=\"frePoint10\"  value=\"%s\" class=\"ipt-text validate[custom[number],min[0],max[1000]]\" data-prompt-position=\"bottomRight:-112\"    maxlength=\"10\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\" >\n",web_data_point->freq10);
+		fprintf(cgiOut, "					MHz</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\" tabindex=\"2\" id=\"fre_span\">\n");
+		fprintf(cgiOut, "						<input id=\"fre\" type=\"text\" name=\"fre\" style=\"display:none\" >\n");
+		fprintf(cgiOut, "					</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+	
+	
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<label id=\"frePointNow_text\" class=\"i-title\">当前频率</label>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\">\n");
+		fprintf(cgiOut, "					<div id=\"frePointNow_div\" class=\"select\" >\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"frePointNow\" name=\"frePointNow\" >\n");
 		fprintf(cgiOut, "							<option value=\"0\">  </option>\n");
@@ -925,75 +1083,81 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "	<div id=\"show5\">\n");
 	fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 	fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-	fprintf(cgiOut, "			<legend>联系人</legend>\n");
+	fprintf(cgiOut, "			<legend id=\"gsmComm_text\">联系人</legend>\n");
 	fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人1</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm1_text\" class=\"i-title\">联系人1</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm1\" type=\"text\" name=\"gsmComm1\" title =\"GSM模块呼叫号码列表；输入格式：最多为30字符，如+1234或1234\" value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" maxlength=\"30\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(1)\" onblur=\"gsmNumber_blur(1)\" autocomplete=\"off\">\n",web_data_point->gsm_list1);
+	fprintf(cgiOut, "						<input id=\"gsmComm1\" type=\"text\" name=\"gsmComm1\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" maxlength=\"30\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(1)\" onmouseover=\"gsmNumber_mouse(1)\" onblur=\"gsmNumber_blur(1)\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->gsm_list1);
 	fprintf(cgiOut, "					</span>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人2</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm2_text\" class=\"i-title\">联系人2</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm2\" type=\"text\" name=\"gsmComm2\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(2)\" onblur=\"gsmNumber_blur(2)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->gsm_list2);
+	fprintf(cgiOut, "						<input id=\"gsmComm2\" type=\"text\" name=\"gsmComm2\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(2)\" onmouseover=\"gsmNumber_mouse(2)\" onblur=\"gsmNumber_blur(2)\" maxlength=\"30\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->gsm_list2);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人3</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm3_text\" class=\"i-title\">联系人3</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm3\" type=\"text\" name=\"gsmComm3\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(3)\" onblur=\"gsmNumber_blur(3)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->gsm_list3);
+	fprintf(cgiOut, "						<input id=\"gsmComm3\" type=\"text\" name=\"gsmComm3\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(3)\" onmouseover=\"gsmNumber_mouse(3)\" onblur=\"gsmNumber_blur(3)\" maxlength=\"30\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->gsm_list3);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人4</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm4_text\" class=\"i-title\">联系人4</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm4\" type=\"text\" name=\"gsmComm4\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(4)\" onblur=\"gsmNumber_blur(4)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->gsm_list4);
+	fprintf(cgiOut, "						<input id=\"gsmComm4\" type=\"text\" name=\"gsmComm4\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(4)\" onmouseover=\"gsmNumber_mouse(4)\" onblur=\"gsmNumber_blur(4)\" maxlength=\"30\" disabled=\"true\"  onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->gsm_list4);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人5</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm5_text\" class=\"i-title\">联系人5</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm5\" type=\"text\" name=\"gsmComm5\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(5)\" onblur=\"gsmNumber_blur(5)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->gsm_list5);
+	fprintf(cgiOut, "						<input id=\"gsmComm5\" type=\"text\" name=\"gsmComm5\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(5)\" onmouseover=\"gsmNumber_mouse(5)\" onblur=\"gsmNumber_blur(5)\" maxlength=\"30\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\">\n",web_data_point->gsm_list5);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人6</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm6_text\" class=\"i-title\">联系人6</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm6\" type=\"text\" name=\"gsmComm6\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(6)\" onblur=\"gsmNumber_blur(6)\"  maxlength=\"30\" disabled=\"true\" autocomplete=\"off\" >\n",web_data_point->gsm_list6);
+	fprintf(cgiOut, "						<input id=\"gsmComm6\" type=\"text\" name=\"gsmComm6\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"gsmNumber_focus(6)\" onmouseover=\"gsmNumber_mouse(6)\"onblur=\"gsmNumber_blur(6)\"  maxlength=\"30\" disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\" >\n",web_data_point->gsm_list6);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人7</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm7_text\" class=\"i-title\">联系人7</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm7\" type=\"text\" name=\"gsmComm7\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(7)\" onblur=\"gsmNumber_blur(7)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\" >\n",web_data_point->gsm_list7);
+	fprintf(cgiOut, "						<input id=\"gsmComm7\" type=\"text\" name=\"gsmComm7\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(7)\" onmouseover=\"gsmNumber_mouse(7)\" onblur=\"gsmNumber_blur(7)\" maxlength=\"30\" disabled=\"true\" onpaste=\"return false\"  autocomplete=\"off\" >\n",web_data_point->gsm_list7);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人8</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm8_text\" class=\"i-title\">联系人8</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm8\" type=\"text\" name=\"gsmComm8\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(8)\" onblur=\"gsmNumber_blur(8)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\" >\n",web_data_point->gsm_list8);
+	fprintf(cgiOut, "						<input id=\"gsmComm8\" type=\"text\" name=\"gsmComm8\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(8)\" onmouseover=\"gsmNumber_mouse(8)\" onblur=\"gsmNumber_blur(8)\" maxlength=\"30\" disabled=\"true\" onpaste=\"return false\"  autocomplete=\"off\" >\n",web_data_point->gsm_list8);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人9</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm9_text\" class=\"i-title\">联系人9</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm9\" type=\"text\" name=\"gsmComm9\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(9)\" onblur=\"gsmNumber_blur(9)\" maxlength=\"30\" disabled=\"true\"   autocomplete=\"off\">\n",web_data_point->gsm_list9);
+	fprintf(cgiOut, "						<input id=\"gsmComm9\" type=\"text\" name=\"gsmComm9\"  value=\"%s\" class=\"ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(9)\" onmouseover=\"gsmNumber_mouse(9)\" onblur=\"gsmNumber_blur(9)\" maxlength=\"30\" disabled=\"true\" onpaste=\"return false\"   autocomplete=\"off\">\n",web_data_point->gsm_list9);
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">联系人10</label>\n");
+	fprintf(cgiOut, "					<label id=\"gsmComm10_text\" class=\"i-title\">联系人10</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
-	fprintf(cgiOut, "						<input id=\"gsmComm10\" type=\"text\" name=\"gsmComm10\"  value=\"%s\" class=\" ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(10)\" onblur=\"gsmNumber_blur(10)\" maxlength=\"30\"disabled=\"true\" autocomplete=\"off\" >\n",web_data_point->gsm_list10);
+	fprintf(cgiOut, "						<input id=\"gsmComm10\" type=\"text\" name=\"gsmComm10\"  value=\"%s\" class=\" ipt-text validate[custom[gsm_number],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"gsmNumber_focus(10)\" onmouseover=\"gsmNumber_mouse(10)\" onblur=\"gsmNumber_blur(10)\" maxlength=\"30\"disabled=\"true\" onpaste=\"return false\" autocomplete=\"off\" >\n",web_data_point->gsm_list10);
+	fprintf(cgiOut, "					</span>\n");	
+	fprintf(cgiOut, "				</li>\n");
+	
+	fprintf(cgiOut, "				<li>\n");
+	fprintf(cgiOut, "					<span class=\"ipt\" tabindex=\"3\" id=\"gsm_span\">\n");
+	fprintf(cgiOut, "						<input id=\"gsm\" type=\"text\" name=\"gsm\"  style=\"display:none\">\n");
 	fprintf(cgiOut, "					</span>\n");	
 	fprintf(cgiOut, "				</li>\n");
 	fprintf(cgiOut, "			</ul>\n");
@@ -1006,21 +1170,21 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "	<div id=\"show6\">\n");
 	fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
     fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-	fprintf(cgiOut, "			<legend>升级E-pack100</legend>\n");
+	fprintf(cgiOut, "			<legend id=\"update_text\">升级E-pack100</legend>\n");
 	
 	fprintf(cgiOut, "				<ul class=\"123\">\n");
 	fprintf(cgiOut, "					<li>\n");
-	fprintf(cgiOut, "						<label class=\"i-title\">升级文件名称</label>\n");
+	fprintf(cgiOut, "						<label id=\"update1_text\" class=\"i-title\">升级文件名称</label>\n");
 	fprintf(cgiOut, "						<span class=\"ipt\">\n");
 	fprintf(cgiOut, "						<input type=\"text\"  name=\"upfile\" id=\"upfile\"  readonly=\"readonly\" value=\"%s\" style=\"width:200px; height:28px; border-radius: 4px;font-size: 20px;\">\n",file_name);
 	fprintf(cgiOut, "						</span>\n");
 	fprintf(cgiOut, "						<input type=\"file\" name =\"file\" id=\"path\" style=\"display:none\" onchange=\"file_path();\">\n");
-	fprintf(cgiOut, "						<button type=\"button\"  onclick=\"path_click()\"  class=\"btn btn-primary\"><span>浏览</span></button>\n");
+	fprintf(cgiOut, "						<button type=\"button\"  onclick=\"path_click()\"  class=\"btn btn-primary\"><span id=\"scan\">浏览</span></button>\n");
 //	fprintf(cgiOut, "					</li>\n");
 //	fprintf(cgiOut, "					<li>\n");
 //	fprintf(cgiOut, "						<label class=\"i-title\">升级按钮</label>\n");
 	fprintf(cgiOut, "						<span class=\"ipt\">\n");
-	fprintf(cgiOut, "			    		<button type=\"button\" name=\"update\" onclick=\"select_file();\" class=\"btn btn-primary\"><span>升级</span></button>\n");
+	fprintf(cgiOut, "			    		<button type=\"button\" name=\"update\" onclick=\"select_file();\" class=\"btn btn-primary\"><span id=\"update2_text\">升级</span></button>\n");
 	fprintf(cgiOut, "						</span>\n");
 	fprintf(cgiOut, "					</li>\n");
 	fprintf(cgiOut, "				</ul>\n");
@@ -1030,17 +1194,17 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 	fprintf(cgiOut, "	<div id=\"show7\">\n");
 	fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
     fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-	fprintf(cgiOut, "			<legend>版本信息</legend>\n");
+	fprintf(cgiOut, "			<legend id=\"version_text\">版本信息</legend>\n");
 	fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">MAC地址</label>\n");
+	fprintf(cgiOut, "					<label id=\"mac_text\"  class=\"i-title\">MAC地址</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
 	fprintf(cgiOut, "						<input id=\"mac\" type=\"text\" name=\"mac\" value=\"%s\" class=\"ipt-text validate[maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\" style=\"background-color:#d0d0d0\">\n",web_data_point->mac);
 	fprintf(cgiOut, "					</span>\n");
 	fprintf(cgiOut, "				</li>\n");
 	
 	fprintf(cgiOut, "				<li>\n");
-	fprintf(cgiOut, "					<label class=\"i-title\">E-pack100版本号</label>\n");
+	fprintf(cgiOut, "					<label id=\"version1_text\" class=\"i-title\">E-pack100版本号</label>\n");
 	fprintf(cgiOut, "					<span class=\"ipt\">\n");
 	fprintf(cgiOut, "						<input id=\"version\" type=\"text\" name=\"version\" value=\"%s\" class=\"ipt-text validate[maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  readonly=\"readonly\" style=\"background-color:#d0d0d0\">\n",web_data_point->epack_version);
 	fprintf(cgiOut, "					</span>\n");
@@ -1054,43 +1218,43 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "	<div id=\"show8\">\n");
 		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 		fprintf(cgiOut, "			<a name=\"yhgl\"></a>\n");
-		fprintf(cgiOut, "			<legend>用户管理</legend>\n");
+		fprintf(cgiOut, "			<legend id =\"yhgl_text\">用户管理</legend>\n");
 		fprintf(cgiOut, "				<div class=\"form-group\">\n");
-		fprintf(cgiOut, "					<label class=\"user-label\">原用户名</label>\n");
+		fprintf(cgiOut, "					<label id =\"old_user_text\" class=\"user-label\">原用户名</label>\n");
 		fprintf(cgiOut, "					<div class=\"user-input\" >\n");
-		fprintf(cgiOut, "						<input type=\"text\" id =\"old_user\"  name=\"old_user\" value =\"%s\" title=\"请输入当前用户名\"  class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->old_user);
+		fprintf(cgiOut, "						<input type=\"text\" id =\"old_user\"  name=\"old_user\" value =\"%s\"   class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->old_user);
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</div>\n");
 	
 	//	fprintf(cgiOut, "				<div class=\"hr-line-dashed\"></div>\n");
 		fprintf(cgiOut, "				<div class=\"form-group\">\n");
-		fprintf(cgiOut, "					<label class=\"user-label\">新用户名</label>\n");
+		fprintf(cgiOut, "					<label id =\"new_user_text\" class=\"user-label\">新用户名</label>\n");
 		fprintf(cgiOut, "					<div class=\"user-input\" >\n");
-		fprintf(cgiOut, "						<input type=\"text\" id =\"new_user\"  name=\"new_user\"  value =\"%s\" title=\"请输入新的用户名，用户名长度5~20字符，只能填写数字与英文字母\" class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->new_user);
+		fprintf(cgiOut, "						<input type=\"text\" id =\"new_user\"  name=\"new_user\"  value =\"%s\"  class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->new_user);
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</div>\n");
 	
 	//	fprintf(cgiOut, "				<div class=\"hr-line-dashed\"></div>\n");
 		fprintf(cgiOut, "				<div class=\"form-group\">\n");
-		fprintf(cgiOut, "					<label class=\"user-label\">原密码</label>\n");
+		fprintf(cgiOut, "					<label id =\"old_code_text\" class=\"user-label\">原密码</label>\n");
 		fprintf(cgiOut, "					<div class=\"user-input\" >\n");
-		fprintf(cgiOut, "						<input type=\"password\" id =\"old_code\"  name=\"old_code\" value =\"%s\" title=\"请输入当前密码\" class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" oncontextmenu=\"return false\" onpaste=\"return false\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->old_code);
+		fprintf(cgiOut, "						<input type=\"password\" id =\"old_code\"  name=\"old_code\" value =\"%s\"  class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" oncontextmenu=\"return false\" onpaste=\"return false\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->old_code);
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</div>\n");
 	
 	//	fprintf(cgiOut, "				<div class=\"hr-line-dashed\"></div>\n");
 		fprintf(cgiOut, "				<div class=\"form-group\">\n");
-		fprintf(cgiOut, "					<label class=\"user-label\">新密码</label>\n");
+		fprintf(cgiOut, "					<label id =\"new_code_text\" class=\"user-label\">新密码</label>\n");
 		fprintf(cgiOut, "					<div class=\"user-input\" >\n");
-		fprintf(cgiOut, "						<input type=\"password\" id =\"new_code\" name=\"new_code\" value =\"%s\"  title=\"请输入新的密码，密码长度5~20字符，只能填写数字与英文字母\" class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" oncontextmenu=\"return false\" onpaste=\"return false\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->new_code);
+		fprintf(cgiOut, "						<input type=\"password\" id =\"new_code\" name=\"new_code\" value =\"%s\"   class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" oncontextmenu=\"return false\" onpaste=\"return false\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->new_code);
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</div>\n");
 	
 	//	fprintf(cgiOut, "				<div class=\"hr-line-dashed\"></div>\n");
 		fprintf(cgiOut, "				<div class=\"form-group\">\n");
-		fprintf(cgiOut, "					<label class=\"user-label\">确认密码</label>\n");
+		fprintf(cgiOut, "					<label id =\"confirm_code_text\" class=\"user-label\">确认密码</label>\n");
 		fprintf(cgiOut, "					<div class=\"user-input\" >\n");
-		fprintf(cgiOut, "						<input type=\"password\" id =\"confirm_code\" name=\"confirm_code\" value =\"%s\" title=\"请再次输入新的密码\" class=\"ipt-text validate[required,minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" oncontextmenu=\"return false\" onpaste=\"return false\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->confirm_code);
+		fprintf(cgiOut, "						<input type=\"password\" id =\"confirm_code\" name=\"confirm_code\" value =\"%s\"  class=\"ipt-text validate[required,custom[onlyLetterNumber],minSize[5],maxSize[20]]\"  maxlength=\"20\" reqmsg=\"\" oncontextmenu=\"return false\" onpaste=\"return false\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->confirm_code);
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</div>\n");
 	
@@ -1098,7 +1262,7 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "				<div class=\"form-group\">\n");
 		fprintf(cgiOut, "					<label class=\"user-label\"></label>\n");
 		fprintf(cgiOut, "					<div class=\"user-input\" >\n");
-		fprintf(cgiOut, "						<button  class=\"user-bt\" type=\"button\" onclick=\"modify_code()\">提　　交</button>\n");
+		fprintf(cgiOut, "						<button  class=\"user-bt\" type=\"button\" onclick=\"modify_code()\" id =\"yhgl1_text\">提　　交</button>\n");
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</div>\n");
 		fprintf(cgiOut, "		</fieldset>\n");
@@ -1111,86 +1275,92 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "	<div id=\"show8\">\n");
 		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 		fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-		fprintf(cgiOut, "			<legend>黑名单设置</legend>\n");
+		fprintf(cgiOut, "			<legend id=\"blk_text\">黑名单设置</legend>\n");
 		fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单使能</label>\n");
-		fprintf(cgiOut, "					<div class=\"select\" title =\"黑名单使能开关，开启会屏蔽黑名单1~10中号码呼叫功能；默认：关闭\" >\n");
+		fprintf(cgiOut, "					<label id=\"blkListConf_text\" class=\"i-title\">黑名单使能</label>\n");
+		fprintf(cgiOut, "					<div id=\"blkListConf_div\" class=\"select\"  >\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"blkListConf\" name=\"blkListConf\" >\n");
-		fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-		fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+		fprintf(cgiOut, "							<option id=\"blkListConf_1\" value=\"0\">关闭</option>\n");
+		fprintf(cgiOut, "							<option id=\"blkListConf_2\" value=\"1\">开启</option>\n");
 		fprintf(cgiOut, "						</select>\n");
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单1</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList1_text\" class=\"i-title\">黑名单1</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList1\" type=\"text\" name=\"blkList1\" title =\"黑名单列表，列入该名单的电话号码将被屏蔽呼叫功能；输入格式：最多为30字符，且字符只能为数字\" value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" maxlength=\"30\" data-prompt-position=\"bottomRight:-112\" onblur=\"blackNumber_blur(1)\"  onfocus=\"blackNumber_focus(1)\"   autocomplete=\"off\">\n",web_data_point->black_list1);
+		fprintf(cgiOut, "						<input id=\"blkList1\" type=\"text\" name=\"blkList1\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" maxlength=\"30\" data-prompt-position=\"bottomRight:-112\" onmouseover=\"blackNumber_mouse(1)\" onblur=\"blackNumber_blur(1)\"  onfocus=\"blackNumber_focus(1)\" onpaste=\"return false\"  autocomplete=\"off\">\n",web_data_point->black_list1);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单2</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList2_text\" class=\"i-title\">黑名单2</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList2\" type=\"text\" name=\"blkList2\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(2)\"  onfocus=\"blackNumber_focus(2)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list2);
+		fprintf(cgiOut, "						<input id=\"blkList2\" type=\"text\" name=\"blkList2\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(2)\"  onmouseover=\"blackNumber_mouse(2)\" onfocus=\"blackNumber_focus(2)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list2);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单3</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList3_text\" class=\"i-title\">黑名单3</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList3\" type=\"text\" name=\"blkList3\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(3)\"  onfocus=\"blackNumber_focus(3)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list3);
+		fprintf(cgiOut, "						<input id=\"blkList3\" type=\"text\" name=\"blkList3\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(3)\"  onmouseover=\"blackNumber_mouse(3)\" onfocus=\"blackNumber_focus(3)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list3);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单4</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList4_text\" class=\"i-title\">黑名单4</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList4\" type=\"text\" name=\"blkList4\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(4)\"  onfocus=\"blackNumber_focus(4)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list4);
+		fprintf(cgiOut, "						<input id=\"blkList4\" type=\"text\" name=\"blkList4\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(4)\"  onmouseover=\"blackNumber_mouse(4)\" onfocus=\"blackNumber_focus(4)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list4);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单5</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList5_text\" class=\"i-title\">黑名单5</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList5\" type=\"text\" name=\"blkList5\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(5)\"  onfocus=\"blackNumber_focus(5)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list5);
+		fprintf(cgiOut, "						<input id=\"blkList5\" type=\"text\" name=\"blkList5\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(5)\"  onmouseover=\"blackNumber_mouse(5)\" onfocus=\"blackNumber_focus(5)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list5);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单6</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList6_text\" class=\"i-title\">黑名单6</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList6\" type=\"text\" name=\"blkList6\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"blackNumber_blur(6)\"  onfocus=\"blackNumber_focus(6)\"  maxlength=\"30\" disabled=\"true\"autocomplete=\"off\">\n",web_data_point->black_list6);
+		fprintf(cgiOut, "						<input id=\"blkList6\" type=\"text\" name=\"blkList6\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"blackNumber_blur(6)\"  onmouseover=\"blackNumber_mouse(6)\" onfocus=\"blackNumber_focus(6)\"  maxlength=\"30\" onpaste=\"return false\" disabled=\"true\"autocomplete=\"off\">\n",web_data_point->black_list6);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单7</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList7_text\" class=\"i-title\">黑名单7</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList7\" type=\"text\" name=\"blkList7\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(7)\"  onfocus=\"blackNumber_focus(7)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->black_list7);
+		fprintf(cgiOut, "						<input id=\"blkList7\" type=\"text\" name=\"blkList7\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(7)\"  onmouseover=\"blackNumber_mouse(7)\" onfocus=\"blackNumber_focus(7)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->black_list7);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单8</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList8_text\" class=\"i-title\">黑名单8</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList8\" type=\"text\" name=\"blkList8\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(8)\"  onfocus=\"blackNumber_focus(8)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->black_list8);
+		fprintf(cgiOut, "						<input id=\"blkList8\" type=\"text\" name=\"blkList8\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(8)\"  onmouseover=\"blackNumber_mouse(8)\" onfocus=\"blackNumber_focus(8)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->black_list8);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单9</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList9_text\" class=\"i-title\">黑名单9</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList9\" type=\"text\" name=\"blkList9\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(9)\"  onfocus=\"blackNumber_focus(9)\" maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->black_list9);
+		fprintf(cgiOut, "						<input id=\"blkList9\" type=\"text\" name=\"blkList9\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onblur=\"blackNumber_blur(9)\"  onmouseover=\"blackNumber_mouse(9)\" onfocus=\"blackNumber_focus(9)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->black_list9);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">黑名单10</label>\n");
+		fprintf(cgiOut, "					<label id=\"blkList10_text\" class=\"i-title\">黑名单10</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"blkList10\" type=\"text\" name=\"blkList10\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"blackNumber_blur(10)\"  onfocus=\"blackNumber_focus(10)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list10);
+		fprintf(cgiOut, "						<input id=\"blkList10\" type=\"text\" name=\"blkList10\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onblur=\"blackNumber_blur(10)\"  onmouseover=\"blackNumber_mouse(10)\" onfocus=\"blackNumber_focus(10)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->black_list10);
+		fprintf(cgiOut, "					</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+		
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\" tabindex=\"4\" id=\"blk_span\">\n");
+		fprintf(cgiOut, "						<input id=\"blk\" type=\"text\" name=\"blk\"  style=\"display:none\">\n");
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 		fprintf(cgiOut, "			</ul>\n");
@@ -1201,86 +1371,93 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "	<div id=\"show9\">\n");
 		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 		fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-		fprintf(cgiOut, "			<legend>白名单设置</legend>\n");
+		fprintf(cgiOut, "			<legend id=\"whtList_text\">白名单设置</legend>\n");
 		fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单使能</label>\n");
-		fprintf(cgiOut, "					<div class=\"select\" title =\"白名单使能开关，开启会使白名单1~10中的号码开启呼叫功能；默认：关闭\">\n");
+		fprintf(cgiOut, "					<label id=\"whtListConf_text\" class=\"i-title\">白名单使能</label>\n");
+		fprintf(cgiOut, "					<div id=\"whtListConf_div\" class=\"select\" >\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"whtListConf\" name=\"whtListConf\"  >\n");
-		fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-		fprintf(cgiOut, "							<option value=\"1\">开启</option>\n");
+		fprintf(cgiOut, "							<option id=\"whtListConf_1\" value=\"0\">关闭</option>\n");
+		fprintf(cgiOut, "							<option id=\"whtListConf_2\" value=\"1\">开启</option>\n");
 		fprintf(cgiOut, "						</select>\n");
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单1</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList1_text\" class=\"i-title\">白名单1</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList1\" type=\"text\" name=\"whtList1\" title =\"白名单列表，列入该名单的电话号码将被开启呼叫功能；输入格式：最多为30字符，且字符只能为数字\" value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" maxlength=\"30\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"whiteNumber_focus(1)\" onblur=\"whiteNumber_blur(1)\"  autocomplete=\"off\">\n" ,web_data_point->white_list1);
+		fprintf(cgiOut, "						<input id=\"whtList1\" type=\"text\" name=\"whtList1\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" maxlength=\"30\" data-prompt-position=\"bottomRight:-112\" onmouseover=\"whiteNumber_mouse(1)\"  onfocus=\"whiteNumber_focus(1)\" onblur=\"whiteNumber_blur(1)\"  onpaste=\"return false\" autocomplete=\"off\">\n" ,web_data_point->white_list1);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单2</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList2_text\" class=\"i-title\">白名单2</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList2\" type=\"text\" name=\"whtList2\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"whiteNumber_focus(2)\" onblur=\"whiteNumber_blur(2)\"  maxlength=\"30\"  disabled=\"true\" autocomplete=\"off\">\n" ,web_data_point->white_list2);
+		fprintf(cgiOut, "						<input id=\"whtList2\" type=\"text\" name=\"whtList2\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"whiteNumber_focus(2)\" onmouseover=\"whiteNumber_mouse(2)\" onblur=\"whiteNumber_blur(2)\"  maxlength=\"30\" onpaste=\"return false\"  disabled=\"true\" autocomplete=\"off\">\n" ,web_data_point->white_list2);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单3</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList3_text\" class=\"i-title\">白名单3</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList3\" type=\"text\" name=\"whtList3\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(3)\" onblur=\"whiteNumber_blur(3)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list3);
+		fprintf(cgiOut, "						<input id=\"whtList3\" type=\"text\" name=\"whtList3\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(3)\" onmouseover=\"whiteNumber_mouse(3)\" onblur=\"whiteNumber_blur(3)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list3);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单4</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList4_text\" class=\"i-title\">白名单4</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList4\" type=\"text\" name=\"whtList4\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(4)\" onblur=\"whiteNumber_blur(4)\"  maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->white_list4);
+		fprintf(cgiOut, "						<input id=\"whtList4\" type=\"text\" name=\"whtList4\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(4)\" onmouseover=\"whiteNumber_mouse(4)\" onblur=\"whiteNumber_blur(4)\"  maxlength=\"30\" onpaste=\"return false\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->white_list4);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单5</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList5_text\" class=\"i-title\">白名单5</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList5\" type=\"text\" name=\"whtList5\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(5)\" onblur=\"whiteNumber_blur(5)\" maxlength=\"30\" disabled=\"true\" autocomplete=\"off\" autocomplete=\"off\">\n",web_data_point->white_list5);
+		fprintf(cgiOut, "						<input id=\"whtList5\" type=\"text\" name=\"whtList5\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(5)\" onmouseover=\"whiteNumber_mouse(5)\" onblur=\"whiteNumber_blur(5)\" maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\" autocomplete=\"off\">\n",web_data_point->white_list5);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单6</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList6_text\" class=\"i-title\">白名单6</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList6\" type=\"text\" name=\"whtList6\" value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(6)\" onblur=\"whiteNumber_blur(6)\"  maxlength=\"30\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list6);
+		fprintf(cgiOut, "						<input id=\"whtList6\" type=\"text\" name=\"whtList6\" value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(6)\" onmouseover=\"whiteNumber_mouse(6)\" onblur=\"whiteNumber_blur(6)\"  maxlength=\"30\" onpaste=\"return false\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list6);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单7</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList7_text\" class=\"i-title\">白名单7</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList7\" type=\"text\" name=\"whtList7\" value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(7)\" onblur=\"whiteNumber_blur(7)\"  maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list7);
+		fprintf(cgiOut, "						<input id=\"whtList7\" type=\"text\" name=\"whtList7\" value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"   onfocus=\"whiteNumber_focus(7)\" onmouseover=\"whiteNumber_mouse(7)\" onblur=\"whiteNumber_blur(7)\"  maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list7);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单8</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList8_text\" class=\"i-title\">白名单8</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList8\" type=\"text\" name=\"whtList8\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"whiteNumber_focus(8)\" onblur=\"whiteNumber_blur(8)\"  maxlength=\"30\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list8);
+		fprintf(cgiOut, "						<input id=\"whtList8\" type=\"text\" name=\"whtList8\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"  onfocus=\"whiteNumber_focus(8)\" onmouseover=\"whiteNumber_mouse(8)\" onblur=\"whiteNumber_blur(8)\"  maxlength=\"30\" onpaste=\"return false\"  disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list8);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单9</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList9_text\" class=\"i-title\">白名单9</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList9\" type=\"text\" name=\"whtList9\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"    onfocus=\"whiteNumber_focus(9)\" onblur=\"whiteNumber_blur(9)\"  maxlength=\"30\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list9);
+		fprintf(cgiOut, "						<input id=\"whtList9\" type=\"text\" name=\"whtList9\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\"    onfocus=\"whiteNumber_focus(9)\" onmouseover=\"whiteNumber_mouse(9)\" onblur=\"whiteNumber_blur(9)\"  maxlength=\"30\" onpaste=\"return false\" disabled=\"true\" autocomplete=\"off\">\n",web_data_point->white_list9);
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">白名单10</label>\n");
+		fprintf(cgiOut, "					<label id=\"whtList10_text\" class=\"i-title\">白名单10</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"whtList10\" type=\"text\" name=\"whtList10\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"whiteNumber_focus(10)\" onblur=\"whiteNumber_blur(10)\"  maxlength=\"30\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->white_list10);
+		fprintf(cgiOut, "						<input id=\"whtList10\" type=\"text\" name=\"whtList10\"  value=\"%s\" class=\"ipt-text validate[custom[integer],maxSize[30]]\" data-prompt-position=\"bottomRight:-112\" onfocus=\"whiteNumber_focus(10)\" onmouseover=\"whiteNumber_mouse(10)\" onblur=\"whiteNumber_blur(10)\"  maxlength=\"30\" onpaste=\"return false\" disabled=\"true\"  autocomplete=\"off\">\n",web_data_point->white_list10);
+		fprintf(cgiOut, "					</span>\n");	
+		fprintf(cgiOut, "				</li>\n");
+		
+		
+		fprintf(cgiOut, "				<li>\n");
+		fprintf(cgiOut, "					<span class=\"ipt\" tabindex=\"5\" id=\"wht_span\">\n");
+		fprintf(cgiOut, "						<input id=\"wht\" type=\"text\" name=\"wht\"  style=\"display:none\">\n");
 		fprintf(cgiOut, "					</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 		fprintf(cgiOut, "			</ul>\n");
@@ -1290,99 +1467,99 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "	<div id=\"show10\">\n");
 		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 		fprintf(cgiOut, "			<a name=\"plsz\"></a>\n");
-		fprintf(cgiOut, "			<legend>中转台设置</legend>\n");
+		fprintf(cgiOut, "			<legend id=\"radio_text\" >中转台设置</legend>\n");
 		fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">中转台IP</label>\n");
+		fprintf(cgiOut, "					<label id=\"radioIP_text\" class=\"i-title\">中转台IP</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "					<input id=\"radioIP\" type=\"text\" name=\"radioIP\"  value=\"%s\" title =\"中转台所用IP地址\"  class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->radio_ip);
+		fprintf(cgiOut, "					<input id=\"radioIP\" type=\"text\" name=\"radioIP\"  value=\"%s\"   class=\"ipt-text validate[required,custom[ipv4]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->radio_ip);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">短信业务时隙1端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"msgSlotTimePort1_text\" class=\"i-title\">短信业务时隙1端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"msgSlotTimePort1\" type=\"text\" title =\"中转台短信业务时隙1端口，默认值：30007\" value=\"%u\" name=\"msgSlotTimePort1\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->busi_timeslot1);
+		fprintf(cgiOut, "						<input id=\"msgSlotTimePort1\" type=\"text\"  value=\"%u\" name=\"msgSlotTimePort1\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->busi_timeslot1);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">短信业务时隙2端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"msgSlotTimePort2_text\" class=\"i-title\">短信业务时隙2端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"msgSlotTimePort2\" type=\"text\" title =\"中转台短信业务时隙2端口，默认值：30008\" value=\"%u\" name=\"msgSlotTimePort2\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->busi_timeslot2);
+		fprintf(cgiOut, "						<input id=\"msgSlotTimePort2\" type=\"text\"  value=\"%u\" name=\"msgSlotTimePort2\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->busi_timeslot2);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">呼叫控制时隙1端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"callCtrlSlotTimePort1_text\" class=\"i-title\">呼叫控制时隙1端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"callCtrlSlotTimePort1\" type=\"text\" title =\"中转台呼叫控制时隙1端口，默认值：30009\" value=\"%u\" name=\"callCtrlSlotTimePort1\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->ctr_timeslot1);
+		fprintf(cgiOut, "						<input id=\"callCtrlSlotTimePort1\" type=\"text\"  value=\"%u\" name=\"callCtrlSlotTimePort1\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->ctr_timeslot1);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">呼叫控制时隙2端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"callCtrlSlotTimePort2_text\" class=\"i-title\">呼叫控制时隙2端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"callCtrlSlotTimePort2\" type=\"text\"  title =\"中转台呼叫控制时隙2端口，默认值：30010\" value=\"%u\" name=\"callCtrlSlotTimePort2\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->ctr_timeslot2);
+		fprintf(cgiOut, "						<input id=\"callCtrlSlotTimePort2\" type=\"text\"   value=\"%u\" name=\"callCtrlSlotTimePort2\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->ctr_timeslot2);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">语音业务时隙1端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"volumeSlotTimePort1_text\" class=\"i-title\">语音业务时隙1端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"volumeSlotTimePort1\" type=\"text\" title =\"中转台语音业务时隙1端口，默认值：30012\" value=\"%u\" name=\"volumeSlotTimePort1\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"   autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->vol_timeslot1);
+		fprintf(cgiOut, "						<input id=\"volumeSlotTimePort1\" type=\"text\"  value=\"%u\" name=\"volumeSlotTimePort1\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"   autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->vol_timeslot1);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">语音业务时隙2端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"volumeSlotTimePort2_text\" class=\"i-title\">语音业务时隙2端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"volumeSlotTimePort2\" type=\"text\" title =\"中转台语音业务时隙2端口，默认值：30014\" value=\"%u\" name=\"volumeSlotTimePort2\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->vol_timeslot2);
+		fprintf(cgiOut, "						<input id=\"volumeSlotTimePort2\" type=\"text\"  value=\"%u\" name=\"volumeSlotTimePort2\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->vol_timeslot2);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">模拟呼叫控制端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"analogCallPort_text\" class=\"i-title\">模拟呼叫控制端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"analogCallPort\" type=\"text\" title =\"中转台模拟呼叫控制端口，默认值：30015\" value=\"%u\" name=\"analogCallPort\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->simulate_call_port);
+		fprintf(cgiOut, "						<input id=\"analogCallPort\" type=\"text\"  value=\"%u\" name=\"analogCallPort\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->simulate_call_port);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">模拟语音业务端口</label>\n");
+		fprintf(cgiOut, "					<label id=\"analogVolumePort_text\" class=\"i-title\">模拟语音业务端口</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"analogVolumePort\" type=\"text\" title =\"中转台模拟语音业务端口，默认值：30016\" value=\"%u\" name=\"analogVolumePort\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->simulate_vol_port);
+		fprintf(cgiOut, "						<input id=\"analogVolumePort\" type=\"text\"  value=\"%u\" name=\"analogVolumePort\" class=\"ipt-text validate[custom[integer],min[30000],max[65535]]\" data-prompt-position=\"bottomRight:-112\" readonly=\"readonly\"  autocomplete=\"off\" style=\"background-color:#d0d0d0\">\n",web_data_point->simulate_vol_port);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">中转台ID</label>\n");
+		fprintf(cgiOut, "					<label id=\"radioID_text\" class=\"i-title\">中转台ID</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"radioID\" type=\"text\" title =\"中转台空口ID；取值范围：1~16776415，默认值：100\" value=\"%u\" name=\"radioID\" class=\"ipt-text validate[custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->radio_id);
+		fprintf(cgiOut, "						<input id=\"radioID\" type=\"text\"  value=\"%u\" name=\"radioID\" class=\"ipt-text validate[custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->radio_id);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">中转组</label>\n");
+		fprintf(cgiOut, "					<label id=\"interConctNum_text\" class=\"i-title\">中转组</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"interConctNum\" type=\"text\" title =\"中转台与中心互联所用组ID；取值范围：1~16776415，默认值：1000\" value=\"%u\" name=\"interConctNum\" class=\"ipt-text validate[custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"   autocomplete=\"off\">\n",web_data_point->connect_group_number);
+		fprintf(cgiOut, "						<input id=\"interConctNum\" type=\"text\"  value=\"%u\" name=\"interConctNum\" class=\"ipt-text validate[custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"   autocomplete=\"off\">\n",web_data_point->connect_group_number);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">短信控制管理员ID</label>\n");
+		fprintf(cgiOut, "					<label id=\"msgCtrlAdmID_text\" class=\"i-title\">短信控制管理员ID</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"msgCtrlAdmID\" type=\"text\" title =\"短信控制管理员ID；取值范围：1~16776415，默认值：101\" value=\"%u\" name=\"msgCtrlAdmID\" class=\"ipt-text validate[custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->manager_id);
+		fprintf(cgiOut, "						<input id=\"msgCtrlAdmID\" type=\"text\"  value=\"%u\" name=\"msgCtrlAdmID\" class=\"ipt-text validate[custom[integer],min[1],max[16776415]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->manager_id);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">短信控制过滤使能</label>\n");
-		fprintf(cgiOut, "					<div class=\"select\"  title =\"短信过滤功能使能开关（开启时只接收来自管理员ID短信，关闭时可接收所有人员ID短信）；默认：关闭\">\n");
+		fprintf(cgiOut, "					<label id=\"msgCtrlFilter_text\" class=\"i-title\">短信控制过滤使能</label>\n");
+		fprintf(cgiOut, "					<div class=\"select\"  id=\"msgCtrlFilter_div\">\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"msgCtrlFilter\" name=\"msgCtrlFilter\" >\n");
-		fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-		fprintf(cgiOut, "							<option value=\"1\" >开启</option>\n");
+		fprintf(cgiOut, "							<option id=\"msgCtrlFilter_1\" value=\"0\">关闭</option>\n");
+		fprintf(cgiOut, "							<option id=\"msgCtrlFilter_2\" value=\"1\" >开启</option>\n");
 		fprintf(cgiOut, "						</select>\n");
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</li>\n");
@@ -1395,27 +1572,27 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "	<div id=\"show11\">\n");
 		fprintf(cgiOut, "		<fieldset class=\"box\" >\n");
 		fprintf(cgiOut, "			<a name=\"gcms\"></a>\n");
-		fprintf(cgiOut, "			<legend>工程模式</legend>\n");
+		fprintf(cgiOut, "			<legend id=\"gcms_text\" >工程模式</legend>\n");
 		fprintf(cgiOut, "			<ul class=\"ipt-box\">\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">GSM主叫重呼间隔</label>\n");
+		fprintf(cgiOut, "					<label id=\"gsm_call_interval_text\" class=\"i-title\">GSM主叫重呼间隔</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"gsm_call_interval\" type=\"text\" title =\"GSM主叫重呼间隔；取值范围：10~60，默认值：30\" value=\"%u\" name=\"gsm_call_interval\" class=\"ipt-text validate[required,custom[integer],min[10],max[60]]\" data-prompt-position=\"bottomRight:-112\"   autocomplete=\"off\">\n",web_data_point->gsm_call_interval);
+		fprintf(cgiOut, "						<input id=\"gsm_call_interval\" type=\"text\"  value=\"%u\" name=\"gsm_call_interval\" class=\"ipt-text validate[required,custom[integer],min[10],max[60]]\" data-prompt-position=\"bottomRight:-112\"   autocomplete=\"off\">\n",web_data_point->gsm_call_interval);
 		fprintf(cgiOut, "					S</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">GSM模块异常重启时间</label>\n");
+		fprintf(cgiOut, "					<label id=\"gsm_reboot_time_text\" class=\"i-title\">GSM模块异常重启时间</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"gsm_reboot_time\" type=\"text\" title =\"GSM模块异常重启时间；取值范围：60~600，默认值：120\" value=\"%u\" name=\"gsm_reboot_time\" class=\"ipt-text validate[required,custom[integer],min[60],max[600]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->gsm_reboot_time);
+		fprintf(cgiOut, "						<input id=\"gsm_reboot_time\" type=\"text\"  value=\"%u\" name=\"gsm_reboot_time\" class=\"ipt-text validate[required,custom[integer],min[60],max[600]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->gsm_reboot_time);
 		fprintf(cgiOut, "					S</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">语音检测启动门限</label>\n");
+		fprintf(cgiOut, "					<label id=\"vol_start_threshold_text\" class=\"i-title\">语音检测启动门限</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "					<div class=\"select\"  title =\"语音能量超过语音检测能量阈值持续时间达到门限值，认为检测出PTT_ON；默认值：80\">\n");
+		fprintf(cgiOut, "					<div id=\"vol_start_threshold_div\" class=\"select\" >\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"vol_start_threshold\" name=\"vol_start_threshold\" >\n");
 		fprintf(cgiOut, "							<option value=\"20\">20</option>\n");
@@ -1434,23 +1611,23 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">语音检测拖尾延时</label>\n");
+		fprintf(cgiOut, "					<label id=\"vol_delay_text\" class=\"i-title\">语音检测拖尾延时</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"vol_delay\" type=\"text\" title =\"静音后话权释放时间；取值范围：1~30，默认值：3\" value=\"%u\" name=\"vol_delay\" class=\"ipt-text validate[required,custom[integer],min[1],max[30]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->vol_delay);
+		fprintf(cgiOut, "						<input id=\"vol_delay\" type=\"text\"  value=\"%u\" name=\"vol_delay\" class=\"ipt-text validate[required,custom[integer],min[1],max[30]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->vol_delay);
 		fprintf(cgiOut, "					S</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">语音检测能量阈值</label>\n");
+		fprintf(cgiOut, "					<label id=\"vol_energy_value_text\" class=\"i-title\">语音检测能量阈值</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"vol_energy_value\" type=\"text\" title =\"语音的能量门限；取值范围：1500~4000，默认值：2000\" value=\"%u\" name=\"vol_energy_value\" class=\"ipt-text validate[required,custom[integer],min[1500],max[4000]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->vol_energy_value);
+		fprintf(cgiOut, "						<input id=\"vol_energy_value\" type=\"text\" value=\"%u\" name=\"vol_energy_value\" class=\"ipt-text validate[required,custom[integer],min[1500],max[4000]]\" data-prompt-position=\"bottomRight:-112\"  autocomplete=\"off\">\n",web_data_point->vol_energy_value);
 		fprintf(cgiOut, "					</span>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">语音包时长</label>\n");
+		fprintf(cgiOut, "					<label id=\"vol_packet_time_text\" class=\"i-title\">语音包时长</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "					<div class=\"select\"  title =\"单包语音的时长；默认值：60\">\n");
+		fprintf(cgiOut, "					<div id=\"vol_packet_time_div\" class=\"select\"  >\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"vol_packet_time\" name=\"vol_packet_time\" >\n");
 		fprintf(cgiOut, "							<option value=\"20\">20</option>\n");
@@ -1461,30 +1638,30 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">终端兼容模式</label>\n");
-		fprintf(cgiOut, "					<div class=\"select\"  title =\"兼容MOTO终端使能开关；默认：开启，兼容MOTO终端模式\">\n");
+		fprintf(cgiOut, "					<label id=\"terminal_compatible_text\" class=\"i-title\">终端兼容模式</label>\n");
+		fprintf(cgiOut, "					<div class=\"select\"  id=\"terminal_compatible_div\">\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"terminal_compatible\" name=\"terminal_compatible\" >\n");
-		fprintf(cgiOut, "							<option value=\"0\">关闭</option>\n");
-		fprintf(cgiOut, "							<option value=\"1\" >开启</option>\n");
+		fprintf(cgiOut, "							<option id=\"terminal_compatible_1\" value=\"0\">关闭</option>\n");
+		fprintf(cgiOut, "							<option id=\"terminal_compatible_2\" value=\"1\" >开启</option>\n");
 		fprintf(cgiOut, "						</select>\n");
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">工作模式</label>\n");
-		fprintf(cgiOut, "					<div class=\"select\"  title =\"设备当前专网制式；默认：PDT常规\">\n");
+		fprintf(cgiOut, "					<label id=\"work_mode_text\" class=\"i-title\">工作模式</label>\n");
+		fprintf(cgiOut, "					<div id=\"work_mode_div\" class=\"select\"  >\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"work_mode\" name=\"work_mode\" >\n");
-		fprintf(cgiOut, "							<option value=\"0\">PDT常规</option>\n");
-		fprintf(cgiOut, "							<option value=\"1\" >DMR常规</option>\n");
+		fprintf(cgiOut, "							<option id=\"work_mode_1\" value=\"0\">PDT常规</option>\n");
+		fprintf(cgiOut, "							<option id=\"work_mode_2\" value=\"1\" >DMR常规</option>\n");
 		fprintf(cgiOut, "						</select>\n");
 		fprintf(cgiOut, "					</div>\n");
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">语音编码格式</label>\n");
-		fprintf(cgiOut, "					<div class=\"select\"  title =\"设备当前使用的语音编码格式；默认值：NVOC\">\n");
+		fprintf(cgiOut, "					<label id=\"voice_mode_text\" class=\"i-title\">语音编码格式</label>\n");
+		fprintf(cgiOut, "					<div class=\"select\"  id=\"voice_mode_div\">\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"voice_mode\" name=\"voice_mode\" >\n");
 		fprintf(cgiOut, "							<option value=\"206\">AMBE</option>\n");
@@ -1494,9 +1671,9 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "				</li>\n");
 		
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">链路保持时间</label>\n");
+		fprintf(cgiOut, "					<label id=\"linkTime_text\" class=\"i-title\">链路保持时间</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "					<div class=\"select\" title =\"发射停止后业务挂断时间；默认值：0.5\">\n");
+		fprintf(cgiOut, "					<div class=\"select\" id=\"linkTime_div\">\n");
 		fprintf(cgiOut, "					<div class=\"select_mask\" ></div>\n");
 		fprintf(cgiOut, "						<select id=\"linkTime\" name=\"linkTime\"  >\n");
 		fprintf(cgiOut, "							<option value=\"500\">0.5</option>\n");
@@ -1511,44 +1688,44 @@ void showHtml(int engineer_mode ,int flag,WEB_NM_DATA_ITEM * web_data_point,int 
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">链路业务保持时间</label>\n");
+		fprintf(cgiOut, "					<label id=\"devOverTime_text\" class=\"i-title\">链路业务保持时间</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"devOverTime\" type=\"text\" name=\"devOverTime\" value=\"%u\" title =\"链路业务等待超时时间；取值范围：1~8；默认值：5\"  class=\"ipt-text validate[required,custom[integer],min[1],max[8]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_busi_time_out);
+		fprintf(cgiOut, "						<input id=\"devOverTime\" type=\"text\" name=\"devOverTime\" value=\"%u\"   class=\"ipt-text validate[required,custom[integer],min[1],max[8]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->dev_busi_time_out);
 		fprintf(cgiOut, "					S</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">终端业务保持时间</label>\n");
+		fprintf(cgiOut, "					<label id=\"termGpsOverTime_text\"  class=\"i-title\">终端业务保持时间</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"termGpsOverTime\" type=\"text\" name=\"termGpsOverTime\" value=\"%u\" title =\"终端GPS上拉、摇晕、激活业务等待超时时间；取值范围：5~16；默认值：10\" class=\"ipt-text validate[required,custom[integer],min[5],max[16]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->gps_time_out);
+		fprintf(cgiOut, "						<input id=\"termGpsOverTime\" type=\"text\" name=\"termGpsOverTime\" value=\"%u\"  class=\"ipt-text validate[required,custom[integer],min[5],max[16]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->gps_time_out);
 		fprintf(cgiOut, "					S</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 		
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">关闭转发场强门限</label>\n");
+		fprintf(cgiOut, "					<label id=\"close_transmit_rssi_threshold_text\" class=\"i-title\">关闭转发场强门限</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"close_transmit_rssi_threshold\" type=\"text\" name=\"close_transmit_rssi_threshold\" value=\"%d\" title =\"接收到其它设备语音，若场强值大于该门限，则禁止转发；取值范围：-80~-40，默认值：-60\"  class=\"ipt-text validate[required,custom[minus],min[-80],max[-40]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->close_transmit_rssi_threshold);
+		fprintf(cgiOut, "						<input id=\"close_transmit_rssi_threshold\" type=\"text\" name=\"close_transmit_rssi_threshold\" value=\"%d\"   class=\"ipt-text validate[required,custom[minus],min[-80],max[-40]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->close_transmit_rssi_threshold);
 		fprintf(cgiOut, "					dB</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">恢复转发场强门限</label>\n");
+		fprintf(cgiOut, "					<label id=\"resume_transmit_rssi_threshold_text\" class=\"i-title\">恢复转发场强门限</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"resume_transmit_rssi_threshold\" type=\"text\" name=\"resume_transmit_rssi_threshold\" value=\"%d\" title =\"接收到其它设备语音，若场强值小于该门限，则恢复转发；取值范围：-90~-65，默认值：-70\"  class=\"ipt-text validate[required,custom[minus],min[-90],max[-65]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->resume_transmit_rssi_threshold);
+		fprintf(cgiOut, "						<input id=\"resume_transmit_rssi_threshold\" type=\"text\" name=\"resume_transmit_rssi_threshold\" value=\"%d\"   class=\"ipt-text validate[required,custom[minus],min[-90],max[-65]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->resume_transmit_rssi_threshold);
 		fprintf(cgiOut, "					dB</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 		
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">温度告警门限</label>\n");
+		fprintf(cgiOut, "					<label id=\"tempratue_alarm_start_threshold_text\" class=\"i-title\">温度告警门限</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"tempratue_alarm_start_threshold\" type=\"text\" name=\"tempratue_alarm_start_threshold\" value=\"%u\" title =\"大于该门限，触发温度告警；取值范围：0~100，默认值：85\"  class=\"ipt-text validate[required,custom[integer],min[0],max[100]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->tempratue_alarm_start_threshold);
+		fprintf(cgiOut, "						<input id=\"tempratue_alarm_start_threshold\" type=\"text\" name=\"tempratue_alarm_start_threshold\" value=\"%u\"   class=\"ipt-text validate[required,custom[integer],min[0],max[100]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->tempratue_alarm_start_threshold);
 		fprintf(cgiOut, "					℃</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 	
 		fprintf(cgiOut, "				<li>\n");
-		fprintf(cgiOut, "					<label class=\"i-title\">温度告警恢复门限</label>\n");
+		fprintf(cgiOut, "					<label id=\"tempratue_alarm_close_threshold_text\" class=\"i-title\">温度告警恢复门限</label>\n");
 		fprintf(cgiOut, "					<span class=\"ipt\">\n");
-		fprintf(cgiOut, "						<input id=\"tempratue_alarm_close_threshold\" title =\"小于该门限，取消温度告警；取值范围：0~100，默认值：80\" type=\"text\" name=\"tempratue_alarm_close_threshold\" value=\"%u\" class=\"ipt-text validate[required,custom[integer],min[0],max[100]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->tempratue_alarm_close_threshold);
+		fprintf(cgiOut, "						<input id=\"tempratue_alarm_close_threshold\" type=\"text\" name=\"tempratue_alarm_close_threshold\" value=\"%u\" class=\"ipt-text validate[required,custom[integer],min[0],max[100]]\" data-prompt-position=\"bottomRight:-112\" maxlength=\"63\" reqmsg=\"\"  autocomplete=\"off\">\n",web_data_point->tempratue_alarm_close_threshold);
 		fprintf(cgiOut, "					℃</span>\n");	
 		fprintf(cgiOut, "				</li>\n");
 		fprintf(cgiOut, "			</ul>\n");
@@ -1627,15 +1804,16 @@ void init_parame(WEB_NM_DATA_ITEM * web_data_point)
 */
 
 /**
- * @brief    表单提交后，防止处理失败，获取页面配置值
+ * @get_init_param_from_html    表单提交后，防止处理失败，获取页面配置值
  *
  * @param[out]		web_data_point	当前页面配置项值
  * @param[out]		current_div		当前显示DIV
+ * @param[out]		language_switch		语言开关状态
  * @return		    engineer_mode   当前模式：常规/工程
  * @author		wdz
  * @bug
  */
-int  get_init_param_from_html(WEB_NM_DATA_ITEM * web_data_point,int * current_div)
+int  get_init_param_from_html(WEB_NM_DATA_ITEM * web_data_point,int * current_div,int * language_switch)
 {
 	
 	int length=0;
@@ -1664,12 +1842,17 @@ int  get_init_param_from_html(WEB_NM_DATA_ITEM * web_data_point,int * current_di
 	char *neighbor_period[]={"2","4","6","8","10","12","14","16","18","20"};
 	char *vol_packet_time[]={"20","60"};
 	char *terminal_compatible[]={"0","1"};
-	
+	char *stop_transmit[]={"0","1"};
+	char *dev_language_switch[]={"0","1"};
+	char *boot_mode_switch[]={"0","1"};
+	char *reboot_strategy_switch[]={"0","1"};
 	
 	////////////////////获取当前显示div////////////////
 	cgiFormStringSpaceNeeded("current_div",&length);
 	cgiFormString("current_div",temp,length);
 	*current_div=atoi(temp);
+	////////////////////获取当前语言////////////////
+	cgiFormInteger("language_switch", language_switch,0);
 	////////////////////获取当前显示模式////////////////
 	cgiFormInteger("current_mode",&engineer_mode,0);
 	////////////////////获取网络参数////////////////
@@ -1732,12 +1915,23 @@ int  get_init_param_from_html(WEB_NM_DATA_ITEM * web_data_point,int * current_di
 	cgiFormSelectSingle("neighbor_switch_status",neighbor_switch_option,2,&index,0);
 	web_data_point->neighbor_switch=atoi(neighbor_switch_option[index]);
 	
-	cgiFormSelectSingle("neighbor_period",neighbor_period,2,&index,0);
+	cgiFormSelectSingle("neighbor_period",neighbor_period,10,&index,0);
 	web_data_point->neighbor_period=atoi(neighbor_period[index]);
 	
 	cgiFormSelectSingle("neighbor_ai_switch",neighbor_ai_switch_option,2,&index,0);
 	web_data_point->neighbor_ai_switch=atoi(neighbor_ai_switch_option[index]);
 	
+	cgiFormSelectSingle("stop_transmit_switch",stop_transmit,2,&index,0);
+	web_data_point->stop_transmit=atoi(stop_transmit[index]);
+	
+	cgiFormSelectSingle("dev_language_switch",dev_language_switch,2,&index,0);
+	web_data_point->device_language_switch=atoi(dev_language_switch[index]);
+	
+	cgiFormSelectSingle("boot_mode_switch",boot_mode_switch,2,&index,0);
+	web_data_point->boot_mode_switch=atoi(boot_mode_switch[index]);
+	
+	cgiFormSelectSingle("reboot_strategy_switch",reboot_strategy_switch,2,&index,0);
+	web_data_point->reboot_strategy_switch=atoi(reboot_strategy_switch[index]);
 	
 	
 	cgiFormSelectSingle("alarm_switch_status",alarm_ai_switch_option,2,&index,0);
@@ -2124,6 +2318,9 @@ void sem_cfg_v(void)
 		system("echo sem_cfg_v fail > /tmp/web_error.txt");
 	}
 }
+
+
+
 /**
  * @save_ini_file
  * @保存配置文件
@@ -2263,6 +2460,7 @@ int get_data_from_file()
 {
 	int fd=0;
 	int i=0;
+	int language_switch=0;
 	unsigned short vol_code;
 	unsigned short work_mode;
 	double tmp_freq=0;
@@ -2270,16 +2468,21 @@ int get_data_from_file()
 	unsigned char *q=NULL;
 	unsigned int temp;
 	struct in_addr addr1;
-	 char temp_data[10]={0};
-	 char vol_code_a[10]="AMBE";
-	 char vol_code_n[10]="NVOC";
-	 char work_mode_p[10]="PDT常规";
-	 char work_mode_d[10]="DMR常规";
+	char temp_data[10]={0};
+	char vol_code_a[10]="AMBE";
+	char vol_code_n[10]="NVOC";
+	char work_mode_p[10]="PDT常规";
+	char work_mode_d[10]="DMR常规";
+	char work_mode_p_en[50]="PDT Conventional";
+	char work_mode_d_en[50]="DMR Conventional";
+	
+	//////////////////获取语言开关///////////////
+	cgiFormInteger("language_switch", &language_switch,0);
+	
 	fd = open(NM_CENTER_CONFIG_FILE, O_RDWR);
 	if(-1==fd)
 	{
 		system("echo open Configfile fail > /tmp/web_error.txt"); 
-		close(fd);
 		return -1;
 	}
 	CENTER_DATA_STRUCT  center_struct;
@@ -2330,6 +2533,8 @@ int get_data_from_file()
 	web_data.gsm_volume=center_struct.gsm_volume;
 	//////////喇叭音量/////////////////
 	web_data.horn_volume=center_struct.horn_volume;
+	//////////语言开关/////////////////
+	web_data.device_language_switch=center_struct.dev_language_switch;
 	//////////人员告警上报次数/////////////////
 	web_data.alarm_count=center_struct.alarm_count;
 	//////////人员告警显示开关/////////////////
@@ -2475,14 +2680,30 @@ int get_data_from_file()
 	web_data.dev_cc=shm_cfg_addr->cc.val;
 	web_data.terminal_cc=shm_cfg_addr->terminal_cc.val;
 	work_mode=shm_cfg_addr->protocol_mode.val;
-	if(0==work_mode)
+	
+	if(language_switch==0)
 	{
-		memcpy(web_data.work_mode,work_mode_p,sizeof(work_mode_p));
+		if(0==work_mode)
+		{
+			memcpy(web_data.work_mode,work_mode_p,sizeof(work_mode_p));
+		}
+		else if(1== work_mode)
+		{
+			memcpy(web_data.work_mode,work_mode_d,sizeof(work_mode_d));
+		}
 	}
-	else if(1== work_mode)
+	else
 	{
-		memcpy(web_data.work_mode,work_mode_d,sizeof(work_mode_d));
+		if(0==work_mode)
+		{
+			memcpy(web_data.work_mode,work_mode_p_en,sizeof(work_mode_p_en));
+		}
+		else if(1== work_mode)
+		{
+			memcpy(web_data.work_mode,work_mode_d_en,sizeof(work_mode_d_en));
+		}
 	}
+	
 	//////////////////工程模式///////////////
 	web_data.work_mode_2=work_mode;
 	web_data.terminal_compatible=shm_cfg_addr->moto_mode_switch.val;
@@ -2508,6 +2729,9 @@ int get_data_from_file()
 	web_data.neighbor_switch=shm_cfg_addr->start_neighbor.val;
 	web_data.neighbor_period=shm_cfg_addr->neighbor_period.val*2;
 	web_data.neighbor_ai_switch=shm_cfg_addr->neighbor_report_ai.val;
+	web_data.stop_transmit=shm_cfg_addr->stop_tans.val;
+	web_data.boot_mode_switch=shm_cfg_addr->boot_mode.val;
+	web_data.reboot_strategy_switch=shm_cfg_addr->reboot_strategy.val;
 	web_data.tempratue_alarm_start_threshold=shm_cfg_addr->tempratue_alarm_start_threshold.val;
 	web_data.tempratue_alarm_close_threshold=shm_cfg_addr->tempratue_alarm_close_threshold.val;
 	web_data.alarm_ai_switch=shm_cfg_addr->alarm_switch_status.val;
@@ -2528,9 +2752,17 @@ int get_data_from_file()
 	
 	return 0;
 }
+
+
+
+
 /**
- * @set_data_to_file
- * @修改配置
+ * @set_data_to_file    修改配置
+ *
+ * @param[in]		web_set_data	保存配置项结构体
+ * @return		    函数执行状态
+ * @author		wdz
+ * @bug
  */
 int set_data_to_file(WEB_NM_DATA_ITEM * web_set_data)
 {
@@ -2545,7 +2777,6 @@ int set_data_to_file(WEB_NM_DATA_ITEM * web_set_data)
 	if(-1==fd)
 	{
 		system("echo open Configfile fail > /tmp/web_error.txt"); 
-		close(fd);
 		return -1;
 	}
 	CENTER_DATA_STRUCT  center_struct;
@@ -2591,6 +2822,8 @@ int set_data_to_file(WEB_NM_DATA_ITEM * web_set_data)
 	center_struct.gsm_volume=web_set_data->gsm_volume;
 	//////////喇叭音量/////////////////
 	center_struct.horn_volume=web_set_data->horn_volume;
+	//////////语言开关/////////////////
+	center_struct.dev_language_switch=web_set_data->device_language_switch;
 	//////////当前组ID/////////////////
 	memcpy(center_struct.current_group_id,web_set_data->current_group_id,sizeof(center_struct.current_group_id));
 	center_struct.alarm_group=atoi(center_struct.current_group_id);
@@ -2747,6 +2980,9 @@ int set_data_to_file(WEB_NM_DATA_ITEM * web_set_data)
 	shm_cfg_addr->power.val=web_set_data->dev_power;
 	shm_cfg_addr->cc.val=web_set_data->dev_cc;
 	shm_cfg_addr->terminal_cc.val=web_set_data->terminal_cc;
+	shm_cfg_addr->stop_tans.val=web_set_data->stop_transmit;
+	shm_cfg_addr->boot_mode.val=web_set_data->boot_mode_switch;
+	shm_cfg_addr->reboot_strategy.val=web_set_data->reboot_strategy_switch;
 	//////////////////工程模式//////////////////////
 	if(engineer_mode==ENGINEER_MODE)
 	{
@@ -2788,6 +3024,11 @@ int set_data_to_file(WEB_NM_DATA_ITEM * web_set_data)
 }
 
 
+
+/**
+ * @md5
+ * @升级文件解密
+ */
 void md5()
 {
 	a=A,b=B,c=C,d=D;
@@ -2869,6 +3110,12 @@ void md5()
 	C += c;
 	D += d;
 }
+
+
+/**
+ * @CalcFileMD5
+ * @升级文件解密
+ */
 int CalcFileMD5(char *filename, char *md5_sum)
 {
 	int i;
@@ -2936,7 +3183,15 @@ int CalcFileMD5(char *filename, char *md5_sum)
 	return 1;
 }
 
-
+/**
+ * @bin_to_bz2    bin文件转化为压缩文件
+ *
+ * @param[in]		bin_name	bin文件名
+ * @param[out]		bz2_name	压缩文件名
+ * @return		    函数执行状态
+ * @author		wdz
+ * @bug
+ */
 int bin_to_bz2(char * bin_name, char * bz2_name)
 {
 	FILE * bin_file;
@@ -3051,7 +3306,14 @@ int bin_to_bz2(char * bin_name, char * bz2_name)
 	return 0;
 }
 
-
+/**
+ * @test_code    system执行结果检查
+ *
+ * @param[in]		status	system执行结果
+ * @return		    system执行检查结果
+ * @author		wdz
+ * @bug
+ */
 int test_code(int status)
 {
     if (-1 == status) 
@@ -3083,6 +3345,13 @@ int test_code(int status)
 	}
 }
 
+
+/**
+ * @transmit_file    接收web传输升级文件
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
 int transmit_file()
 {
 	char name[128]={0};
@@ -3130,7 +3399,8 @@ int transmit_file()
 	    status=system("rm -rf /home/*");
 	    if(test_code(status))
 	    {
-			system("echo system cp -rf * /mnt failed! > /tmp/web_error.txt");   
+			system("echo  rm -rf /home/* failed! > /tmp/web_error.txt");   
+			cgiFormFileClose(file);
 			return -1;	
 		}
 		targetFile=open(fileNameOnServer,O_RDWR|O_CREAT|O_TRUNC);
@@ -3139,7 +3409,6 @@ int transmit_file()
 		{
 			system("echo could not open the file > /tmp/web_error.txt");  
 			cgiFormFileClose(file);		
-			close(targetFile);		
 			return -1; 
 		}
 
@@ -3174,13 +3443,19 @@ int transmit_file()
 	else 
 	{
 		chdir("/home");
+		status=system("rm -rf /home/*");
+	    if(test_code(status))
+	    {
+			system("echo rm -rf /home/*! > /tmp/web_error.txt");   
+			return -1;	
+		}
+
 		targetFile=open(fileNameOnServer,O_RDWR|O_CREAT|O_TRUNC);
 		
 		if(targetFile<0)
 		{
 			system("echo could not open the file > /tmp/web_error.txt"); 
 			cgiFormFileClose(file);		
-			close(targetFile);			
 			return -1; 
 		}
 
@@ -3212,6 +3487,302 @@ int transmit_file()
 }
 
 
+/**
+ * @update_file_system    更新文件系统
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
+int update_file_system()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("/usr/sbin/flash_eraseall /dev/mtd4 > /tmp/erase.txt");
+	
+    if(test_code(status))
+    {
+		system("echo flash_eraseall /dev/mtd4 failed! > /tmp/web_error.txt");
+        return -1;   
+    }
+    else
+    {
+        status =system("/usr/sbin/flashcp ramdisk.image.gz /dev/mtd4  > /tmp/erase.txt ");
+        if(test_code(status))
+        {
+			system("echo flashcp failed! > /tmp/web_error.txt");
+            return -1;
+        }
+    }
+	
+    return 0;
+}
+
+
+/**
+ * @update_zimage    更新内核
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
+int update_zimage()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("/usr/sbin/flash_eraseall /dev/mtd3 > /tmp/erase.txt");
+    if(test_code(status))
+    {
+        system("echo flash_eraseall /dev/mtd3 fail! > /tmp/web_error.txt");
+        return -1;   
+    }
+    else
+    {
+        status =system("/usr/sbin/flashcp zImage /dev/mtd3 > /tmp/erase.txt");
+        if(test_code(status))
+        {
+            system("echo flashcp zImage /dev/mtd3 fail! > /tmp/web_error.txt");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * @update_dtb    更新设备树
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
+int update_dtb()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("/usr/sbin/flash_eraseall /dev/mtd2 > /tmp/erase.txt");
+    if(test_code(status))
+	{
+		system("echo flash_eraseall /dev/mtd2! > /tmp/web_error.txt"); 
+		return -1;   
+	}
+	else
+	{
+		status =system("/usr/sbin/flashcp soc_system.dtb /dev/mtd2 > /tmp/erase.txt");
+		if(test_code(status))
+		{
+			system("echo flashcp soc_system.dtb /dev/mtd2! > /tmp/web_error.txt");
+		   	return -1;
+		}
+	}
+    return 0;
+}
+
+/**
+ * @update_uboot    更新boot
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
+int update_uboot()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("/usr/sbin/flash_eraseall /dev/mtd0 > /tmp/erase.txt");
+    if(test_code(status))
+    {
+        system("echo flash_eraseall /dev/mtd0! > /tmp/web_error.txt"); 
+        return -1;   
+    }
+    else
+    {
+        status =system("/usr/sbin/flashcp bootloader /dev/mtd0 > /tmp/erase.txt");
+        if(test_code(status))
+        {
+            system("echo flashcp bootloader /dev/mtd0! > /tmp/web_error.txt");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**
+ * @confirm_mount_point    确认当前挂载分区，确定升级分区
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
+int  confirm_mount_point()
+{
+    pid_t status;
+
+    FILE *fd;
+
+    fd = popen("/loadapp/mount.sh", "r");
+
+    if(fd==NULL)
+    {
+		system("echo open /loadapp/mount.sh file error! > /tmp/web_error.txt");
+        return -1;
+    }
+
+    memset(buffer,0x00,sizeof(buffer));
+
+    if(fgets((char*)buffer, sizeof(buffer), fd)==NULL)
+    {
+		system("echo get mount point error! > /tmp/web_error.txt");
+        pclose(fd);
+        return -1 ;
+    }
+
+    pclose(fd);
+
+    if(strcmp((char*)buffer,"/dev/mtdblock6\n")==0)
+    {
+        status = system("mount -t jffs2 /dev/mtdblock7 /mnt");
+    }
+    else
+    {
+        status = system("mount -t jffs2 /dev/mtdblock6 /mnt");
+    }
+
+    if (-1 == status)
+    {
+		system("echo mount /dev/mtdblockx on /mnt failed! > /tmp/web_error.txt");
+        return -1 ;
+    }
+    else
+    {
+        if (WIFEXITED(status))
+        {
+            if (0 == WEXITSTATUS(status))
+            {
+                	chdir("/mnt");
+	                return 0;
+            }
+            else
+            {
+				system("echo mount /dev/mtdblockx on /mnt WEXITSTATUS(status) failed! > /tmp/web_error.txt");
+                return -1 ;
+            }
+        }
+        else
+        {
+			system("echo mount /dev/mtdblockx on /mnt WIFEXITED(status) failed! > /tmp/web_error.txt");
+            return -1 ;
+        }
+    }
+
+}
+
+/**
+ * @update_loadapp    升级应用程序
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
+int update_loadapp()
+{
+	char buffer_active[]="active\n";
+	char buffer_back[]="back\n";
+	FILE * fd;
+	unsigned  int size;
+	int status=0;
+	if(confirm_mount_point())
+	{
+		system("echo confirm_mount_point failed! > /tmp/web_error.txt");
+		return -1;	   
+	}
+	status=system("rm -rf /mnt/*");
+	if(test_code(status))
+	{
+		system("echo rm -rf /mnt/*  failed! > /tmp/web_error.txt");   
+		return -1;	
+	}
+	status =system(" cp -rf /home/* /mnt");
+	if(test_code(status))
+	{
+		system("echo system cp -rf * /mnt failed! > /tmp/web_error.txt");
+        chdir("/");
+		system("umount /mnt");
+		return -1;	
+	}
+	
+	fd=fopen("/mnt/loadflag","wb");
+		       
+	if(fd == NULL)
+	{
+		system("echo open /mnt/loadflag file error! > /tmp/web_error.txt");
+		chdir("/");
+		system("umount /mnt");
+		return -1;
+		        
+	}
+	size=strlen(buffer_active);
+	fwrite(buffer_active,size,1,fd);
+	fclose(fd);
+	if(strcmp((char *)buffer,"/dev/mtdblock5\n")!=0)
+	{
+		               
+		fd=fopen("/loadapp/loadflag","wb");
+		       
+		if(fd == NULL)
+		{
+			system("echo open /loadapp/loadflag file failed! > /tmp/web_error.txt");
+		    chdir("/");
+		    system("umount /mnt");
+		    return -1;
+		}
+		size=strlen(buffer_back);
+		fwrite(buffer_back,size,1,fd);
+		fclose(fd); 
+	}
+    system("cp -rf /loadapp/nas_config.ini /mnt");
+    system("cp -rf /loadapp/ConfigFile     /mnt");
+    //system("cp -rf /loadapp/config.ini /mnt");
+    chdir("/");
+	system("umount /mnt");
+	return 0;  
+}
+
+
+/**
+ * @update_rbf    升级rbf
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
+
+int update_rbf()
+{
+    int status;
+    chdir("/home");
+    
+    status =system("/usr/sbin/flash_eraseall /dev/mtd1 > /tmp/erase.txt");
+    if(test_code(status))
+    {
+		system("echo flash_eraseall /dev/mtd1! > /tmp/web_error.txt");
+        return -1;   
+    }
+    else
+    {
+        status =system("/usr/sbin/flashcp soc_system.rbf /dev/mtd1 > /tmp/erase.txt");
+        if(test_code(status))
+        {
+            system("echo flashcp soc_system.rbf /dev/mtd1! > /tmp/web_error.txt");
+            return -1;
+        }
+    }
+    return 0;
+}
+
+
+/**
+ * @shm_ipc_attch    打开IPC共享内存
+ * @return		    函数执行结果
+ * @author		wdz
+ * @bug
+ */
 int shm_ipc_attch(void)
 {
 	SEMUN sem_arg;
@@ -3251,7 +3822,11 @@ int shm_ipc_attch(void)
 	return 0;
 }
 
-
+/**
+ * @sem_ipc_p    获取IPC信号量
+ * @author		wdz
+ * @bug
+ */
 void sem_ipc_p(void)
 {
 	struct sembuf s_p;
@@ -3264,7 +3839,11 @@ void sem_ipc_p(void)
 	}
 }
 
- 
+/**
+ * @sem_ipc_v    释放IPC信号量
+ * @author		wdz
+ * @bug
+ */ 
 void sem_ipc_v(void)
 {
 	struct sembuf s_v;
@@ -3276,24 +3855,7 @@ void sem_ipc_v(void)
 		system("echo sem_ipc_v operation fail! > /tmp/web_error.txt");
 	}
 }
-/*
-void show_login()
-{
-	fprintf(cgiOut, "<!DOCTYPE html>\n");
-	fprintf(cgiOut, "<html>\n");
-	fprintf(cgiOut, "<head>\n");
-	fprintf(cgiOut, "<script type=\"text/javascript\" src=\"../js/jquery_1_7_2_min.js\"></script>\n");
-	fprintf(cgiOut,"<script>\n");
-	fprintf(cgiOut,"$(document).ready(function(){\n");
-	fprintf(cgiOut,"window.location.href = \"../\";\n");
-	fprintf(cgiOut,"	})\n");
-	fprintf(cgiOut,"</script>\n");
-	fprintf(cgiOut, "</head>\n");
-	fprintf(cgiOut, "<body>\n");
-	fprintf(cgiOut, "</body>\n");
-	fprintf(cgiOut, "</html>\n");
-}
-*/
+
 /**
  * @cgiMain
  * @入口函数
@@ -3303,10 +3865,11 @@ int cgiMain(){
 	WEB_NM_DATA_ITEM     web_nm_data;
 	int operate_flag=0;  
     int current_div=1;//默认显示div1
-	int update_flag=0;
 	int log_flag=0;
 	int update_file_name_length=0;
 	int length;
+	int  freq_channel=0;
+	int language_switch=0;
 	int engineer_mode_flag=NORMAL_MODE;
     char web_code[50]={0};
     char web_user[50]={0};
@@ -3314,42 +3877,18 @@ int cgiMain(){
 	memset((unsigned char *)&web_nm_data,0,sizeof(WEB_NM_DATA_ITEM));
 	cgiHeaderContentType("text/html\n\n");
 	
-	if(strcmp(cgiRequestMethod,"GET")== 0)
+	if(strcmp(cgiRequestMethod,"GET")== 0)          //输入网址回车分支，显示登录界面
 	{
-		/*
-		//init_parame(&web_nm_data);
-		//showHtml(operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		/////开机读取配置参数
-		if (shm_cfg_attch())
-		{
-			return;
-		}
-		if(get_data_from_file())
-		{
-			return ;
-		}
-		showHtml(operate_flag,&web_data,current_div,update_flag,update_file_name);	
-		*/
-		/*
-		if(shm_cfg_attch())
-		{
-			system("echo shm_cfg_attch fail > /tmp/web_error.txt"); 
-			return -1;
-		}
-		memcpy(web_code,shm_cfg_addr->web_code.buf,sizeof(web_code));
-		memcpy(web_user,shm_cfg_addr->web_user.buf,sizeof(web_user));
-		*/
-		show_login(web_user,web_code,log_flag);
-		
+		show_login(web_user,web_code,log_flag,language_switch);	
 	}
 	else
 	{
 		
-		if((cgiFormSubmitClicked("reboot_operate") == cgiFormSuccess))
+		if((cgiFormSubmitClicked("reboot_operate") == cgiFormSuccess))  //重启操作分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())                      //获取频段信息
 			{
 				return -1;
 			} 
@@ -3364,28 +3903,103 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
+			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)  ///////////表明其它操作正在进行////////////
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
-			//////重启按键触发//////////////
-			if (mgrh_msg_queue_create())
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=REBOOT_FLAG;  /////////////重启操作标志//////////
+            sem_ipc_v();
+
+			
+			if (mgrh_msg_queue_create())               //打开mgr_local_handle创建的消息队列，接收重启指令
 			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				operate_flag=REBOOT_FAIL_FLAG;
 				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
+			if(shm_ipc_addr->update_dtb_result ==UPDATE_FAIL)      //重启之前，判断dtb是否升级失败
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=REBOOT_DTB_FAIL;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(shm_ipc_addr->update_boot_result ==UPDATE_FAIL)     //重启之前，判断boot是否升级失败
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=REBOOT_BOOT_FAIL;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(shm_ipc_addr->update_ram_result ==UPDATE_FAIL)     //重启之前，判断文件系统是否升级失败
+			{ 
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=REBOOT_RAM_FAIL;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(shm_ipc_addr->update_rbf_result ==UPDATE_FAIL)   //重启之前，判断rbf是否升级失败（可以去掉）
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=REBOOT_RBF_FAIL;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(shm_ipc_addr->update_zimage_result ==UPDATE_FAIL)   //重启之前，判断内核是否升级失败
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=REBOOT_ZIMAGE_FAIL;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			sem_ipc_v();
 			shmdt(shm_ipc_addr);
 			operate_flag=REBOOT_SUCCESS_FLAG;
+			send_cmd_to_queque(CMD_CODE_REBOOT);               //发送重启指令
 			sleep(1);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			send_cmd_to_queque(CMD_CODE_REBOOT);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
 		}
-		else if((cgiFormSubmitClicked("get_operate") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("get_operate") == cgiFormSuccess))   //读取操作分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())                                  //获取频段信息
 			{
 				return -1;
 			} 
@@ -3400,34 +4014,48 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
+			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)  ///////////表明其它操作正在进行////////////
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
-			////////////////////获取操作触发//////////////
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=READ_FLAG;  /////////////读取操作标志//////////
+            sem_ipc_v();
+
 			////////////////打开配置区共享内存//////////////
 			if (shm_cfg_attch())
 			{
+				
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				operate_flag=GET_FAIL_FLAG;
 				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
-			if(get_data_from_file())
+			if(get_data_from_file())                             //从配置文件获取数据
 			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				shmdt(shm_cfg_addr);
 				operate_flag=GET_FAIL_FLAG;
 				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
-			shmdt(shm_cfg_addr);
-			operate_flag=GET_SUCCESS_FLAG;
-			sleep(1);
 			
-			
-			
-			if(engineer_mode_flag == NORMAL_MODE )
+			if(engineer_mode_flag == NORMAL_MODE )                //用户模式，保留用户管理界面信息
 			{
 				///////////////////获取用户管理界面信息///////
 				cgiFormStringSpaceNeeded("old_user",&length);
@@ -3463,992 +4091,114 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
+				web_data.freq_channel=0;//无效频段
 			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			sem_ipc_v();
+			shmdt(shm_cfg_addr);
+			operate_flag=GET_SUCCESS_FLAG;
+			sleep(1);
 			shmdt(shm_ipc_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_data,current_div,update_file_name,language_switch);
 		}
-		else if((cgiFormSubmitClicked("set_operate") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("set_operate") == cgiFormSuccess))       //设置操作对应分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			cgiFormInteger("freq_channel",&freq_channel,0);  //获取界面保存频段标志
+			if (shm_ipc_attch())                     //获取频段信息
+			{ 
 				return -1;
 			} 
 			if(shm_ipc_addr->freq_channel == 350)
 			{
+				if(freq_channel !=1)         //界面保存频段标志与设备不一致，不允许配置
+				{
+					operate_flag=FERQ_NOT_SAME;
+					web_nm_data.freq_channel=1;
+					shmdt(shm_ipc_addr);
+					sleep(1);
+					showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+					return -1;
+				}
 				web_nm_data.freq_channel=1;
 			}
 			else if (shm_ipc_addr->freq_channel == 410)
 			{
+				if(freq_channel !=2)         //界面保存频段标志与设备不一致，不允许配置
+				{
+					operate_flag=FERQ_NOT_SAME;
+					web_nm_data.freq_channel=2;
+					shmdt(shm_ipc_addr);
+					sleep(1);
+					showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+					return -1;
+				}
 				web_nm_data.freq_channel=2;
 			}
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
+				operate_flag=FERQ_CHANNEL_ERROR;
+				web_nm_data.freq_channel=0;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)  ///////////表明其它操作正在进行////////////
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=WRITE_FLAG;  /////////////读取操作标志//////////
+            sem_ipc_v();
 			////////////////////配置操作触发//////////////
 			////////////////打开配置区共享内存//////////////
 			if (shm_cfg_attch())
 			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				operate_flag=SET_FAIL_FLAG;
 				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
-			if(set_data_to_file(&web_nm_data))
+			if(set_data_to_file(&web_nm_data))                //配置信息保存至配置文件
 			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				shmdt(shm_cfg_addr);
 				operate_flag=SET_FAIL_FLAG;
 				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			sem_ipc_v();
 			shmdt(shm_ipc_addr);
 			shmdt(shm_cfg_addr);
 			operate_flag=SET_SUCCESS_FLAG;
 			sleep(1);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("transmit_dtb") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			if (shm_cfg_attch())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			
-			if(engineer_mode_flag == NORMAL_MODE )
-			{
-				////////////////判断当前用户是否与设备用户一致//////////////////
-				if(shm_ipc_addr->modify_web_info_flag == 0)
-				{
-					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else if(shm_ipc_addr->modify_web_info_flag == 1)
-				{
-					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else
-				{
-					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
-					return -1;
-				}
-			}
-			
-			
-			if(transmit_file())
-			{
-				shmdt(shm_ipc_addr);
-				shmdt(shm_cfg_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			update_flag=1;
-			sleep(5);
-			shmdt(shm_ipc_addr);
-			shmdt(shm_cfg_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("transmit_dtb_update") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			} 
-			sem_ipc_p();
-            shm_ipc_addr->update_flag=0;
-		    sem_ipc_v();
-			if (mgrh_msg_queue_create())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			shmdt(shm_ipc_addr);
-			send_cmd_to_queque(CMD_CODE_UPDATE_DTB);
-			update_flag=2;
-			sleep(5);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("update_dtb") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			} 
-			sleep(3);
-			if(shm_ipc_addr->update_flag==-1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			else if(shm_ipc_addr->update_flag==1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_SUCCESS_FALG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-			else
-			{
-				cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	            cgiFormString("upfile",update_file_name,update_file_name_length);
-				shmdt(shm_ipc_addr);
-				update_flag=2;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-		}
-		else if((cgiFormSubmitClicked("transmit_uboot") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			if (shm_cfg_attch())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			if(engineer_mode_flag == NORMAL_MODE )
-			{
-				////////////////判断当前用户是否与设备用户一致//////////////////
-				if(shm_ipc_addr->modify_web_info_flag == 0)
-				{
-					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else if(shm_ipc_addr->modify_web_info_flag == 1)
-				{
-					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else
-				{
-					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
-					return -1;
-				}
-			}
-			if(transmit_file())
-			{
-				shmdt(shm_ipc_addr);
-				shmdt(shm_cfg_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			update_flag=3;
-			sleep(5);
-			shmdt(shm_ipc_addr);
-			shmdt(shm_cfg_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("transmit_uboot_update") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			} 
-			sem_ipc_p();
-            shm_ipc_addr->update_flag=0;
-		    sem_ipc_v();
-			if (mgrh_msg_queue_create())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			shmdt(shm_ipc_addr);
-			send_cmd_to_queque(CMD_CODE_UPDATE_UBOOT);
-			update_flag=4;
-			sleep(5);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("update_uboot") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			} 
-			sleep(3);
-			if(shm_ipc_addr->update_flag==-1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			else if(shm_ipc_addr->update_flag==1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_SUCCESS_FALG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-			else
-			{
-				cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	            cgiFormString("upfile",update_file_name,update_file_name_length);
-				shmdt(shm_ipc_addr);
-				update_flag=4;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-		}
-		else if((cgiFormSubmitClicked("transmit_loadapp") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			if (shm_cfg_attch())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			if(engineer_mode_flag == NORMAL_MODE )
-			{
-				////////////////判断当前用户是否与设备用户一致//////////////////
-				if(shm_ipc_addr->modify_web_info_flag == 0)
-				{
-					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else if(shm_ipc_addr->modify_web_info_flag == 1)
-				{
-					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else
-				{
-					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
-					return -1;
-				}
-			}
-			
-			if(transmit_file())
-			{
-				shmdt(shm_ipc_addr);
-				shmdt(shm_cfg_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			operate_flag=0;
-			update_flag=5;
-			shmdt(shm_ipc_addr);
-			shmdt(shm_cfg_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("transmit_loadapp_update") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			} 
-			sem_ipc_p();
-            shm_ipc_addr->update_flag=0;
-		    sem_ipc_v();
-			if (mgrh_msg_queue_create())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			shmdt(shm_ipc_addr);
-			send_cmd_to_queque(CMD_CODE_UPDATE_LOADAPP);
-			update_flag=6;
-			sleep(60);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("update_loadapp") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			} 
-			sleep(10);
-			if(shm_ipc_addr->update_flag==-1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			else if(shm_ipc_addr->update_flag==1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_SUCCESS_FALG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-			else
-			{
-				cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	            cgiFormString("upfile",update_file_name,update_file_name_length);
-				shmdt(shm_ipc_addr);
-				update_flag=6;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-		}
-		else if((cgiFormSubmitClicked("transmit_file") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			if (shm_cfg_attch())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			if(engineer_mode_flag == NORMAL_MODE )
-			{
-				////////////////判断当前用户是否与设备用户一致//////////////////
-				if(shm_ipc_addr->modify_web_info_flag == 0)
-				{
-					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else if(shm_ipc_addr->modify_web_info_flag == 1)
-				{
-					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else
-				{
-					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
-					return -1;
-				}
-			}
-			
-			if(transmit_file())
-			{
-				shmdt(shm_ipc_addr);
-				shmdt(shm_cfg_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			operate_flag=0;
-			update_flag=7;
-			shmdt(shm_ipc_addr);
-			shmdt(shm_cfg_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("transmit_file_update") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1; 
-			} 
-			sem_ipc_p();
-            shm_ipc_addr->update_flag=0;
-		    sem_ipc_v();
-			if (mgrh_msg_queue_create())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			shmdt(shm_ipc_addr);
-			send_cmd_to_queque(CMD_CODE_UPDATE_FILE_SYSTEM);
-			update_flag=8;
-			sleep(60);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("update_file") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1 ;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			} 
-			sleep(10);
-			if(shm_ipc_addr->update_flag==-1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			else if(shm_ipc_addr->update_flag==1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_SUCCESS_FALG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-			else
-			{
-				cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-				cgiFormString("upfile",update_file_name,update_file_name_length);
-				shmdt(shm_ipc_addr);
-				update_flag=8;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-		}
-		else if((cgiFormSubmitClicked("transmit_rbf") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			if (shm_cfg_attch())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			if(engineer_mode_flag == NORMAL_MODE )
-			{
-				////////////////判断当前用户是否与设备用户一致//////////////////
-				if(shm_ipc_addr->modify_web_info_flag == 0)
-				{
-					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else if(shm_ipc_addr->modify_web_info_flag == 1)
-				{
-					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else
-				{
-					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
-					return -1;
-				}
-			}
-			if(transmit_file())
-			{
-				shmdt(shm_ipc_addr);
-				shmdt(shm_cfg_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			operate_flag=0;
-			update_flag=9;
-			shmdt(shm_ipc_addr);
-			shmdt(shm_cfg_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("transmit_rbf_update") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1 ;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			sem_ipc_p();
-            shm_ipc_addr->update_flag=0;
-		    sem_ipc_v();
-			if (mgrh_msg_queue_create())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			shmdt(shm_ipc_addr);
-			send_cmd_to_queque(CMD_CODE_UPDATE_RBF );
-			update_flag=10;
-			sleep(30);			
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("update_rbf") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			}
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			sleep(5);
-			if(shm_ipc_addr->update_flag==-1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			else if(shm_ipc_addr->update_flag==1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_SUCCESS_FALG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-			else
-			{
-				cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-				cgiFormString("upfile",update_file_name,update_file_name_length); 
-				shmdt(shm_ipc_addr);
-				update_flag=10;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-			}
-		}
-		else if((cgiFormSubmitClicked("transmit_zimage") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			if (shm_cfg_attch())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			if(engineer_mode_flag == NORMAL_MODE )
-			{
-				////////////////判断当前用户是否与设备用户一致//////////////////
-				if(shm_ipc_addr->modify_web_info_flag == 0)
-				{
-					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else if(shm_ipc_addr->modify_web_info_flag == 1)
-				{
-					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
-					{
-						operate_flag=VALIDATE_FAIL;
-						shmdt(shm_ipc_addr);
-						shmdt(shm_cfg_addr);
-						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-						return -1;
-					}
-				}
-				else
-				{
-					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
-					return -1;
-				}
-			}
-			if(transmit_file())
-			{
-				shmdt(shm_ipc_addr);
-				shmdt(shm_cfg_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			
-			shmdt(shm_ipc_addr);
-			shmdt(shm_cfg_addr);
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			operate_flag=0;
-			update_flag=11;
-			sleep(1);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-		}
-		else if((cgiFormSubmitClicked("transmit_zimage_update") == cgiFormSuccess))
-		{
-			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
-			{
-				return -1;
-			} 
-			if(shm_ipc_addr->freq_channel == 350)
-			{
-				web_nm_data.freq_channel=1;
-			}
-			else if (shm_ipc_addr->freq_channel == 410)
-			{
-				web_nm_data.freq_channel=2;
-			}
-			else
-			{
-				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
-			}
-			sem_ipc_p();
-            shm_ipc_addr->update_flag=0;
-		    sem_ipc_v();
-			if (mgrh_msg_queue_create())
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-	        cgiFormString("upfile",update_file_name,update_file_name_length);
-			shmdt(shm_ipc_addr);
-			send_cmd_to_queque(CMD_CODE_UPDATE_ZIMAGE);
-			update_flag=12;
-			sleep(60);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 
 		}
-		else if((cgiFormSubmitClicked("update_zimage") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("transmit_dtb") == cgiFormSuccess))      //升级设备树分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
-			if (shm_ipc_attch())
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())   //获取频段信息
 			{
 				return -1;
 			} 
@@ -4463,52 +4213,753 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
+				web_nm_data.freq_channel=0;//无效频段
 			}
-			sleep(10);
-			if(shm_ipc_addr->update_flag==-1)
-			{
-				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
-				return -1;
-			}
-			else if(shm_ipc_addr->update_flag==1)
+			
+		    if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)  ///////////表明其它操作正在进行////////////
 			{
 				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
 				shmdt(shm_ipc_addr);
-				operate_flag=UPDATE_SUCCESS_FALG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=UPDATE_DTB_FLAG;  /////////////升级操作标志//////////
+            sem_ipc_v();
+			
+			if (shm_cfg_attch())
+			{
+				operate_flag=UPDATE_DTB_FAIL_FLAG;
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			
+			if(engineer_mode_flag == NORMAL_MODE )
+			{
+				////////////////判断当前用户是否与设备用户一致//////////////////
+				if(shm_ipc_addr->modify_web_info_flag == 0)
+				{
+					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else if(shm_ipc_addr->modify_web_info_flag == 1)
+				{
+					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else
+				{
+					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
+					sem_ipc_p();
+					shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+					sem_ipc_v();
+					shmdt(shm_ipc_addr);
+					shmdt(shm_cfg_addr);
+					return -1;
+				}
+			}
+			if(transmit_file())                           //传输升级文件
+			{
+				operate_flag=UPDATE_DTB_FAIL_FLAG;
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(update_dtb())                            //升级dtb
+			{
+				operate_flag=UPDATE_DTB_FAIL_FLAG;
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				shm_ipc_addr->update_dtb_result=UPDATE_FAIL;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			shm_ipc_addr->update_dtb_result=UPDATE_SUCCESS;
+			sem_ipc_v();
+			operate_flag=UPDATE_DTB_SUCCESS_FALG;
+			sleep(5);
+			shmdt(shm_ipc_addr);
+			shmdt(shm_cfg_addr);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
+		}
+		else if((cgiFormSubmitClicked("transmit_uboot") == cgiFormSuccess))      //升级boot分支
+		{
+			///////获取当前网页值--防止配置失败////////////////////
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())               //获取频段信息
+			{
+				return -1;
+			} 
+			if(shm_ipc_addr->freq_channel == 350)
+			{
+				web_nm_data.freq_channel=1;
+			}
+			else if (shm_ipc_addr->freq_channel == 410)
+			{
+				web_nm_data.freq_channel=2;
 			}
 			else
 			{
-				cgiFormStringSpaceNeeded("upfile",&update_file_name_length);
-				cgiFormString("upfile",update_file_name,update_file_name_length);
-				shmdt(shm_ipc_addr);
-				update_flag=12;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
 			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)          //判断当前有无其它操作进行
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=UPDATE_UBOOT_FLAG;            //升级标志置位，互斥
+            sem_ipc_v();
+			if (shm_cfg_attch())
+			{
+				operate_flag=UPDATE_UBOOT_FAIL_FLAG;
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(engineer_mode_flag == NORMAL_MODE )
+			{
+				////////////////判断当前用户是否与设备用户一致//////////////////
+				if(shm_ipc_addr->modify_web_info_flag == 0)
+				{
+					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else if(shm_ipc_addr->modify_web_info_flag == 1)
+				{
+					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else
+				{
+					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
+					sem_ipc_p();
+					shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+					sem_ipc_v();
+					shmdt(shm_ipc_addr);
+					shmdt(shm_cfg_addr);
+					return -1;
+				}
+			}
+			if(transmit_file())                             //传输升级文件
+			{
+				operate_flag=UPDATE_UBOOT_FAIL_FLAG;
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(update_uboot())                           //升级boot
+			{
+				operate_flag=UPDATE_UBOOT_FAIL_FLAG;
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				shm_ipc_addr->update_boot_result=UPDATE_FAIL;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			shm_ipc_addr->update_boot_result=UPDATE_SUCCESS;
+			sem_ipc_v();
+			operate_flag=UPDATE_UBOOT_SUCCESS_FALG;
+			sleep(5);
+			shmdt(shm_ipc_addr);
+			shmdt(shm_cfg_addr);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
 		}
-		else if((cgiFormSubmitClicked("normal_mode") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("transmit_loadapp") == cgiFormSuccess))          //升级loadapp分支
 		{
+			///////获取当前网页值--防止配置失败////////////////////
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())                    //获取频段信息
+			{
+				return -1;
+			} 
+			if(shm_ipc_addr->freq_channel == 350)
+			{
+				web_nm_data.freq_channel=1;
+			}
+			else if (shm_ipc_addr->freq_channel == 410)
+			{
+				web_nm_data.freq_channel=2;
+			}
+			else
+			{
+				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
+			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)        //判断当前有无其它操作进行
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=UPDATE_APP_FLAG;            //置位升级标志，互斥
+            sem_ipc_v();
+			if (shm_cfg_attch())
+			{
+				operate_flag=UPDATE_APP_FAIL_FLAG;
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(engineer_mode_flag == NORMAL_MODE )
+			{
+				////////////////判断当前用户是否与设备用户一致//////////////////
+				if(shm_ipc_addr->modify_web_info_flag == 0)
+				{
+					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else if(shm_ipc_addr->modify_web_info_flag == 1)
+				{
+					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else
+				{
+					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
+					sem_ipc_p();
+					shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+					sem_ipc_v();
+					shmdt(shm_ipc_addr);
+					shmdt(shm_cfg_addr);
+					return -1;
+				}
+			}
+			if(transmit_file())                                        //传输升级文件
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_APP_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(update_loadapp())                                     //升级loadapp
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_APP_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			sem_ipc_v();
+			operate_flag=UPDATE_APP_SUCCESS_FALG;
+			shmdt(shm_ipc_addr);
+			shmdt(shm_cfg_addr);
+			sleep(1);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
+		}
+		else if((cgiFormSubmitClicked("transmit_file") == cgiFormSuccess))        //升级文件系统分支
+		{
+			///////获取当前网页值--防止配置失败////////////////////
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())                      //获取频段信息
+			{
+				return -1;
+			} 
+			if(shm_ipc_addr->freq_channel == 350)
+			{
+				web_nm_data.freq_channel=1;
+			}
+			else if (shm_ipc_addr->freq_channel == 410)
+			{
+				web_nm_data.freq_channel=2;
+			}
+			else
+			{
+				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
+			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)       //判断当前有无其它操作进行
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=UPDATE_RAM_FLAG;             //置位升级标志，互斥
+            sem_ipc_v();
+			if (shm_cfg_attch())
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=UPDATE_RAM_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(engineer_mode_flag == NORMAL_MODE )
+			{
+				////////////////判断当前用户是否与设备用户一致//////////////////
+				if(shm_ipc_addr->modify_web_info_flag == 0)
+				{
+					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else if(shm_ipc_addr->modify_web_info_flag == 1)
+				{
+					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else
+				{
+					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
+					sem_ipc_p();
+					shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+					sem_ipc_v();
+					shmdt(shm_ipc_addr);
+					shmdt(shm_cfg_addr);
+					return -1;
+				}
+			}
+			if(transmit_file())                       //传输升级文件
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_RAM_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(update_file_system())           //升级文件系统
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				shm_ipc_addr->update_ram_result=UPDATE_FAIL;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_RAM_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			shm_ipc_addr->update_ram_result=UPDATE_SUCCESS;
+			sem_ipc_v();
+			shmdt(shm_ipc_addr);
+			shmdt(shm_cfg_addr);
+			operate_flag=UPDATE_RAM_SUCCESS_FALG;
+			sleep(1);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
+		}
+		else if((cgiFormSubmitClicked("transmit_rbf") == cgiFormSuccess))         //升级rbf分支（可删除）
+		{
+			///////获取当前网页值--防止配置失败////////////////////
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())           //获取频段信息
+			{
+				return -1;
+			} 
+			if(shm_ipc_addr->freq_channel == 350)
+			{
+				web_nm_data.freq_channel=1;
+			}
+			else if (shm_ipc_addr->freq_channel == 410)
+			{
+				web_nm_data.freq_channel=2;
+			}
+			else
+			{
+				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
+			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)           //判断当前有无其它操作进行
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=UPDATE_RBF_FLAG;           //置位升级标志，互斥
+            sem_ipc_v();
+			if (shm_cfg_attch())
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=UPDATE_RBF_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(engineer_mode_flag == NORMAL_MODE )
+			{
+				////////////////判断当前用户是否与设备用户一致//////////////////
+				if(shm_ipc_addr->modify_web_info_flag == 0)
+				{
+					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else if(shm_ipc_addr->modify_web_info_flag == 1)
+				{
+					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else
+				{
+					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
+					sem_ipc_p();
+					shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+					sem_ipc_v();
+					shmdt(shm_ipc_addr);
+					shmdt(shm_cfg_addr);
+					return -1;
+				}
+			}
+			if(transmit_file())                  //传输升级文件
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_RBF_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(update_rbf())                 //升级rbf
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				shm_ipc_addr->update_rbf_result=UPDATE_FAIL;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_RBF_FAIL_FLAG;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			shm_ipc_addr->update_rbf_result=UPDATE_SUCCESS;
+			sem_ipc_v();
+			operate_flag=UPDATE_RBF_SUCCESS_FALG;
+			shmdt(shm_ipc_addr);
+			shmdt(shm_cfg_addr);
+			sleep(1);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
+		}
+		else if((cgiFormSubmitClicked("transmit_zimage") == cgiFormSuccess)) //升级内核分支
+		{
+			///////获取当前网页值--防止配置失败////////////////////
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			if (shm_ipc_attch())                 //获取频段信息
+			{ 
+				return -1;
+			} 
+			if(shm_ipc_addr->freq_channel == 350)
+			{
+				web_nm_data.freq_channel=1;
+			}
+			else if (shm_ipc_addr->freq_channel == 410)
+			{
+				web_nm_data.freq_channel=2;
+			}
+			else
+			{
+				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
+			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)         //判断当前有无其它操作进行
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=UPDATE_ZIMAGE_FLAG;         //置位升级标志，互斥
+            sem_ipc_v();
+			if (shm_cfg_attch())
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				operate_flag=UPDATE_ZIMAGE_FAIL_FLAG ;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(engineer_mode_flag == NORMAL_MODE )
+			{
+				////////////////判断当前用户是否与设备用户一致//////////////////
+				if(shm_ipc_addr->modify_web_info_flag == 0)
+				{
+					if((strcmp(web_nm_data.web_user,shm_cfg_addr->web_user.buf)!=0)||(strcmp(web_nm_data.web_code,shm_cfg_addr->web_code.buf)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else if(shm_ipc_addr->modify_web_info_flag == 1)
+				{
+					if((strcmp(web_nm_data.web_user,shm_ipc_addr->web_old_user)!=0)||(strcmp(web_nm_data.web_code,shm_ipc_addr->web_old_code)!=0))
+					{
+						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
+						shmdt(shm_ipc_addr);
+						shmdt(shm_cfg_addr);
+						sleep(1);
+						showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+						return -1;
+					}
+				}
+				else
+				{
+					system("echo modify_web_info_flag error > /tmp/web_error.txt");
+					sem_ipc_p();
+					shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+					sem_ipc_v();
+					shmdt(shm_ipc_addr);
+					shmdt(shm_cfg_addr);					
+					return -1;
+				}
+			}
+			if(transmit_file())                  //传输升级文件
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_ZIMAGE_FAIL_FLAG ;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			if(update_zimage())             //升级内核
+			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				shm_ipc_addr->update_zimage_result=UPDATE_FAIL;
+				sem_ipc_v();
+				shmdt(shm_ipc_addr);
+				shmdt(shm_cfg_addr);
+				operate_flag=UPDATE_ZIMAGE_FAIL_FLAG ;
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+				return -1;
+			}
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			shm_ipc_addr->update_zimage_result=UPDATE_SUCCESS;
+			sem_ipc_v();
+			shmdt(shm_ipc_addr);
+			shmdt(shm_cfg_addr);
+			operate_flag=UPDATE_ZIMAGE_SUCCESS_FALG;
+			sleep(1);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
+		}
+		else if((cgiFormSubmitClicked("normal_mode") == cgiFormSuccess))       //用户模式登录分支
+		{
+			cgiFormInteger("language_switch",&language_switch,0);     //获取语言开关
 			/////开机读取配置参数
 			if (shm_cfg_attch())
 			{
 				return -1;
 			}
 			if (shm_ipc_attch())
-			{
+			{ 
 				shmdt(shm_cfg_addr);
 				return -1;
 			}
 			
-			if(get_data_from_file())
+			if(get_data_from_file())                //从配置文件中获取配置信息
 			{
 				shmdt(shm_cfg_addr);
 				shmdt(shm_ipc_addr);
 				return -1;
 			}
-			if(shm_ipc_addr->freq_channel == 350)
+			if(shm_ipc_addr->freq_channel == 350)           //获取频段信息
 			{
 				web_data.freq_channel=1;
 			}
@@ -4519,7 +4970,7 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
+				web_data.freq_channel=0;//无效频段
 			}
 			/////常规模式/////////////
 			memcpy(web_data.web_user,shm_cfg_addr->web_user.buf,sizeof(web_data.web_user));
@@ -4527,7 +4978,7 @@ int cgiMain(){
 			shm_ipc_addr->modify_web_info_flag=0;  //记录是否更改密码，为了保证安全
 			shmdt(shm_cfg_addr);
 			shmdt(shm_ipc_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_data,current_div,update_file_name,language_switch);
 			/*
 			memset(web_code,0,sizeof(web_code));
 			memset(web_user,0,sizeof(web_user));
@@ -4580,12 +5031,12 @@ int cgiMain(){
 			*/
 			
 		}
-		else if((cgiFormSubmitClicked("set_code") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("set_code") == cgiFormSuccess))   //更改用户信息分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
 			
-			if (shm_ipc_attch())
+			if (shm_ipc_attch())                //获取频段信息
 			{
 				return -1;
 			}
@@ -4600,16 +5051,19 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
+				web_nm_data.freq_channel=0;//无效频段
 			}
 			////////////////////配置操作触发//////////////
 			////////////////打开配置区共享内存//////////////
 			if (shm_cfg_attch())
 			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				operate_flag=SET_CODE_FAIL;
 				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
 			memset(shm_ipc_addr->web_old_user,0,sizeof(shm_ipc_addr->web_old_user));
@@ -4630,32 +5084,39 @@ int cgiMain(){
 			sem_cfg_v();
 			shm_ipc_addr->modify_web_info_flag=1;
 		//	printf("%s\n",shm_cfg_addr->web_code.buf);
-			if(save_ini_file())
+			if(save_ini_file())                  
 			{
 				system("echo save_ini_file fail > /tmp/web_error.txt"); 
 				shmdt(shm_cfg_addr);
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				operate_flag=SET_CODE_FAIL;
 				shm_ipc_addr->modify_web_info_flag=0;
 				sleep(1);
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
 			shmdt(shm_cfg_addr);
+			sem_ipc_p();
+			shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+			sem_ipc_v();
 			shmdt(shm_ipc_addr);
 			operate_flag=SET_CODE_SUCCESS;
 			sleep(1);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
 		}
-		else if((cgiFormSubmitClicked("engineer_pattern") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("engineer_pattern") == cgiFormSuccess))      //工程模式分支
 		{
-			/////开机读取配置参数
+			cgiFormInteger("language_switch",&language_switch,0);         //获取语言开关状态
 			if (shm_cfg_attch())
 			{
 				return -1;
 			}
 			
-			if(get_data_from_file())
+			if(get_data_from_file())                //从配置文件获取配置信息
 			{
 				shmdt(shm_cfg_addr);
 				return -1;
@@ -4665,7 +5126,7 @@ int cgiMain(){
 				shmdt(shm_cfg_addr);
 				return -1;
 			}
-			if(shm_ipc_addr->freq_channel == 350)
+			if(shm_ipc_addr->freq_channel == 350)          //获取频段信息
 			{
 				web_data.freq_channel=1;
 			}
@@ -4676,7 +5137,7 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
+				web_data.freq_channel=0;//无效频段
 			}
 			
 			engineer_mode_flag=ENGINEER_MODE;
@@ -4686,12 +5147,12 @@ int cgiMain(){
 		//	shm_ipc_addr->modify_web_info_flag=0;  //记录是否更改密码，为了保证安全
 			shmdt(shm_cfg_addr);
 			shmdt(shm_ipc_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_data,current_div,update_file_name,language_switch);
 		}
-		else if((cgiFormSubmitClicked("get_operate_validate") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("get_operate_validate") == cgiFormSuccess))    //用户模式，读取操作之前校验分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
 			if (shm_ipc_attch())
 			{
 				return -1;
@@ -4707,7 +5168,7 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
+				web_nm_data.freq_channel=0;//无效频段
 			}
 			////////////////////获取操作触发//////////////
 			////////////////打开配置区共享内存//////////////
@@ -4715,7 +5176,8 @@ int cgiMain(){
 			{
 				shmdt(shm_ipc_addr);
 				operate_flag=GET_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
 			if(engineer_mode_flag == NORMAL_MODE)
@@ -4745,6 +5207,8 @@ int cgiMain(){
 				}
 				else
 				{
+					shmdt(shm_cfg_addr);
+					shmdt(shm_ipc_addr);
 					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
 					return -1;
 				}
@@ -4753,27 +5217,51 @@ int cgiMain(){
 			
 			shmdt(shm_cfg_addr);
 			shmdt(shm_ipc_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 		}
-		else if((cgiFormSubmitClicked("set_operate_validate") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("set_operate_validate") == cgiFormSuccess))  //用户模式写入操作之前校验分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
+			cgiFormInteger("freq_channel",&freq_channel,0);  //获取界面保存频段标志
 			if (shm_ipc_attch())
 			{
 				return -1;
 			} 
 			if(shm_ipc_addr->freq_channel == 350)
 			{
+				if(freq_channel !=1)         //界面保存频段标志与设备不一致，不允许配置
+				{
+					operate_flag=FERQ_NOT_SAME;
+					web_nm_data.freq_channel=1;
+					shmdt(shm_ipc_addr);
+					//sleep(1);
+					showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+					return -1;
+				}
 				web_nm_data.freq_channel=1;
 			}
 			else if (shm_ipc_addr->freq_channel == 410)
 			{
+				if(freq_channel !=2)         //界面保存频段标志与设备不一致，不允许配置
+				{
+					operate_flag=FERQ_NOT_SAME;
+					web_nm_data.freq_channel=2;
+					shmdt(shm_ipc_addr);
+				//	sleep(1);
+					showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+					return -1;
+				}
 				web_nm_data.freq_channel=2;
 			}
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
+				operate_flag=FERQ_CHANNEL_ERROR;
+				web_nm_data.freq_channel=0;
+				shmdt(shm_ipc_addr);
+			//	sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
 			////////////////////获取操作触发//////////////
@@ -4782,7 +5270,8 @@ int cgiMain(){
 			{
 				shmdt(shm_ipc_addr);
 				operate_flag=SET_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+			//	sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
 			if(engineer_mode_flag == NORMAL_MODE)
@@ -4812,6 +5301,8 @@ int cgiMain(){
 				}
 				else
 				{
+					shmdt(shm_cfg_addr);
+					shmdt(shm_ipc_addr);
 					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
 					return -1;
 				}
@@ -4820,12 +5311,12 @@ int cgiMain(){
 			
 			shmdt(shm_cfg_addr);
 			shmdt(shm_ipc_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 		}
-		else if((cgiFormSubmitClicked("reboot_operate_validate") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("reboot_operate_validate") == cgiFormSuccess))      //用户模式重启操作之前校验分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
 			if (shm_ipc_attch())
 			{
 				return -1;
@@ -4841,7 +5332,7 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
-				return -1;
+				web_nm_data.freq_channel=0;//无效频段
 			}
 			////////////////////获取操作触发//////////////
 			////////////////打开配置区共享内存//////////////
@@ -4849,7 +5340,8 @@ int cgiMain(){
 			{
 				shmdt(shm_ipc_addr);
 				operate_flag=REBOOT_FAIL_FLAG;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
 			if(engineer_mode_flag == NORMAL_MODE)
@@ -4879,18 +5371,20 @@ int cgiMain(){
 				}
 				else
 				{
+					shmdt(shm_cfg_addr);
+					shmdt(shm_ipc_addr);
 					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
 					return -1;
 				}
 			}
 			shmdt(shm_cfg_addr);
 			shmdt(shm_ipc_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 		}
-		else if((cgiFormSubmitClicked("set_code_validate") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("set_code_validate") == cgiFormSuccess))         //用户模式修改用户信息之前校验分支
 		{
 			///////获取当前网页值--防止配置失败////////////////////
-			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div);
+			engineer_mode_flag=get_init_param_from_html(&web_nm_data,&current_div,&language_switch);
 			if (shm_ipc_attch())
 			{
 				return -1;
@@ -4906,15 +5400,31 @@ int cgiMain(){
 			else
 			{
 				system("echo freq_channel error > /tmp/web_error.txt"); 
+				web_nm_data.freq_channel=0;//无效频段
+			}
+			if(shm_ipc_addr->clear_update_status != NO_OPERATE_FLAG)
+			{
+				
+				operate_flag=25+shm_ipc_addr->clear_update_status;
+				shmdt(shm_ipc_addr);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
+			sem_ipc_p();
+            shm_ipc_addr->clear_update_status=USER_INFO_FLAG;
+            sem_ipc_v();
 			////////////////////获取操作触发//////////////
 			////////////////打开配置区共享内存//////////////
 			if (shm_cfg_attch())
 			{
+				sem_ipc_p();
+				shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+				sem_ipc_v();
 				shmdt(shm_ipc_addr);
 				operate_flag=SET_CODE_FAIL;
-				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+				sleep(1);
+				showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
 				return -1;
 			}
 			if(engineer_mode_flag == NORMAL_MODE)
@@ -4929,6 +5439,9 @@ int cgiMain(){
 					else
 					{
 						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
 					}
 				}
 				else if(shm_ipc_addr->modify_web_info_flag == 1)
@@ -4940,10 +5453,16 @@ int cgiMain(){
 					else
 					{
 						operate_flag=VALIDATE_FAIL;
+						sem_ipc_p();
+						shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+						sem_ipc_v();
 					}
 				}
 				else
 				{
+					sem_ipc_p();
+					shm_ipc_addr->clear_update_status=NO_OPERATE_FLAG;
+					sem_ipc_v();
 					system("echo modify_web_info_flag error > /tmp/web_error.txt"); 
 					return -1;
 				}
@@ -4951,15 +5470,16 @@ int cgiMain(){
 			
 			shmdt(shm_cfg_addr);
 			shmdt(shm_ipc_addr);
-			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_flag,update_file_name);
+			showHtml(engineer_mode_flag,operate_flag,&web_nm_data,current_div,update_file_name,language_switch);
+
 		}
-		else if((cgiFormSubmitClicked("submit") == cgiFormSuccess))
+		else if((cgiFormSubmitClicked("submit") == cgiFormSuccess))           //登录界面提交登录信息分支
 		{
 			cgiFormStringSpaceNeeded("code",&length);
 			cgiFormString("code",web_code,length);
 			cgiFormStringSpaceNeeded("user",&length);
 			cgiFormString("user",web_user,length);
-			
+			cgiFormInteger("language_switch",&language_switch,0);
 			if (shm_cfg_attch())
 			{
 				return -1;
@@ -4979,7 +5499,7 @@ int cgiMain(){
 				log_flag=3;
 			}
 			shmdt(shm_cfg_addr);
-			show_login(web_user,web_code,log_flag);
+			show_login(web_user,web_code,log_flag,language_switch);
 		}
 		
 

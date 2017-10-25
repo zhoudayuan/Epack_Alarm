@@ -122,9 +122,14 @@ unsigned int local_cc = 0;
 unsigned int local_dev_id = 0;
 
 
+
+
 int main(void)
 {
+    
 	printf("<%s> <%s> <%d> mgr_center_agent start!\n", __FILE__, __FUNCTION__, __LINE__);
+
+    
 	key_t msqKey;
 	//logÐ´ÎÄ¼þ
 	pLogTxtFd = fopen("./LOG.txt","r+");

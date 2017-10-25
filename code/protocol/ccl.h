@@ -35,6 +35,7 @@
 
 
 
+
 /******************************************************************************
  *   类型定义
  *   *************************************************************************/
@@ -73,8 +74,8 @@
  * @def
  * @brief信令回复结果
  */
-#define    ACK_OK                   0x04
-#define    ACK_FAIL                 0x05
+#define    PPT_ACK_OK                   0x04
+#define    PPT_ACK_FAIL                 0x05
 /**
  * @def
  * @brief PTT  信令状态
@@ -133,7 +134,7 @@
  * @def  CENTER_VOICE_DL_HEADLEN
  * @brief 中心下行语音帧头长度
  */
-#define    CENTER_VOICE_DL_HEADLEN          32//20
+#define    CENTER_VOICE_DL_HEADLEN          32    //20  标准头+扩展头   12+20
 
 /**
  * @def  CENTER_VOICE_DL_PAYLOADLEN
@@ -203,8 +204,8 @@
 typedef struct  _CC_CVID_SUBNET_DATA
 {
     unsigned char SubNet;
-    unsigned int  CallId;   // 控制面ID 标识一次呼叫的控制面ID
-    unsigned int  VoiceId;  // 业务面ID 标识一次呼叫的业务面ID
+    unsigned int  CallId;           // 控制面ID 标识一次呼叫的控制面ID
+    unsigned int  VoiceId;          // 业务面ID 标识一次呼叫的业务面ID
     unsigned char srcid[3];
     unsigned char destid[3];
 } CC_CVID_SUBNET_DATA;
@@ -469,8 +470,8 @@ typedef struct  _Rtp_Repeater_Ex_Head
  */
 typedef struct _CENTER_VOICE_DATA
 {
-    Rtp_Fix_Head    Rtp_Head;
-    Rtp_Ex_Head     Rtp_Ex;
+    Rtp_Fix_Head    Rtp_Head;//12字节
+    Rtp_Ex_Head     Rtp_Ex;//20字节
     unsigned char   Payload[ RTP_MAX_DATA_SIZE];
     unsigned char   Reserve_Data[5];
 } CENTER_VOICE_DATA;
@@ -613,15 +614,15 @@ typedef struct _GPS_DATA_CCL_T
 * @struct  GPS_DATA_CC_T
 * @brief  GPS NAS   CC层数据结构
 */
-
 typedef struct _GPS_DATA_CC_T
 {
-    unsigned char   CALLEDID[4];      //被叫设备ID
+    unsigned char   CALLEDID[4];    // 被叫设备ID
     GPS_DATA_CCL_T  GPSCCLDATA;
 }__attribute__((packed,aligned(1))) GPS_DATA_CC_T;
 
 
 
+#if 0
 /**
 * @struct   _LP__DC_INFO
 * @brief 数据链路层到呼叫控制层LP消息
@@ -632,6 +633,8 @@ typedef  struct _LP__DC_INFO
     unsigned char  OptCode[2];
     struct     GPS_DC_INFO;
 }LP_DC_INFO;
+#endif
+
 /**
 * @struct  _GPS__CC_INFO
 * @brief 呼叫控制层到中心GPS消息

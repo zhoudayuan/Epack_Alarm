@@ -98,7 +98,8 @@ void cach_frag_dec(UINT16* pu2AiData, UINT16* pu2TACT, UINT32* pu4CACH);
 
 void rc_enc(UINT16* pu2RC, UINT16* pu2AiData);
 
-void rc_dec(UINT16* pu2AiData, UINT16* pu2RC, UINT16* pu2Result);
+void rc_dec(UINT16* pu2EncodedRC,UINT16* pu2Result);
+
 
 INT16 distance(INT16 px1, INT16 px2, INT16 py1, INT16 py2,INT16 pout);
 void TriBit(UINT16 *psymbol, UINT16 num, UINT16 *pbit);

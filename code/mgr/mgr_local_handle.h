@@ -39,7 +39,9 @@
 #define DATA_LENGTH             0x4380
 #define MAX_VOLUMN_IQ_DATA      60*1024*1024
 /******************SAVE DATA***********************/
-
+#define  TRANSMIT_ERROR_FLAG2    0x3a586B73      //全功能复位策略标志
+#define  TRANSMIT_ERROR_FLAG1    0x55AA      //FPGA快四复位策略标志
+#define  REBOOT_STRATEGY_FILE_NAME   "reboot_strategy_error"
 
 
 
@@ -59,6 +61,20 @@ typedef struct {
     unsigned int  power_status:1;
     unsigned int other:20;
 }__attribute__((packed,aligned(1)))TEMPERATE_STRUCT;
+
+typedef  enum {
+	NO_OPERATE_FLAG=0,
+	UPDATE_DTB_FLAG=1,
+	UPDATE_RBF_FLAG=2,
+	UPDATE_UBOOT_FLAG=3,
+	UPDATE_APP_FLAG=4,
+	UPDATE_RAM_FLAG=5,
+	UPDATE_ZIMAGE_FLAG=6,
+	READ_FLAG=7,
+	WRITE_FLAG=8,
+	REBOOT_FLAG=9,
+	USER_INFO_FLAG=10
+}WEB_OPERATE_FLAG;
 
 void  read_fpga_version(void);
 int init_fpga_mem_nm(void);
@@ -113,21 +129,18 @@ void Center_Query_AlarmTable_Set();
 void send_center_query_alarmtable_ack(unsigned char * buffer);
 void clear_report_ai_alarm_flag();
 int  confirm_mount_point();
-int update_loadapp();
-int update_dtb();
-int update_uboot();
-int update_file_system();
-int update_rbf();
-int update_zimage();
 void  send_remote_query_alarm_ack(unsigned short cmd_code, unsigned char nm_type, unsigned char src_id, unsigned char dst_id, unsigned char * data);
 
 void * pthread_func_alarm_send_local(void *arg);
-unsigned int db_convert_rssi(int input_db);
+unsigned int db_convert_rssi(unsigned int input_db);
 void find_db_table(int index,int *convert_db ,unsigned int rssi);
 int rssi_convert_db(unsigned int rssi);
 int write_vertion_to_eeprom(void);
 int read_vertion_from_eeprom(void);
 int read_old_fpga_param_from_eeprom(void);
+
+void * pthread_func_transmit_data_error_monitor(void *arg);
+
 
 
 #endif

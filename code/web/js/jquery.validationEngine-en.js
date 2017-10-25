@@ -6,7 +6,7 @@
 			$.validationEngineLanguage.allRules = {
 				"required":{ // Add your regex rules here, you can take telephone as an example
 					"regex":"none",
-					"alertText":"* 该项为必填项",
+					"alertText":"* Input is required",
 					"alertTextCheckboxMultiple":"* 请选择一个项目",
 					"alertTextCheckboxe":"* 该选项为必选",
 					"alertTextDateRange":"* 日期范围不可空白"
@@ -23,13 +23,13 @@
 				},
 				"minSize":{
 					"regex":"none",
-					"alertText":"* 最少 ",
-					"alertText2":" 个字符"
+					"alertText":"* Minimum ",
+					"alertText2":"characters"
 				},
 				"maxSize":{
 					"regex":"none",
-					"alertText":"* 最多 ",
-					"alertText2":" 个字符"
+					"alertText":"* Maximum ",
+					"alertText2":"characters"
 				},
 				"groupRequired":{
 					"regex":"none",
@@ -37,11 +37,11 @@
 				},
 				"min":{
 					"regex":"none",
-					"alertText":"* 最小值为 "
+					"alertText":"* The minimum value is "
 				},
 				"max":{
 					"regex":"none",
-					"alertText":"* 最大值为 "
+					"alertText":"* The maximum value is "
 				},
 				"past":{
 					"regex":"none",
@@ -83,24 +83,24 @@
 				},
 				"integer":{
 					"regex":/^\d+$/,
-					"alertText":"* 只能输入数字"
+					"alertText":"* Please enter only numbers"
 				},
 				"team_number":{
 					"regex":/^[1-9]\d*$/,
-					"alertText":"* 只能输入正整数"
+					"alertText":"* Please enter only positive integers"
 				},
 				"gsm_number":{
 					"regex":/^[\+]?\d+$/,
-					"alertText":"* 无效的号码，如+12345678"
+					"alertText":"* Invalid number"
 				},
 				"minus":{
 					"regex":/^\-\d+$/,
-					"alertText":"* 只能输入负数"
+					"alertText":"* Please enter only negative numbers"
 				},
 				"number":{
 					// Number, including positive, negative, and floating decimal. credit:orefalo
                     "regex": /^([1-9][0-9]{1,2})([\.]([0-9]{1,6}))?$/,
-					"alertText":"* 只能输入数字，且最多输入6位精度位数"
+					"alertText":"* Invalid number"
 				},
 				"date":{
 					"regex":/^\d{4}[\/\-](0?[1-9]|1[012])[\/\-](0?[1-9]|[12][0-9]|3[01])$/,
@@ -112,11 +112,11 @@
 				},
 				"ipv4":{
 					"regex":/^([1-9]\d?|1\d{2}|2[01]\d|22[0-3])[.]((([01]?[0-9]{1,2})|(2[0-4][0-9])|(25[0-5]))[.]){2}(([0-1]?[0-9]{1,2})|(2[0-4][0-9])|(25[0-5]))$/,
-					"alertText":"* 无效的IP地址。第1段取值范围：1-223；例如:192.168.69.1"
+					"alertText":"* Invalid IP address. The value range for the first portion is 1-223. For example, 192.168.69.1"
 				},
 				"ip_epck":{
 					"regex":/^([1-9]\d?|1\d{2}|2[01]\d|22[0-3])[.](((0)|(1[0-9]{0,2})|([2-9][0-9]{0,1})|(2[0-4][0-9])|(25[0-5]))[.]){2}((0)|(1[0-9]{0,2})|([2-9][0-9]{0,1})|(2[0-4][0-9])|(25[0-5]))$/,
-					"alertText":"* 无效的IP地址。例如:192.168.69.1"
+					"alertText":"* Invalid IP address"
 				},
 				"url":{
 					"regex":/^(https?|ftp):\/\/(((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:)*@)?(((\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\.(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5]))|((([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|\d|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.)+(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])*([a-z]|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])))\.?)(:\d*)?)(\/((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)+(\/(([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)*)*)?)?(\?((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|[\uE000-\uF8FF]|\/|\?)*)?(\#((([a-z]|\d|-|\.|_|~|[\u00A0-\uD7FF\uF900-\uFDCF\uFDF0-\uFFEF])|(%[\da-f]{2})|[!\$&'\(\)\*\+,;=]|:|@)|\/|\?)*)?$/i,
@@ -132,7 +132,7 @@
 				},
 				"onlyLetterNumber":{
 					"regex":/^[0-9a-zA-Z]+$/,
-					"alertText":"* 只能填写数字和英文字母"
+					"alertText":"* Enter only digits and English letters"
 				},
 				//tls warning:homegrown not fielded 
 				"dateFormat":{

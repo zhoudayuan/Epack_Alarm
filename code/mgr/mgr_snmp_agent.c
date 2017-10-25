@@ -15766,7 +15766,7 @@ handle_fpgaParam(netsnmp_mib_handler *handler,
 {
     int ret;
 	unsigned int i = 0;
-	unsigned char fpga_param[244] = {0};
+	unsigned char fpga_param[365] = {0};
 	struct timeval delay; 
 	
     /* We are never called for a GETNEXT if it's registered as a
@@ -23363,6 +23363,15 @@ int handle_updateData(netsnmp_mib_handler *handler,
 		   			    netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
                         break;
 		   			}
+                    status=system("rm -rf *");
+                    if(test_code(status))
+					{
+		   			    chdir("/");
+		   				system("umount /mnt");
+		   		        printf("rm -rf * failed!\n");
+		   			    netsnmp_set_request_error(reqinfo, requests, SNMP_ERR_BADVALUE);
+                        break;
+					}
 		   			status=system((const char *)code);
 					if(test_code(status))
 					{
@@ -23414,7 +23423,7 @@ int handle_updateData(netsnmp_mib_handler *handler,
 		        
 		                        }
 		                        size=strlen(buffer_active);
-		                        fwrite(buffer_active,size,1,fd);
+		                        fwrite(buffer_active,1,size,fd);
 		                        fclose(fd);
 		   						if(strcmp((char *)buffer,"/dev/mtdblock5\n")!=0)
 		       	                {
@@ -23431,12 +23440,12 @@ int handle_updateData(netsnmp_mib_handler *handler,
                                         break;
 		                            }
 		                            size=strlen(buffer_back);
-		                            fwrite(buffer_back,size,1,fd);
+		                            fwrite(buffer_back,1,size,fd);
 		                            fclose(fd); 
 		       	                 }
 		   						 system("cp -rf /loadapp/nas_config.ini /mnt");
 								 system("cp -rf /loadapp/ConfigFile     /mnt");
-								 system("cp -rf /loadapp/config.ini /mnt");
+								// system("cp -rf /loadapp/config.ini /mnt");
 		   					     printf("update loadapp  success\n");
 		   					     system("rm -rf loadapp*");
 		   						 chdir("/");
@@ -27082,7 +27091,7 @@ handle_id16CombinedDataPacket(netsnmp_mib_handler *handler,
     int ret;
 	unsigned int i = 0;
 	struct timeval delay; 
-	unsigned int this_id = DEV_ID_1;
+	unsigned int this_id = DEV_ID_16;
 	NM_COMBINED_DATA data;
 	int flag=0;
 	
@@ -37419,6 +37428,7 @@ int bin_to_bz2(char * bin_name, char * bz2_name)
 		if (NULL == bin_file)
 		{
 			printf("bin_file fopen err\n");
+            fclose(bz2_file);
 			return -1;
 		}
 

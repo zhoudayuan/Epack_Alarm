@@ -563,18 +563,53 @@ void CLL_SyncGpsTime(void)
     GPS_DEV_DATA_T *GpsDevData;
     GpsDevData = (GPS_DEV_DATA_T *)(p_DllFpgaShm->GpsData);
 
-    if ((p_DllFpgaShm->GpsFlag & 0x01) == 1)
+    // 从与FPGA的共享内存获取时间 
+    if ((p_DllFpgaShm->GpsFlag & 0x01) == 1)  // 是否锁定
     {
-        _tm.tm_sec = GpsDevData->SEC;
-        _tm.tm_min = GpsDevData->MIN;
-        _tm.tm_hour = (GpsDevData->HOUR+8)%24;
+        /*
+        ** struct tm {
+        ** 　　int tm_sec;     // 秒 –取值区间为[0,59]
+        ** 　　int tm_min;     // 分 - 取值区间为[0,59]
+        ** 　　int tm_hour;    // 时 - 取值区间为[0,23]
+        ** 　　int tm_mday;    // 日 - 一个月中的日期 - 取值区间为[1,31]
+        ** 　　int tm_mon;     // 月 - 从一月开始，0代表一月 - 取值区间为[0,11]
+        ** 　　int tm_year;    // 年 - 其值从1900开始
+        ** 　　int tm_wday;    // 星期 – 取值区间为[0,6]，其中0代表星期天，1代表星期一，以此类推
+        ** 　　int tm_yday;    // 年   - 从每年的1月1日开始的天数–取值区间为[0,365]，其中0代表1月1日，1代表1月2日，以此类推
+        ** 　　int tm_isdst;   // 夏令时标识符，实行夏令时的时候，tm_isdst为正。不实行夏令时的进候，tm_isdst为0；不了解情况时，tm_isdst()为负。
+        ** };
+        */
+        _tm.tm_sec =  GpsDevData->SEC;
+        _tm.tm_min =  GpsDevData->MIN;
+        _tm.tm_hour = (GpsDevData->HOUR+8)%24;  // 转化为北京时间
         _tm.tm_mday = GpsDevData->DAY;
-        _tm.tm_mon = GpsDevData->MONTH - 1;
-        _tm.tm_year = GpsDevData->YEAR+ 2000- 1900;
+        _tm.tm_mon =  GpsDevData->MONTH - 1;
+        _tm.tm_year = GpsDevData->YEAR+ 2000 - 1900;  //
 
+        /*
+        ** time_t mktime(struct tm * timeptr);
+        ** typedef long int time_t, time_t 类型的变量最大值为0x7fffffff
+        ** mktime()用来将参数timeptr所指的tm结构数据转换成从公元1970年1月1日0时0分0 秒算起至今的时间所经过的秒数
+        ** 
+        **         
+        ** struct timeval {
+        **     time_t tv_sec;  // seconds 
+        **     long   tv_usec; // microseconds
+        ** };
+        */
         timep = mktime(&_tm);
         tv.tv_sec = timep;
         tv.tv_usec = 0;
+
+        /*
+        ** settimeofday 会把目前时间设成由tv所指的结构信息，当地时区信息则设成tz所指的结构
+        ** 
+        ** struct timezone
+        ** {
+        **    int tz_minuteswest;  // 和Greewich时间差了多少分钟
+        **    int tz_dsttime;      // 日光节约时间的状态
+        ** };
+        */        
         if(settimeofday (&tv, (struct timezone *) 0) < 0)
         {
             printf("Set system datatime error!/n");
@@ -617,7 +652,7 @@ void CLL_GetGpsTime(struct tm* pvTm)
 * @since
 * @bug
 */
-int GetTime( char *pvtime)
+int GetTime(char *pvtime)
 {
     char pttime[20]={0};
     struct tm timeinfo;
@@ -626,8 +661,8 @@ int GetTime( char *pvtime)
 
    // GpsExsit = 0x01 & (p_DllFpgaShm->GpsFlag >> 1);
 
-    if((p_DllFpgaShm->GpsFlag & 0x01) != 1)//GPS 没有锁定
-    {   
+    if((p_DllFpgaShm->GpsFlag & 0x01) != 1) // GPS 没有锁定
+    {
         LOG_DEBUG(s_LogMsgId,"[CCL][%s] GPS time err :gpsexsit:%d lockflg:%d  ", __FUNCTION__,(0x01 & (p_DllFpgaShm->GpsFlag >> 1)),p_DllFpgaShm->GpsFlag & 0x01);
         memset(pttime,48,14);
     }

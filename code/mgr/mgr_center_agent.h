@@ -24,4 +24,5 @@ void * pthread_cc_mgra_recv(void *arg);
 void init_local_val(void);
 
 
+
 #endif

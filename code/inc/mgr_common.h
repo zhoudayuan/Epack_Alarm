@@ -21,7 +21,7 @@
  * @def NAS_CONFIG_FILE
  * @brief 配置文件
  */
-#define NAS_CONFIG_FILE           "nas_config.ini"
+#define NAS_CONFIG_FILE 	      "/loadapp/nas_config.ini"
 /**
  * @def FTOK_F_NAME
  * @brief 用于获取共享内存和信号量IPC键值的文件名
@@ -373,6 +373,7 @@ typedef struct {
     SHM_CFG_UINT_ITEM threshold_opt_switch;                //方差优化开关
     SHM_CFG_UINT_ITEM stop_tans;                //大功率禁止转发开关
     SHM_CFG_UINT_ITEM boot_mode;                //开机方式
+	SHM_CFG_UINT_ITEM reboot_strategy;                //复位策略
     SHM_CFG_STRING_ITEM web_code;                   //web密码
     SHM_CFG_STRING_ITEM web_user;                   //web用户名
 }__attribute__((packed,aligned(1)))SHM_CFG_STRU;
